@@ -1,0 +1,48 @@
+:root {
+  --color-bg: #E9E5F2;
+  --color-primary: #7C3AED;
+  --color-primary-light: #F3E8FF;
+  --color-primary-mid: #EDE4FF;
+  --color-primary-hover: #6D28D9;
+  --color-dark: #2E1065;
+  --color-dark-mid: #5B3D8A;
+  --color-muted: #8478A0;
+  --color-muted-light: #A99BC4;
+  --color-muted-lighter: #C4B0E0;
+  --color-border: #EDE4F8;
+  --color-border-active: #7C3AED;
+  --color-white: #ffffff;
+  --color-card-shadow: 0 4px 12px rgba(76,36,120,.05);
+  --color-card-shadow-active: 0 8px 18px rgba(124,58,237,.14);
+
+  --font-serif: 'DM Serif Display', serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+
+  --frame-w: 384px;
+  --frame-h: 832px;
+  --frame-radius: 46px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
