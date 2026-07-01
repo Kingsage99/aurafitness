@@ -177,6 +177,66 @@ function MacroBar({ label, consumed, total, color }) {
   )
 }
 
+function CookbookItemSheet({ item, onClose, onLog }) {
+  const color = MEAL_COLORS[item.type] || '#7C3AED'
+  const hasFullRecipe = item.ingredients?.length > 0
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+      <div onClick={onClose} style={{ flex: 1, background: 'rgba(0,0,0,.45)' }} />
+      <div style={{ background: '#fff', borderRadius: '24px 24px 0 0', padding: '20px 22px 32px', maxHeight: '82vh', overflowY: 'auto' }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: '#EDE4F8', margin: '0 auto 18px' }} />
+        <div style={{ fontSize: 10, fontWeight: 800, color, letterSpacing: '.5px', marginBottom: 6, textTransform: 'uppercase' }}>{slotLabel(item.type)}</div>
+        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: '#2E1065', marginBottom: 14, lineHeight: 1.2 }}>{item.name}</div>
+
+        {/* Macros */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+          {[
+            ['Calories', item.macros?.calories ?? item.calories ?? 0, '#7C3AED', 'kcal'],
+            ['Protein', item.macros?.protein ?? item.protein ?? 0, '#7C3AED', 'g'],
+            ['Carbs', item.macros?.carbs ?? 0, '#F59E0B', 'g'],
+            ['Fat', item.macros?.fat ?? 0, '#DB2777', 'g'],
+          ].map(([label, val, clr, unit]) => (
+            <div key={label} style={{ flex: 1, borderRadius: 14, background: clr + '12', padding: '10px 8px', textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: clr }}>{Math.round(val)}</div>
+              <div style={{ fontSize: 9, color: '#8478A0', fontWeight: 700 }}>{unit} {label}</div>
+            </div>
+          ))}
+        </div>
+
+        {hasFullRecipe ? (
+          <>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#2E1065', marginBottom: 8 }}>Ingredients</div>
+            <ul style={{ margin: '0 0 16px', paddingLeft: 18 }}>
+              {item.ingredients.map((ing, i) => (
+                <li key={i} style={{ fontSize: 13, color: '#5B3D8A', marginBottom: 4 }}>{ing}</li>
+              ))}
+            </ul>
+            {item.instructions?.length > 0 && (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#2E1065', marginBottom: 8 }}>Method</div>
+                <ol style={{ margin: '0 0 16px', paddingLeft: 18 }}>
+                  {item.instructions.map((step, i) => (
+                    <li key={i} style={{ fontSize: 13, color: '#5B3D8A', marginBottom: 6, lineHeight: 1.4 }}>{step}</li>
+                  ))}
+                </ol>
+              </>
+            )}
+          </>
+        ) : (
+          <div style={{ padding: '12px 16px', borderRadius: 14, background: '#F9F5FF', border: '1.5px solid #EDE4F8', marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: '#8478A0' }}>Full recipe not saved for this item. Log it to track your macros.</div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, height: 50, borderRadius: 16, border: '1.5px solid #EDE4F8', background: '#fff', fontSize: 14, fontWeight: 700, color: '#8478A0', cursor: 'pointer' }}>Close</button>
+          <button onClick={onLog} style={{ flex: 1.6, height: 50, borderRadius: 16, background: '#7C3AED', color: '#fff', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 10px 24px rgba(124,58,237,.28)' }}>Log this meal</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function RecipeDrawer({ meal, mealName, mealType, onClose, onSaveToCookbook }) {
   const color = MEAL_COLORS[mealType] || '#7C3AED'
   return (
@@ -391,7 +451,7 @@ function EditDrawer({ meal, mealType, onClose, onRegenerate }) {
 }
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
-export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, onUpdateLoggedMacros, onNavigate }) {
+export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, onUpdateLoggedMacros, cookbook = [], onUpdateCookbook, onMealLogged, onNavigate }) {
   const {
     physique = 'lean_toned', dietary = [], allergies = [], name = 'Maya',
     dailyCalorieTarget = null, fitnessGoal = 'tone_recomp',
@@ -421,13 +481,8 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
   const [generatedMeals, setGeneratedMeals] = useState(null)
   const [expandedMeal, setExpandedMeal] = useState(null)
   const [editingMeal, setEditingMeal] = useState(null)
-  const [cookbook, setCookbook] = useState([
-    { name: 'Berry protein bowl', protein: 32, calories: 410, type: 'breakfast' },
-    { name: 'Tofu stir-fry', protein: 28, calories: 520, type: 'lunch' },
-    { name: 'Green power salad', protein: 19, calories: 330, type: 'lunch' },
-    { name: 'Lentil veg curry', protein: 34, calories: 590, type: 'dinner' },
-  ])
   const [cookbookSearch, setCookbookSearch] = useState('')
+  const [viewingCookbookItem, setViewingCookbookItem] = useState(null)
   const inputRef = useRef()
 
   // ── Craving preview state ───────────────────────────────────────────────────
@@ -617,15 +672,24 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
     }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
 
     const newFaves = Object.entries(generatedMeals).map(([type, m]) => ({
-      name: mealNames[type] || m.name, protein: m.macros?.protein ?? 0,
-      calories: m.macros?.calories ?? 0, type,
+      name: mealNames[type] || m.name,
+      type,
+      macros: m.macros ?? { calories: 0, protein: 0, carbs: 0, fat: 0 },
+      protein: m.macros?.protein ?? 0,
+      calories: m.macros?.calories ?? 0,
+      ingredients: m.ingredients ?? [],
+      instructions: m.instructions ?? [],
+      prepTimeMinutes: m.prepTimeMinutes ?? null,
+      savedAt: new Date().toISOString().slice(0, 10),
     }))
-    setCookbook(prev => [...newFaves, ...prev].slice(0, 12))
+    if (onUpdateCookbook) onUpdateCookbook(prev => [...newFaves, ...prev].slice(0, 20))
     if (onUpdateLoggedMacros) {
       onUpdateLoggedMacros(prev => ({
         calories: prev.calories + totals.calories, protein: prev.protein + totals.protein,
         carbs: prev.carbs + totals.carbs, fat: prev.fat + totals.fat,
       }))
+      const firstName = Object.values(mealNames)[0] || 'Today\'s meal plan'
+      if (onMealLogged) onMealLogged({ name: firstName, macros: totals })
     }
     setView('home')
     setGeneratedMeals(null)
@@ -779,7 +843,7 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
             </div>
             <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
               {cookbook.slice(0, 4).map((item, i) => (
-                <div key={i} onClick={() => { handleGenerate(1, item.name) }}
+                <div key={i} onClick={() => setViewingCookbookItem(item)}
                   style={{ flexShrink: 0, width: 120, borderRadius: 16, background: '#fff', border: '1.5px solid #EDE4F8', padding: '12px', boxShadow: '0 4px 12px rgba(76,36,120,.05)', cursor: 'pointer' }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: (MEAL_COLORS[item.type] || '#7C3AED') + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
                     <div style={{ width: 14, height: 14, borderRadius: '50%', background: MEAL_COLORS[item.type] || '#7C3AED' }} />
@@ -793,6 +857,24 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
         </div>
 
         <BottomNav active="meals" onNavigate={onNavigate} />
+
+        {viewingCookbookItem && (
+          <CookbookItemSheet
+            item={viewingCookbookItem}
+            onClose={() => setViewingCookbookItem(null)}
+            onLog={() => {
+              const m = viewingCookbookItem.macros || { calories: viewingCookbookItem.calories || 0, protein: viewingCookbookItem.protein || 0, carbs: 0, fat: 0 }
+              if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => ({
+                calories: prev.calories + (m.calories || 0),
+                protein: prev.protein + (m.protein || 0),
+                carbs: prev.carbs + (m.carbs || 0),
+                fat: prev.fat + (m.fat || 0),
+              }))
+              if (onMealLogged) onMealLogged({ name: viewingCookbookItem.name || 'Meal', macros: m, ingredients: viewingCookbookItem.ingredients || [] })
+              setViewingCookbookItem(null)
+            }}
+          />
+        )}
       </>
     )
   }
@@ -1049,7 +1131,16 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
             onSaveToCookbook={() => {
               const m = generatedMeals[viewingRecipe]
               const n = mealNames[viewingRecipe] || m.name
-              setCookbook(prev => [{ name: n, protein: m.macros.protein, calories: m.macros.calories, type: viewingRecipe }, ...prev].slice(0, 12))
+              if (onUpdateCookbook) onUpdateCookbook(prev => [{
+                name: n, type: viewingRecipe,
+                macros: m.macros ?? { calories: 0, protein: 0, carbs: 0, fat: 0 },
+                protein: m.macros?.protein ?? 0,
+                calories: m.macros?.calories ?? 0,
+                ingredients: m.ingredients ?? [],
+                instructions: m.instructions ?? [],
+                prepTimeMinutes: m.prepTimeMinutes ?? null,
+                savedAt: new Date().toISOString().slice(0, 10),
+              }, ...prev].slice(0, 20))
               setViewingRecipe(null)
             }}
           />
@@ -1084,9 +1175,9 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingBottom: 16 }}>
           {cookbook.filter(m => m.name.toLowerCase().includes(cookbookSearch.toLowerCase())).map((item, i) => (
-            <div key={i} onClick={() => { handleGenerate(1, item.name) }}
+            <div key={i} onClick={() => setViewingCookbookItem(item)}
               style={{ borderRadius: 18, background: '#fff', border: '1.5px solid #EDE4F8', padding: '14px', boxShadow: '0 4px 12px rgba(76,36,120,.05)', cursor: 'pointer' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: MEAL_COLORS[item.type] || '#7C3AED', letterSpacing: '.5px', marginBottom: 6, textTransform: 'uppercase' }}>{item.type}</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: MEAL_COLORS[item.type] || '#7C3AED', letterSpacing: '.5px', marginBottom: 6, textTransform: 'uppercase' }}>{slotLabel(item.type)}</div>
               <div style={{ width: 32, height: 32, borderRadius: 10, background: (MEAL_COLORS[item.type] || '#7C3AED') + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
                 <div style={{ width: 12, height: 12, borderRadius: '50%', background: MEAL_COLORS[item.type] || '#7C3AED' }} />
               </div>
@@ -1094,6 +1185,24 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
               <div style={{ fontSize: 11, color: '#8478A0' }}>{item.protein}g P · {item.calories} kcal</div>
             </div>
           ))}
+
+          {viewingCookbookItem && (
+            <CookbookItemSheet
+              item={viewingCookbookItem}
+              onClose={() => setViewingCookbookItem(null)}
+              onLog={() => {
+                const m = viewingCookbookItem.macros || { calories: viewingCookbookItem.calories || 0, protein: viewingCookbookItem.protein || 0, carbs: 0, fat: 0 }
+                if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => ({
+                  calories: prev.calories + (m.calories || 0),
+                  protein: prev.protein + (m.protein || 0),
+                  carbs: prev.carbs + (m.carbs || 0),
+                  fat: prev.fat + (m.fat || 0),
+                }))
+                if (onMealLogged) onMealLogged({ name: viewingCookbookItem.name || 'Meal', macros: m, ingredients: viewingCookbookItem.ingredients || [] })
+                setViewingCookbookItem(null)
+              }}
+            />
+          )}
         </div>
       </div>
 

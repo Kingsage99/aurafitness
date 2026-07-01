@@ -1,17 +1,36 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import PhoneFrame from './components/PhoneFrame'
 import Auth from './screens/Auth'
 import Onboarding from './screens/Onboarding'
 import WhyAura from './screens/WhyAura'
 import Home from './screens/Home'
 import WorkoutPlayer from './screens/WorkoutPlayer'
+import WorkoutHub from './screens/WorkoutHub'
+import WorkoutDetail from './screens/WorkoutDetail'
+import WorkoutActive from './screens/WorkoutActive'
+import WorkoutComplete from './screens/WorkoutComplete'
+import WorkoutPost from './screens/WorkoutPost'
+import WorkoutBuilder from './screens/WorkoutBuilder'
+import WorkoutRoutine from './screens/WorkoutRoutine'
 import MuscleMap from './screens/MuscleMap'
 import Meals from './screens/Meals'
 import Profile from './screens/Profile'
 import Stats from './screens/Stats'
-import Squad from './screens/Squad'
+import MedalsScreen from './screens/MedalsScreen'
+import QuestsScreen from './screens/QuestsScreen'
+import Discovery from './screens/Discovery'
+import MealPost from './screens/MealPost'
+import Analytics from './screens/Analytics'
+import Leaderboard from './screens/Leaderboard'
 import { buildWeeklyPlan } from './utils/workoutBuilder'
 import { supabase } from './lib/supabase'
+import { saveWorkoutHistory, fetchPendingRequests, setUsername } from './lib/social'
+import {
+  DEFAULT_GAMIFICATION, resetWeeklyIfNeeded, awardGems, awardXP,
+  updateStreak, checkBadges, checkCaloriePenalty,
+  awardRankPoints, completeQuest, purchaseItem, QUEST_POOL, SHOP_ITEMS,
+} from './utils/gamification'
+import RewardToast from './components/RewardToast'
 
 const DEFAULT_PROFILE = {
   physique: 'lean_toned',
@@ -34,33 +53,334 @@ const DEFAULT_PROFILE = {
   dailyCalorieTarget: null,
 }
 
+const Spinner = () => (
+  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #EDE4F8', borderTopColor: '#7C3AED', animation: 'spin 0.8s linear infinite' }} />
+    <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+  </div>
+)
+
 export default function App() {
-  const [session, setSession] = useState(undefined) // undefined = loading, null = no user
+  const [session, setSession] = useState(undefined)
+  const [profileLoading, setProfileLoading] = useState(true)
   const [screen, setScreen] = useState('onboarding')
   const [userProfile, setUserProfile] = useState(DEFAULT_PROFILE)
   const [weeklyPlan, setWeeklyPlan] = useState(null)
   const [todayWorkoutIndex, setTodayWorkoutIndex] = useState(0)
   const [loggedMacros, setLoggedMacros] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 })
+  const [cookbook, setCookbook] = useState([])
+  const [gamification, setGamification] = useState(DEFAULT_GAMIFICATION)
+  const [notifications, setNotifications] = useState([])
+  const [activeWorkout, setActiveWorkout] = useState(null)
+  const [workoutSession, setWorkoutSession] = useState(null)
+  const [userWorkouts, setUserWorkouts] = useState([])
+  const [routine, setRoutine] = useState({})
+  const [pendingRequests, setPendingRequests] = useState([])
+  const [mealPostData, setMealPostData] = useState(null)
+
+  // Tracks whether data has been loaded from DB — prevents auto-saves on initial load
+  const dataReady = useRef(false)
+  const sessionRef = useRef(null)
+
+  const pushNotification = (msg) => {
+    const id = Date.now() + Math.random()
+    setNotifications(prev => [...prev, { id, msg }])
+    setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 3000)
+  }
+
+  async function loadProfile(userId) {
+    // Try full select first; fall back to core columns if new columns don't exist yet
+    let data = null
+    let usedFallback = false
+
+    const { data: fullData, error: fullError } = await supabase
+      .from('profiles')
+      .select('profile_data, onboarding_done, cookbook, daily_log_date, daily_log, gamification, username')
+      .eq('id', userId)
+      .single()
+
+    if (fullError && fullError.code !== 'PGRST116') {
+      // Likely missing columns — fall back to core columns only
+      console.warn('Full profile load failed, trying core columns:', fullError.message)
+      usedFallback = true
+      const { data: coreData, error: coreError } = await supabase
+        .from('profiles')
+        .select('profile_data, onboarding_done')
+        .eq('id', userId)
+        .single()
+      if (coreError && coreError.code !== 'PGRST116') {
+        console.error('Profile load error:', coreError.message)
+      }
+      data = coreData
+    } else {
+      data = fullData
+    }
+
+    if (data?.onboarding_done && data?.profile_data) {
+      const profile = { ...DEFAULT_PROFILE, ...data.profile_data }
+
+      // Auto-generate username silently if not yet set
+      if (!data.username) {
+        const base = (profile.name || 'aura').toLowerCase().replace(/[^a-z0-9]/g, '') || 'aura'
+        const { error: u1 } = await setUsername(userId, base)
+        if (u1) {
+          const fallback = base + Math.floor(100 + Math.random() * 900)
+          await setUsername(userId, fallback)
+          profile.username = fallback
+        } else {
+          profile.username = base
+        }
+      } else {
+        profile.username = data.username
+      }
+
+      setUserProfile(profile)
+      const plan = buildWeeklyPlan(profile)
+      setWeeklyPlan(plan)
+      setScreen('home')
+
+      if (!usedFallback) {
+        if (data.cookbook && Array.isArray(data.cookbook)) setCookbook(data.cookbook)
+        const todayKey = new Date().toISOString().slice(0, 10)
+        if (data.daily_log_date === todayKey && data.daily_log) setLoggedMacros(data.daily_log)
+
+        // Load + reset weekly gamification
+        let g = { ...DEFAULT_GAMIFICATION, ...(data.gamification || {}) }
+        g = resetWeeklyIfNeeded(g)
+
+        // Check yesterday's calorie goal and apply penalty/reward
+        const ydDate = new Date(); ydDate.setDate(ydDate.getDate() - 1)
+        const yesterdayKey = ydDate.toISOString().slice(0, 10)
+        if (data.daily_log_date === yesterdayKey && data.daily_log) {
+          const dailyTarget = profile.dailyCalorieTarget
+          const { g: checkedG, lifeLost, penaltyApplied, goalHit } = checkCaloriePenalty(g, yesterdayKey, dailyTarget, data.daily_log)
+          g = checkedG
+          if (lifeLost) {
+            if (penaltyApplied > 0) pushNotification(`❤️ Life lost — missed calorie goal. -${penaltyApplied} 💎 penalty`)
+            else pushNotification('❤️ Life lost — calorie goal missed yesterday')
+          } else if (goalHit) {
+            pushNotification('+20 💎  Yesterday\'s calorie goal achieved!')
+          }
+        }
+
+        setGamification(g)
+      }
+
+      console.log('Profile loaded ✓', profile.name)
+      // Load pending friend requests
+      fetchPendingRequests(userId).then(reqs => setPendingRequests(reqs))
+    } else {
+      console.log('No profile → onboarding')
+    }
+
+    setProfileLoading(false)
+    dataReady.current = true
+  }
+
+  // Auto-save loggedMacros to Supabase (debounced 1.5s)
+  useEffect(() => {
+    if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
+    const todayKey = new Date().toISOString().slice(0, 10)
+    const t = setTimeout(async () => {
+      const { error } = await supabase.from('profiles').update({
+        daily_log: loggedMacros,
+        daily_log_date: todayKey,
+      }).eq('id', sessionRef.current.user.id)
+      if (error) console.error('Daily log save error:', error.message)
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [loggedMacros]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save cookbook to Supabase (debounced 1.5s)
+  useEffect(() => {
+    if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
+    const t = setTimeout(async () => {
+      const { error } = await supabase.from('profiles').update({
+        cookbook,
+      }).eq('id', sessionRef.current.user.id)
+      if (error) console.error('Cookbook save error:', error.message)
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [cookbook]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save gamification to Supabase (debounced 1.5s)
+  useEffect(() => {
+    if (!dataReady.current || !sessionRef.current) return
+    const t = setTimeout(async () => {
+      const { error } = await supabase.from('profiles').update({ gamification }).eq('id', sessionRef.current.user.id)
+      if (error) console.error('Gamification save error:', error.message)
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [gamification]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
+      sessionRef.current = session
+      if (session) {
+        loadProfile(session.user.id)
+      } else {
+        setProfileLoading(false)
+      }
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession)
+      sessionRef.current = newSession
+      if (newSession) {
+        dataReady.current = false
+        setProfileLoading(true)
+        loadProfile(newSession.user.id)
+      } else {
+        dataReady.current = false
+        setProfileLoading(false)
+        setScreen('onboarding')
+        setUserProfile(DEFAULT_PROFILE)
+        setWeeklyPlan(null)
+        setLoggedMacros({ calories: 0, protein: 0, carbs: 0, fat: 0 })
+        setCookbook([])
+      }
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const navigate = (target) => setScreen(target)
 
-  const handleOnboardingComplete = (answers) => {
+  const handleOnboardingComplete = async (answers) => {
     const profile = { ...DEFAULT_PROFILE, ...answers }
     setUserProfile(profile)
     const plan = buildWeeklyPlan(profile)
     setWeeklyPlan(plan)
+
+    if (sessionRef.current) {
+      const { error } = await supabase.from('profiles').upsert({
+        id: sessionRef.current.user.id,
+        onboarding_done: true,
+        profile_data: profile,
+        cookbook: [],
+        updated_at: new Date().toISOString(),
+      })
+      if (error) console.error('Profile save failed:', error.message, error.code)
+      else {
+        console.log('Profile saved ✓')
+        dataReady.current = true
+        // Award onboarding gems + first_step badge
+        let g = resetWeeklyIfNeeded(DEFAULT_GAMIFICATION)
+        g = awardGems(g, 50)
+        ;({ g } = awardXP(g, 100))
+        const { updatedG } = checkBadges(g, { onboardingCompleted: true })
+        setGamification(updatedG)
+        pushNotification('Welcome to Aura! +50 💎 +100 XP 🎉')
+      }
+    }
+
     navigate('whyaura')
   }
 
-  const handleSwapExercise = (exerciseId, replacement) => {
+  const handleResetOnboarding = async () => {
+    if (sessionRef.current) {
+      await supabase.from('profiles').update({ onboarding_done: false }).eq('id', sessionRef.current.user.id)
+    }
+    dataReady.current = false
+    setUserProfile(DEFAULT_PROFILE)
+    setWeeklyPlan(null)
+    setLoggedMacros({ calories: 0, protein: 0, carbs: 0, fat: 0 })
+    setCookbook([])
+    setScreen('onboarding')
+  }
+
+  const handleWorkoutComplete = (rawSessionData = {}) => {
+    const today = new Date().toISOString().slice(0, 10)
+    let g = resetWeeklyIfNeeded(gamification)
+    g = { ...g, totalWorkouts: g.totalWorkouts + 1, weeklyWorkoutsDone: g.weeklyWorkoutsDone + 1 }
+    // Track workout date for calendar
+    const existingDates = g.workoutDates || []
+    if (!existingDates.includes(today)) g = { ...g, workoutDates: [...existingDates, today] }
+    g = updateStreak(g, today)
+
+    // Base workout reward
+    g = awardGems(g, 30)
+    let levelUp = false; let lvl = g.level
+    ;({ g, leveledUp: levelUp, newLevel: lvl } = awardXP(g, 50))
+    pushNotification('+30 💎  Workout complete!')
+    if (levelUp) pushNotification(`Level up! You're now Level ${lvl} ⬆️`)
+
+    // Streak milestone bonuses
+    const milestones = { 3: { gems: 25, xp: 40 }, 7: { gems: 75, xp: 100 }, 30: { gems: 300, xp: 500 }, 60: { gems: 500, xp: 800 } }
+    const mb = milestones[g.workoutStreak]
+    if (mb) {
+      g = awardGems(g, mb.gems)
+      ;({ g } = awardXP(g, mb.xp))
+      pushNotification(`🔥 ${g.workoutStreak}-day streak bonus! +${mb.gems} 💎`)
+    }
+
+    const allWeekDone = g.weeklyWorkoutsDone >= (userProfile.daysPerWeek || 3)
+    const { updatedG, newBadges } = checkBadges(g, { workoutCompleted: true, cookbookCount: cookbook.length, allWeekDone })
+    g = updatedG
+    newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
+    if (allWeekDone) pushNotification('+60 💎  Full week complete!')
+
+    // Rank points
+    let rankedUp = false; let newRankLabel = ''
+    ;({ g, rankedUp, newRank: newRankLabel } = awardRankPoints(g, allWeekDone ? 20 : 10))
+    if (rankedUp) pushNotification(`Rank up! You're now ${newRankLabel} 🏆`)
+
+    setGamification(g)
+    setWorkoutSession({ ...rawSessionData, xpEarned: 50, gemsEarned: 30, streak: g.workoutStreak })
+
+    // Persist workout history (user chooses whether to post via WorkoutPost)
+    if (sessionRef.current) {
+      saveWorkoutHistory(sessionRef.current.user.id, rawSessionData)
+    }
+
+    navigate('workoutComplete')
+  }
+
+  const handleSaveWorkout = (workout) => {
+    setUserWorkouts(prev => [...prev, workout])
+  }
+
+  const handleUpdateRoutine = (updatedRoutine) => {
+    setRoutine(updatedRoutine)
+  }
+
+  const handleQuestComplete = (questId) => {
+    const today = new Date().toISOString().slice(0, 10)
+    const { g: updated, alreadyDone } = completeQuest(gamification, questId, today)
+    if (!alreadyDone) {
+      setGamification(updated)
+      const q = QUEST_POOL.find(q => q.id === questId)
+      if (q) pushNotification(`Quest complete! +${q.reward} 💎`)
+    }
+  }
+
+  const handleShopPurchase = (itemId, costOverride) => {
+    const { g: updated, success } = purchaseItem(gamification, itemId, costOverride)
+    if (success) {
+      setGamification(updated)
+      const item = SHOP_ITEMS.find(i => i.id === itemId)
+      pushNotification(item ? `${item.icon} ${item.label} purchased!` : '✅ Purchased!')
+    } else {
+      pushNotification('Not enough gems')
+    }
+  }
+
+  const handleMealLogged = (mealData = {}) => {
+    let g = resetWeeklyIfNeeded(gamification)
+    g = awardGems(g, 5)
+    ;({ g } = awardXP(g, 10))
+    const { updatedG, newBadges } = checkBadges(g, { mealLogged: true })
+    g = updatedG
+    setGamification(g)
+    pushNotification('+5 💎  Meal logged!')
+    newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
+
+    if (mealData.name) {
+      setMealPostData(mealData)
+      navigate('mealPost')
+    }
+  }
+
+  const handleSwapExercise = (exerciseId) => {
     setUserProfile(prev => ({
       ...prev,
       dislikedExercises: [...(prev.dislikedExercises || []), exerciseId],
@@ -76,55 +396,125 @@ export default function App() {
       case 'whyaura':
         return <WhyAura userProfile={userProfile} onContinue={() => navigate('home')} />
       case 'home':
-        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} onNavigate={navigate} />
+        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+
+      // ── Workout section ──────────────────────────────────────────────────────
       case 'workout':
+        return (
+          <WorkoutHub
+            weeklyPlan={weeklyPlan}
+            todayWorkoutIndex={todayWorkoutIndex}
+            userWorkouts={userWorkouts}
+            setActiveWorkout={setActiveWorkout}
+            onNavigate={navigate}
+            gamification={gamification}
+          />
+        )
+      case 'workoutDetail':
+        return <WorkoutDetail activeWorkout={activeWorkout} onNavigate={navigate} />
+      case 'workoutActive':
+        return (
+          <WorkoutActive
+            activeWorkout={activeWorkout}
+            onWorkoutComplete={handleWorkoutComplete}
+            onNavigate={navigate}
+          />
+        )
+      case 'workoutComplete':
+        return <WorkoutComplete sessionData={workoutSession} gamification={gamification} onNavigate={navigate} />
+      case 'workoutPost':
+        return <WorkoutPost sessionData={workoutSession} userProfile={userProfile} session={session} onNavigate={navigate} />
+      case 'mealPost':
+        return <MealPost mealData={mealPostData} userProfile={userProfile} session={session} onNavigate={navigate} />
+      case 'workoutBuilder':
+        return <WorkoutBuilder onSaveWorkout={handleSaveWorkout} onNavigate={navigate} />
+      case 'workoutRoutine':
+        return (
+          <WorkoutRoutine
+            weeklyPlan={weeklyPlan}
+            userProfile={userProfile}
+            userWorkouts={userWorkouts}
+            routine={routine}
+            onUpdateRoutine={handleUpdateRoutine}
+            onNavigate={navigate}
+          />
+        )
+      // ── Legacy workout player (kept, accessible via internal nav if needed) ─
+      case 'workoutLegacy':
         return (
           <WorkoutPlayer
             workout={todayWorkout}
             userProfile={userProfile}
             onSwapExercise={handleSwapExercise}
+            onWorkoutComplete={handleWorkoutComplete}
             onNavigate={navigate}
           />
         )
+
       case 'musclemap':
         return <MuscleMap workout={todayWorkout} onNavigate={navigate} />
       case 'meals':
-        return <Meals userProfile={userProfile} loggedMacros={loggedMacros} onUpdateLoggedMacros={setLoggedMacros} onNavigate={navigate} />
+        return (
+          <Meals
+            userProfile={userProfile}
+            loggedMacros={loggedMacros}
+            onUpdateLoggedMacros={setLoggedMacros}
+            cookbook={cookbook}
+            onUpdateCookbook={setCookbook}
+            onMealLogged={handleMealLogged}
+            onNavigate={navigate}
+          />
+        )
       case 'profile':
-        return <Profile userProfile={userProfile} weeklyPlan={weeklyPlan} onNavigate={navigate} onSignOut={() => setScreen('onboarding')} />
+        return (
+          <Profile
+            userProfile={userProfile}
+            weeklyPlan={weeklyPlan}
+            session={session}
+            gamification={gamification}
+            onShopPurchase={handleShopPurchase}
+            onNavigate={navigate}
+            onResetOnboarding={handleResetOnboarding}
+          />
+        )
+      case 'store':
+        return (
+          <Profile
+            userProfile={userProfile}
+            weeklyPlan={weeklyPlan}
+            session={session}
+            gamification={gamification}
+            onShopPurchase={handleShopPurchase}
+            onNavigate={navigate}
+            onResetOnboarding={handleResetOnboarding}
+            initialTab="store"
+          />
+        )
       case 'stats':
         return <Stats weeklyPlan={weeklyPlan} onNavigate={navigate} />
-      case 'squad':
-        return <Squad onNavigate={navigate} />
+      case 'medals':
+        return <MedalsScreen gamification={gamification} onNavigate={navigate} />
+      case 'quests':
+        return <QuestsScreen gamification={gamification} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+      case 'discovery':
+        return <Discovery session={session} userProfile={userProfile} onNavigate={navigate} />
+      case 'analytics':
+        return <Analytics gamification={gamification} userProfile={userProfile} loggedMacros={loggedMacros} session={session} onNavigate={navigate} />
+      case 'leaderboard':
+        return <Leaderboard onNavigate={navigate} />
       default:
-        return <Home userProfile={userProfile} todayWorkout={todayWorkout} onNavigate={navigate} />
+        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
     }
   }
 
-  // Still loading session
-  if (session === undefined) {
-    return (
-      <PhoneFrame hideStatus={true}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #EDE4F8', borderTopColor: '#7C3AED', animation: 'spin 0.8s linear infinite' }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-        </div>
-      </PhoneFrame>
-    )
-  }
-
-  // Not logged in → show auth screen
-  if (!session) {
-    return (
-      <PhoneFrame hideStatus={true}>
-        <Auth />
-      </PhoneFrame>
-    )
-  }
+  if (session === undefined) return <PhoneFrame hideStatus={true}><Spinner /></PhoneFrame>
+  if (!session) return <PhoneFrame hideStatus={true}><Auth /></PhoneFrame>
+  if (profileLoading) return <PhoneFrame hideStatus={true}><Spinner /></PhoneFrame>
 
   return (
     <PhoneFrame hideStatus={true}>
       {renderScreen()}
+      <RewardToast notifications={notifications} />
     </PhoneFrame>
   )
 }

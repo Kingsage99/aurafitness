@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
-import { BodyOutline } from '../components/AvatarSilhouette'
+import { BodyOutline, MUSCLE_MAP } from '../components/AvatarSilhouette'
+import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
 
 const FALLBACK_EXERCISES = [
   { name: 'Glute Bridge', sets: 3, reps: 12, muscles: { glutes: '#FF3B3B', legs: '#FF5A2F' }, target: 'Glutes · Hams', category: 'MAIN' },
@@ -27,7 +28,7 @@ function buildExerciseList(workout) {
   }))
 }
 
-export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, onNavigate }) {
+export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, onWorkoutComplete, onNavigate }) {
   const exercises = buildExerciseList(workout)
 
   const [view, setView] = useState('list') // 'list' | 'active'
@@ -76,7 +77,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
 
   const nextExercise = () => {
     if (exerciseIdx < exercises.length - 1) { goToExercise(exerciseIdx + 1) }
-    else { onNavigate('home') }
+    else { if (onWorkoutComplete) onWorkoutComplete(); onNavigate('home') }
   }
 
   const prevExercise = () => {
@@ -85,6 +86,35 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
 
   const workoutName = workout?.name || 'Today\'s Workout'
   const totalMin = Math.round(exercises.length * 5.5)
+
+  // Build muscle color maps for the "Muscles today" overview
+  const workoutFrontColors = useMemo(() => {
+    const counts = {}
+    exercises.forEach(ex => {
+      Object.keys(ex.muscles || {}).forEach(group => {
+        MUSCLE_SVG_IDS[group]?.front?.forEach(id => { counts[id] = (counts[id] || 0) + 1 })
+      })
+    })
+    const colors = {}
+    Object.entries(counts).forEach(([id, n]) => {
+      colors[id] = n >= 3 ? '#FF3B3B' : n >= 2 ? '#FFAA30' : '#4ADE80'
+    })
+    return colors
+  }, [exercises])
+
+  const workoutBackColors = useMemo(() => {
+    const counts = {}
+    exercises.forEach(ex => {
+      Object.keys(ex.muscles || {}).forEach(group => {
+        MUSCLE_SVG_IDS[group]?.back?.forEach(id => { counts[id] = (counts[id] || 0) + 1 })
+      })
+    })
+    const colors = {}
+    Object.entries(counts).forEach(([id, n]) => {
+      colors[id] = n >= 3 ? '#FF3B3B' : n >= 2 ? '#FFAA30' : '#4ADE80'
+    })
+    return colors
+  }, [exercises])
 
   // ── LIST VIEW ─────────────────────────────────────────────────────────────
   if (view === 'list') {
@@ -112,6 +142,20 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
         )}
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
+
+          {/* Muscles today */}
+          <div style={{ borderRadius: 20, background: '#1E1430', padding: '12px 16px', marginBottom: 12 }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: '#C9B7E8', letterSpacing: '.5px', marginBottom: 8 }}>MUSCLES TODAY</div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+              <div style={{ width: 110, height: 185 }}>
+                <MuscleSVG url="/muscle_map_front.svg" muscleColors={workoutFrontColors} />
+              </div>
+              <div style={{ width: 110, height: 185 }}>
+                <MuscleSVG url="/muscle_map_back.svg" muscleColors={workoutBackColors} />
+              </div>
+            </div>
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {exercises.map((ex, idx) => {
               const done = completedExercises.has(idx)

@@ -1,6 +1,19 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 600)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 600px)')
+    const handler = (e) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return isMobile
+}
 
 function StatusBar() {
+  const isMobile = useIsMobile()
+  if (isMobile) return null
   return (
     <div style={{
       height: 46,
@@ -26,6 +39,23 @@ function StatusBar() {
 }
 
 export default function PhoneFrame({ children, hideStatus }) {
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        background: 'linear-gradient(180deg,#FBF7FF 0%,#F4ECFB 100%)',
+      }}>
+        {children}
+      </div>
+    )
+  }
+
   return (
     <div style={{
       display: 'flex',

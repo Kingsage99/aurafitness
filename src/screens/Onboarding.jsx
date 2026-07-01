@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import ProgressBar from '../components/ProgressBar'
 import { StatusBar } from '../components/PhoneFrame'
 import AvatarSilhouette from '../components/AvatarSilhouette'
+import MuscleSVG, { TARGET_AREA_SVG, SVG_TO_TARGET_AREA } from '../components/MuscleSVG'
 
 const ftInToCm = (ft, inches) => Math.round(parseInt(ft || 0) * 30.48 + parseFloat(inches || 0) * 2.54)
 const lbsToKg = (lbs) => Math.round(parseFloat(lbs) / 2.2046 * 10) / 10
@@ -68,7 +69,7 @@ const EQUIPMENT = [
   { id: 'gym', label: 'Full gym', sub: 'Machines & racks', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9v6M21 9v6M6 7v10M18 7v10M6 12h12"/></svg> },
 ]
 
-const TARGET_AREAS = ['Full body', 'Upper body', 'Core', 'Lower body', 'Back']
+const TARGET_AREAS = ['Full body', 'Legs', 'Glutes', 'Core', 'Arms', 'Back']
 const DIETARY = ['No preference', 'Vegetarian', 'Vegan', 'Pescatarian', 'Halal', 'Kosher', 'Gluten-free', 'Dairy-free']
 const ALLERGIES = ['None', 'Nuts', 'Soy', 'Eggs', 'Shellfish', 'Wheat', 'Lactose']
 
@@ -129,6 +130,18 @@ export default function Onboarding({ onComplete }) {
   const [targetAreas, setTargetAreas] = useState(new Set(['Full body']))
   const [dietary, setDietary] = useState(new Set(['No preference']))
   const [allergies, setAllergies] = useState(new Set(['None']))
+
+  // Step 8 — muscle map colors derived from selected target areas
+  const step8FrontColors = useMemo(() => {
+    const colors = {}
+    targetAreas.forEach(area => { TARGET_AREA_SVG[area]?.front?.forEach(id => { colors[id] = '#7C3AED' }) })
+    return colors
+  }, [targetAreas])
+  const step8BackColors = useMemo(() => {
+    const colors = {}
+    targetAreas.forEach(area => { TARGET_AREA_SVG[area]?.back?.forEach(id => { colors[id] = '#7C3AED' }) })
+    return colors
+  }, [targetAreas])
 
   // Step 11 — Nutrition
   const [tdeeData, setTdeeData] = useState(null)
@@ -293,7 +306,7 @@ export default function Onboarding({ onComplete }) {
                 return (
                   <button key={p.id} onClick={() => setPhysique(p.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 6px 11px', borderRadius: 18, background: sel ? '#FAF5FF' : '#fff', border: `2px solid ${sel ? '#7C3AED' : '#EDE4F8'}`, boxShadow: sel ? '0 8px 18px rgba(124,58,237,.16)' : '0 4px 12px rgba(76,36,120,.05)', position: 'relative', cursor: 'pointer' }}>
                     {sel && <div style={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: '50%', background: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CheckIcon /></div>}
-                    <AvatarSilhouette height={58} color={sel ? '#C4A8E8' : '#D4C4E8'} />
+                    <AvatarSilhouette height={72} color={sel ? '#7C3AED' : '#A88BC8'} />
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#2E1065' }}>{p.label}</div>
                     <div style={{ fontSize: 10.5, color: '#8478A0', textAlign: 'center', lineHeight: 1.2 }}>{p.sub}</div>
                   </button>
@@ -494,15 +507,30 @@ export default function Onboarding({ onComplete }) {
           <div style={headerStyle}>
             <div style={stepLabel}>STEP 8 OF 11</div>
             <div style={stepTitle}>Any areas you want to focus on?</div>
-            <div style={stepSub}>We'll still train everything — this shapes the focus.</div>
+            <div style={stepSub}>Tap the body or use the chips — we'll shape your focus.</div>
           </div>
-          <div style={{ flex: 1, padding: '8px 22px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, overflowY: 'auto' }}>
-            <div style={{ position: 'relative', height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <AvatarSilhouette height={200} color='#C4A8E8' />
-              {targetAreas.has('Core') && <div style={{ position: 'absolute', top: '44%', left: '50%', transform: 'translateX(-50%)', width: 60, height: 40, borderRadius: '50%', background: 'radial-gradient(circle,rgba(124,58,237,.55),rgba(124,58,237,0))' }} />}
-              {(targetAreas.has('Lower body') || targetAreas.has('Full body')) && (<><div style={{ position: 'absolute', top: '60%', left: '41%', width: 30, height: 60, borderRadius: '50%', background: 'radial-gradient(circle,rgba(124,58,237,.5),rgba(124,58,237,0))' }} /><div style={{ position: 'absolute', top: '60%', left: '59%', width: 30, height: 60, borderRadius: '50%', background: 'radial-gradient(circle,rgba(124,58,237,.5),rgba(124,58,237,0))' }} /></>)}
-              {(targetAreas.has('Upper body') || targetAreas.has('Full body')) && <div style={{ position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)', width: 70, height: 50, borderRadius: '50%', background: 'radial-gradient(circle,rgba(124,58,237,.4),rgba(124,58,237,0))' }} />}
+          <div style={{ flex: 1, padding: '8px 22px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, overflowY: 'auto' }}>
+
+            {/* Side-by-side muscle map */}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <div style={{ width: 130, height: 220, borderRadius: 16, overflow: 'hidden', background: '#F8F4FF', border: '1.5px solid #EDE4F8' }}>
+                <MuscleSVG
+                  url="/muscle_map_front.svg"
+                  muscleColors={step8FrontColors}
+                  onMuscleClick={(area) => toggleSet(setTargetAreas, area)}
+                />
+              </div>
+              <div style={{ width: 130, height: 220, borderRadius: 16, overflow: 'hidden', background: '#F8F4FF', border: '1.5px solid #EDE4F8' }}>
+                <MuscleSVG
+                  url="/muscle_map_back.svg"
+                  muscleColors={step8BackColors}
+                  onMuscleClick={(area) => toggleSet(setTargetAreas, area)}
+                />
+              </div>
             </div>
+
+            <div style={{ fontSize: 11, color: '#A99BC4', fontWeight: 600 }}>Tap a muscle to select — or use the chips below</div>
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
               {TARGET_AREAS.map(a => <Chip key={a} label={a} selected={targetAreas.has(a)} onToggle={() => toggleSet(setTargetAreas, a)} />)}
             </div>
