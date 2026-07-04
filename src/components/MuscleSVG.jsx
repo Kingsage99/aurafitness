@@ -59,7 +59,7 @@ export const SVG_TO_TARGET_AREA = {
   back_shoulder: 'Back', scapular_muscle: 'Back', front_shoulder: 'Back',
 }
 
-const DEFAULT_FILL = '#cacbdf'
+const DEFAULT_FILL = '#EAE6D2'
 const VIEW_BOX = '640 0 640 1080'
 
 // All known muscle SVG IDs (used for reset before re-coloring)

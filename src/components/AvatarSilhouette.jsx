@@ -1,5 +1,6 @@
 import React from 'react'
 import Model from 'react-body-highlighter'
+import { NB } from '../styles/neoBrutalism'
 
 // Maps internal muscle keys to react-body-highlighter names
 const MUSCLE_MAP = {
@@ -16,7 +17,7 @@ const MUSCLE_MAP = {
 
 // Custom female body silhouette SVG
 // viewBox 0 0 100 230 → aspect ratio 100:230 ≈ 0.435
-export default function AvatarSilhouette({ height = 160, color = '#7C3AED', style = {} }) {
+export default function AvatarSilhouette({ height = 160, color = NB.ink, style = {} }) {
   const width = Math.round(height * (100 / 230))
   return (
     <svg
@@ -63,7 +64,7 @@ export default function AvatarSilhouette({ height = 160, color = '#7C3AED', styl
 
 // Muscle map with highlights — uses react-body-highlighter
 // Used in WorkoutPlayer and MuscleMap
-export function BodyOutline({ muscleColors = {}, data, height = 260, highlightedColors = ['#7C3AED'], type = 'anterior' }) {
+export function BodyOutline({ muscleColors = {}, data, height = 260, highlightedColors = [NB.magenta], type = 'anterior' }) {
   const modelData = data || (() => {
     const muscles = Object.keys(muscleColors).map(k => MUSCLE_MAP[k]).filter(Boolean)
     return muscles.length > 0 ? [{ name: 'Exercise', muscles }] : []
@@ -73,7 +74,7 @@ export function BodyOutline({ muscleColors = {}, data, height = 260, highlighted
     <Model
       data={modelData}
       type={type}
-      bodyColor='#2A1F3D'
+      bodyColor={NB.ink}
       highlightedColors={highlightedColors}
       style={{ height, width: height / 2 }}
     />

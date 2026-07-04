@@ -1,4 +1,5 @@
 import React from 'react'
+import { NB, NB_BORDER } from '../styles/neoBrutalism'
 
 export default function ProgressBar({ step, total = 8 }) {
   return (
@@ -14,9 +15,9 @@ export default function ProgressBar({ step, total = 8 }) {
           key={i}
           style={{
             flex: 1,
-            height: 5,
-            borderRadius: 3,
-            background: i < step ? '#7C3AED' : '#E4D8F5',
+            height: 6,
+            border: NB_BORDER,
+            background: i < step ? NB.teal : NB.white,
             transition: 'background 0.3s',
           }}
         />

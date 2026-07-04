@@ -1,26 +1,28 @@
 :root {
-  --color-bg: #E9E5F2;
-  --color-primary: #7C3AED;
-  --color-primary-light: #F3E8FF;
-  --color-primary-mid: #EDE4FF;
-  --color-primary-hover: #6D28D9;
-  --color-dark: #2E1065;
-  --color-dark-mid: #5B3D8A;
-  --color-muted: #8478A0;
-  --color-muted-light: #A99BC4;
-  --color-muted-lighter: #C4B0E0;
-  --color-border: #EDE4F8;
-  --color-border-active: #7C3AED;
+  --color-bg: #F5F0DC;
+  --color-ink: #0A0A0A;
   --color-white: #ffffff;
-  --color-card-shadow: 0 4px 12px rgba(76,36,120,.05);
-  --color-card-shadow-active: 0 8px 18px rgba(124,58,237,.14);
+  --color-cream: #F7F4E6;
 
-  --font-serif: 'DM Serif Display', serif;
-  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --color-teal: #00C2C8;
+  --color-magenta: #FF00E5;
+  --color-yellow: #FFD400;
+  --color-gold: #FFC93C;
+  --color-green: #46D45A;
+  --color-orange: #FF6A2C;
+  --color-blue: #4AA3FF;
+  --color-lavender: #C9B8F5;
+  --color-red: #E5352B;
+
+  --nb-border-w: 3px;
+  --nb-border: 3px solid #0A0A0A;
+
+  --font-display: 'Archivo', sans-serif;
+  --font-mono: 'Space Mono', monospace;
 
   --frame-w: 384px;
   --frame-h: 832px;
-  --frame-radius: 46px;
+  --frame-radius: 0px;
 }
 
 * {
@@ -29,8 +31,10 @@
 
 body {
   margin: 0;
-  background: var(--color-bg);
-  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  background-image: radial-gradient(rgba(10,10,10,0.10) 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+  font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
 }
 

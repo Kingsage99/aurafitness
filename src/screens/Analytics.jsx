@@ -3,6 +3,7 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
 import { fetchWorkoutHistory } from '../lib/social'
+import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
 const DAILY_TARGETS = {
   lean_toned:  { calories: 1750, protein: 130, carbs: 180, fat: 55 },
@@ -57,7 +58,7 @@ function buildMuscleCounts(history) {
 function buildSVGColors(muscleCounts, side) {
   const colors = {}
   Object.entries(muscleCounts).forEach(([group, count]) => {
-    const color = count >= 6 ? '#4C1D95' : count >= 3 ? '#7C3AED' : '#DDD0FA'
+    const color = count >= 6 ? NB.ink : count >= 3 ? NB.magenta : '#e5c9e5'
     ;(MUSCLE_SVG_IDS[group]?.[side] || []).forEach(id => { colors[id] = color })
   })
   return colors
@@ -79,14 +80,12 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
   const targets = DAILY_TARGETS[userProfile?.physique] || DAILY_TARGETS.lean_toned
   const g = gamification || {}
 
-  // XP to next level
   const LEVEL_XP = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 5800, 8000]
   const curLvl   = Math.min(g.level || 1, 10)
   const xpStart  = LEVEL_XP[curLvl - 1] || 0
   const xpEnd    = LEVEL_XP[curLvl] || 8000
   const xpPct    = Math.min(1, ((g.xp || 0) - xpStart) / Math.max(1, xpEnd - xpStart))
 
-  // Weekly bar chart — last 8 weeks
   const weeklyData = useMemo(() => {
     const counts = {}
     history.forEach(s => {
@@ -106,16 +105,15 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
 
   const maxWeekly = Math.max(...weeklyData.map(w => w.count), 1)
 
-  // Muscle coverage
   const muscleCounts = useMemo(() => buildMuscleCounts(history), [history])
   const frontColors  = useMemo(() => buildSVGColors(muscleCounts, 'front'), [muscleCounts])
   const backColors   = useMemo(() => buildSVGColors(muscleCounts, 'back'), [muscleCounts])
 
   const macroItems = [
-    { label: 'Calories', value: loggedMacros?.calories || 0, target: targets.calories, color: '#7C3AED', unit: 'kcal' },
-    { label: 'Protein',  value: loggedMacros?.protein  || 0, target: targets.protein,  color: '#10B981', unit: 'g' },
-    { label: 'Carbs',    value: loggedMacros?.carbs    || 0, target: targets.carbs,    color: '#F59E0B', unit: 'g' },
-    { label: 'Fat',      value: loggedMacros?.fat      || 0, target: targets.fat,      color: '#EC4899', unit: 'g' },
+    { label: 'Calories', value: loggedMacros?.calories || 0, target: targets.calories, color: NB.teal, unit: 'kcal' },
+    { label: 'Protein',  value: loggedMacros?.protein  || 0, target: targets.protein,  color: NB.blue, unit: 'g' },
+    { label: 'Carbs',    value: loggedMacros?.carbs    || 0, target: targets.carbs,    color: NB.yellow, unit: 'g' },
+    { label: 'Fat',      value: loggedMacros?.fat      || 0, target: targets.fat,      color: NB.pink, unit: 'g' },
   ]
 
   return (
@@ -125,28 +123,28 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {/* Header */}
         <div style={{ padding: '10px 22px 6px', flexShrink: 0 }}>
-          <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 26, color: '#2E1065' }}>Analytics</div>
-          <div style={{ fontSize: 13, color: '#8478A0', marginTop: 2 }}>Your fitness at a glance</div>
+          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink }}>Analytics</div>
+          <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>Your fitness at a glance</div>
         </div>
 
         <div style={{ padding: '0 16px 24px' }}>
 
-          {/* ── Quick Stats ─────────────────────────── */}
+          {/* Quick Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
             <StatCard icon="💪" label="Total Workouts" value={g.totalWorkouts || 0} />
             <StatCard icon="🔥" label="Streak" value={`${g.workoutStreak || 0} days`} />
-            <div style={{ borderRadius: 18, padding: '14px 16px', background: '#fff', border: '1.5px solid #EDE4F8', boxShadow: '0 2px 8px rgba(76,36,120,.04)' }}>
-              <div style={{ fontSize: 11, color: '#8478A0', fontWeight: 700, marginBottom: 4 }}>⚡ Level {curLvl}</div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: '#2E1065', marginBottom: 8 }}>{g.xp || 0} XP</div>
-              <div style={{ height: 6, borderRadius: 99, background: '#F0E8FF', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${xpPct * 100}%`, background: '#7C3AED', borderRadius: 99 }} />
+            <div style={{ border: NB_BORDER, boxShadow: hardShadow(2), padding: '14px 16px', background: NB.white }}>
+              <div style={{ fontSize: 11, color: '#555', fontWeight: 700, marginBottom: 4 }}>⚡ Level {curLvl}</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: NB.ink, marginBottom: 8 }}>{g.xp || 0} XP</div>
+              <div style={{ height: 8, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${xpPct * 100}%`, background: NB.teal }} />
               </div>
-              <div style={{ fontSize: 10, color: '#8478A0', marginTop: 4 }}>{xpEnd - (g.xp || 0)} XP to next level</div>
+              <div style={{ fontSize: 10, color: '#555', marginTop: 4 }}>{xpEnd - (g.xp || 0)} XP to next level</div>
             </div>
             <StatCard icon="💎" label="Gems" value={g.gems || 0} />
           </div>
 
-          {/* ── Activity Chart ──────────────────────── */}
+          {/* Activity Chart */}
           <Section
             title="Activity"
             subtitle="Workouts per week"
@@ -156,7 +154,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
           >
             {loading ? (
               <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontSize: 13, color: '#8478A0' }}>Loading…</div>
+                <div style={{ fontSize: 13, color: '#555' }}>Loading…</div>
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 100, paddingBottom: 20, position: 'relative' }}>
@@ -166,14 +164,15 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
                   return (
                     <div key={w.week} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                       {w.count > 0 && (
-                        <div style={{ fontSize: 9, color: '#7C3AED', fontWeight: 800, marginBottom: 2 }}>{w.count}</div>
+                        <div style={{ fontSize: 9, color: NB.ink, fontWeight: 800, marginBottom: 2 }}>{w.count}</div>
                       )}
                       <div style={{
-                        width: '100%', height: barH || 3, borderRadius: 6,
-                        background: isThisWeek ? '#7C3AED' : w.count > 0 ? '#C4B5FD' : '#F0E8FF',
+                        width: '100%', height: barH || 3,
+                        background: isThisWeek ? NB.magenta : w.count > 0 ? NB.teal : '#eee',
+                        border: w.count > 0 ? `1.5px solid ${NB.ink}` : 'none',
                         minHeight: 3,
                       }} />
-                      <div style={{ fontSize: 8, color: isThisWeek ? '#7C3AED' : '#B6A8CE', fontWeight: isThisWeek ? 800 : 600, whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '100%', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontFamily: NB.fontMono, fontSize: 8, color: NB.ink, fontWeight: isThisWeek ? 800 : 600, whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '100%', textOverflow: 'ellipsis' }}>
                         {i === weeklyData.length - 1 ? 'Now' : w.label.split(' ')[0]}
                       </div>
                     </div>
@@ -182,22 +181,21 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
               </div>
             )}
 
-            {/* Expanded: recent sessions */}
             {expanded === 'activity' && !loading && history.slice(0, 8).map((s, i) => (
-              <div key={i} style={{ borderRadius: 12, padding: '10px 12px', background: '#F8F4FF', border: '1px solid #EDE4F8', marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div key={i} style={{ border: `1.5px solid ${NB.ink}`, padding: '10px 12px', background: NB.cream, marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#2E1065' }}>{s.label || 'Workout'}</div>
-                  <div style={{ fontSize: 11, color: '#8478A0' }}>{new Date(s.completed_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>{s.label || 'Workout'}</div>
+                  <div style={{ fontSize: 11, color: '#555' }}>{new Date(s.completed_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#7C3AED' }}>{Math.floor((s.elapsed || 0) / 60)} min</div>
-                  <div style={{ fontSize: 11, color: '#8478A0' }}>{s.sets_completed || 0} sets</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: NB.ink }}>{Math.floor((s.elapsed || 0) / 60)} min</div>
+                  <div style={{ fontSize: 11, color: '#555' }}>{s.sets_completed || 0} sets</div>
                 </div>
               </div>
             ))}
           </Section>
 
-          {/* ── Muscle Coverage ─────────────────────── */}
+          {/* Muscle Coverage */}
           <Section title="Muscle Coverage" subtitle="Most-trained areas">
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
               <div style={{ flex: 1, maxWidth: 130, aspectRatio: '0.6' }}>
@@ -208,55 +206,55 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
               </div>
             </div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 8 }}>
-              {[['#DDD0FA', '1–2 sessions'], ['#7C3AED', '3–5'], ['#4C1D95', '6+']].map(([c, l]) => (
+              {[['#e5c9e5', '1–2 sessions'], [NB.magenta, '3–5'], [NB.ink, '6+']].map(([c, l]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: 2, background: c }} />
-                  <span style={{ fontSize: 10, color: '#8478A0', fontWeight: 600 }}>{l}</span>
+                  <div style={{ width: 10, height: 10, border: `1.5px solid ${NB.ink}`, background: c }} />
+                  <span style={{ fontSize: 10, color: '#555', fontWeight: 600 }}>{l}</span>
                 </div>
               ))}
             </div>
           </Section>
 
-          {/* ── Today's Nutrition ───────────────────── */}
+          {/* Today's Nutrition */}
           <Section title="Today's Nutrition" subtitle="vs. your daily target">
             {macroItems.map(m => {
               const pct = Math.min(1, m.value / m.target)
               return (
                 <div key={m.label} style={{ marginBottom: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#2E1065' }}>{m.label}</span>
-                    <span style={{ fontSize: 12, color: '#8478A0' }}>{m.value}{m.unit} / {m.target}{m.unit}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: NB.ink }}>{m.label}</span>
+                    <span style={{ fontSize: 12, color: '#555' }}>{m.value}{m.unit} / {m.target}{m.unit}</span>
                   </div>
-                  <div style={{ height: 8, borderRadius: 99, background: '#F0E8FF', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct * 100}%`, background: m.color, borderRadius: 99, transition: 'width 0.6s' }} />
+                  <div style={{ height: 8, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct * 100}%`, background: m.color, transition: 'width 0.6s' }} />
                   </div>
                 </div>
               )
             })}
           </Section>
 
-          {/* ── Achievements ────────────────────────── */}
+          {/* Achievements */}
           <Section title="Achievements">
             <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ flex: 1, borderRadius: 14, padding: '12px 10px', background: '#F8F4FF', border: '1px solid #EDE4F8', textAlign: 'center' }}>
+              <div style={{ flex: 1, border: `1.5px solid ${NB.ink}`, padding: '12px 10px', background: NB.cream, textAlign: 'center' }}>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>🏅</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: '#7C3AED' }}>{(g.badges || []).length}</div>
-                <div style={{ fontSize: 10, color: '#8478A0', fontWeight: 600 }}>/ 16 badges</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: NB.ink }}>{(g.badges || []).length}</div>
+                <div style={{ fontSize: 10, color: '#555', fontWeight: 600 }}>/ 16 badges</div>
               </div>
-              <div style={{ flex: 1, borderRadius: 14, padding: '12px 10px', background: '#F8F4FF', border: '1px solid #EDE4F8', textAlign: 'center' }}>
+              <div style={{ flex: 1, border: `1.5px solid ${NB.ink}`, padding: '12px 10px', background: NB.cream, textAlign: 'center' }}>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>🏆</div>
-                <div style={{ fontSize: 16, fontWeight: 900, color: '#7C3AED', textTransform: 'capitalize' }}>{g.rank || 'Bronze'}</div>
-                <div style={{ fontSize: 10, color: '#8478A0', fontWeight: 600 }}>{g.rankPoints || 0} pts</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: NB.ink, textTransform: 'capitalize' }}>{g.rank || 'Bronze'}</div>
+                <div style={{ fontSize: 10, color: '#555', fontWeight: 600 }}>{g.rankPoints || 0} pts</div>
               </div>
-              <div style={{ flex: 1, borderRadius: 14, padding: '12px 10px', background: '#F8F4FF', border: '1px solid #EDE4F8', textAlign: 'center' }}>
+              <div style={{ flex: 1, border: `1.5px solid ${NB.ink}`, padding: '12px 10px', background: NB.cream, textAlign: 'center' }}>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>🥗</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: '#7C3AED' }}>{g.calorieGoalStreak || 0}</div>
-                <div style={{ fontSize: 10, color: '#8478A0', fontWeight: 600 }}>cal streak</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: NB.ink }}>{g.calorieGoalStreak || 0}</div>
+                <div style={{ fontSize: 10, color: '#555', fontWeight: 600 }}>cal streak</div>
               </div>
             </div>
             <button
               onClick={() => onNavigate('medals')}
-              style={{ marginTop: 10, width: '100%', padding: '10px', borderRadius: 14, border: '1.5px solid #EDE4F8', background: '#F8F4FF', color: '#7C3AED', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              style={{ marginTop: 12, width: '100%', padding: '10px', border: `2px solid ${NB.ink}`, background: NB.white, color: NB.ink, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer' }}
             >
               View all badges →
             </button>
@@ -272,23 +270,23 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
 
 function StatCard({ icon, label, value }) {
   return (
-    <div style={{ borderRadius: 18, padding: '14px 16px', background: '#fff', border: '1.5px solid #EDE4F8', boxShadow: '0 2px 8px rgba(76,36,120,.04)' }}>
-      <div style={{ fontSize: 11, color: '#8478A0', fontWeight: 700, marginBottom: 4 }}>{icon} {label}</div>
-      <div style={{ fontSize: 24, fontWeight: 900, color: '#2E1065' }}>{value}</div>
+    <div style={{ border: NB_BORDER, boxShadow: hardShadow(2), padding: '14px 16px', background: NB.white }}>
+      <div style={{ fontSize: 11, color: '#555', fontWeight: 700, marginBottom: 4 }}>{icon} {label}</div>
+      <div style={{ fontSize: 24, fontWeight: 900, color: NB.ink }}>{value}</div>
     </div>
   )
 }
 
 function Section({ title, subtitle, children, expandable, expanded, onToggle }) {
   return (
-    <div style={{ borderRadius: 20, background: '#fff', border: '1.5px solid #EDE4F8', padding: '14px 16px', marginBottom: 14, boxShadow: '0 2px 8px rgba(76,36,120,.04)' }}>
+    <div style={{ border: NB_BORDER, boxShadow: hardShadow(2), background: NB.white, padding: '14px 16px', marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#2E1065' }}>{title}</div>
-          {subtitle && <div style={{ fontSize: 11, color: '#8478A0', marginTop: 2 }}>{subtitle}</div>}
+          <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>{title}</div>
+          {subtitle && <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{subtitle}</div>}
         </div>
         {expandable && (
-          <button onClick={onToggle} style={{ background: '#F0E8FF', border: 'none', borderRadius: 8, padding: '4px 10px', fontSize: 11, color: '#7C3AED', fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={onToggle} style={{ background: NB.yellow, border: `1.5px solid ${NB.ink}`, padding: '4px 10px', fontSize: 11, color: NB.ink, fontWeight: 700, cursor: 'pointer' }}>
             {expanded ? 'Less' : 'Details'}
           </button>
         )}

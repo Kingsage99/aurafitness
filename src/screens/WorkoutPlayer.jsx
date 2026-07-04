@@ -3,18 +3,19 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { BodyOutline, MUSCLE_MAP } from '../components/AvatarSilhouette'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
+import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
 const FALLBACK_EXERCISES = [
-  { name: 'Glute Bridge', sets: 3, reps: 12, muscles: { glutes: '#FF3B3B', legs: '#FF5A2F' }, target: 'Glutes · Hams', category: 'MAIN' },
-  { name: 'Romanian Deadlift', sets: 4, reps: 10, muscles: { glutes: '#FF5A2F', legs: '#FFAA30' }, target: 'Glutes · Hams', category: 'MAIN' },
-  { name: 'Sumo Squat', sets: 3, reps: 15, muscles: { legs: '#FF3B3B', glutes: '#FFAA30' }, target: 'Quads · Glutes', category: 'MAIN' },
-  { name: 'Lateral Lunges', sets: 3, reps: 12, muscles: { legs: '#FFAA30' }, target: 'Quads · Adductors', category: 'SECONDARY' },
-  { name: 'Cable Kickback', sets: 3, reps: 15, muscles: { glutes: '#FF3B3B' }, target: 'Glutes', category: 'ACCESSORY' },
-  { name: 'Calf Raises', sets: 4, reps: 20, muscles: { calves: '#FF5A2F' }, target: 'Calves', category: 'FINISHER' },
-  { name: 'Plank', sets: 3, reps: '45s', muscles: { core: '#FFAA30' }, target: 'Core', category: 'FINISHER' },
+  { name: 'Glute Bridge', sets: 3, reps: 12, muscles: { glutes: '#E5352B', legs: '#FF6A2C' }, target: 'Glutes · Hams', category: 'MAIN' },
+  { name: 'Romanian Deadlift', sets: 4, reps: 10, muscles: { glutes: '#FF6A2C', legs: '#FFC93C' }, target: 'Glutes · Hams', category: 'MAIN' },
+  { name: 'Sumo Squat', sets: 3, reps: 15, muscles: { legs: '#E5352B', glutes: '#FFC93C' }, target: 'Quads · Glutes', category: 'MAIN' },
+  { name: 'Lateral Lunges', sets: 3, reps: 12, muscles: { legs: '#FFC93C' }, target: 'Quads · Adductors', category: 'SECONDARY' },
+  { name: 'Cable Kickback', sets: 3, reps: 15, muscles: { glutes: '#E5352B' }, target: 'Glutes', category: 'ACCESSORY' },
+  { name: 'Calf Raises', sets: 4, reps: 20, muscles: { calves: '#FF6A2C' }, target: 'Calves', category: 'FINISHER' },
+  { name: 'Plank', sets: 3, reps: '45s', muscles: { core: '#FFC93C' }, target: 'Core', category: 'FINISHER' },
 ]
 
-const CATEGORY_COLOR = { MAIN: '#7C3AED', SECONDARY: '#0EA5E9', ACCESSORY: '#F59E0B', FINISHER: '#DB2777' }
+const CATEGORY_COLOR = { MAIN: NB.magenta, SECONDARY: NB.blue, ACCESSORY: NB.yellow, FINISHER: NB.pink }
 
 function buildExerciseList(workout) {
   if (!workout || !workout.exercises || workout.exercises.length === 0) return FALLBACK_EXERCISES
@@ -22,7 +23,7 @@ function buildExerciseList(workout) {
     name: ex.name || ex.id,
     sets: ex.sets,
     reps: ex.repsRange ? `${ex.repsRange.min}–${ex.repsRange.max}` : (ex.reps || 10),
-    muscles: { [ex.muscles?.primary?.[0] || 'full body']: '#FF3B3B' },
+    muscles: { [ex.muscles?.primary?.[0] || 'full body']: '#E5352B' },
     target: ex.muscles?.primary?.join(' · ') || 'Full Body',
     category: ex.slot ? ex.slot.toUpperCase() : 'MAIN',
   }))
@@ -87,7 +88,6 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
   const workoutName = workout?.name || 'Today\'s Workout'
   const totalMin = Math.round(exercises.length * 5.5)
 
-  // Build muscle color maps for the "Muscles today" overview
   const workoutFrontColors = useMemo(() => {
     const counts = {}
     exercises.forEach(ex => {
@@ -97,7 +97,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
     })
     const colors = {}
     Object.entries(counts).forEach(([id, n]) => {
-      colors[id] = n >= 3 ? '#FF3B3B' : n >= 2 ? '#FFAA30' : '#4ADE80'
+      colors[id] = n >= 3 ? '#E5352B' : n >= 2 ? '#FF9E4A' : '#46D45A'
     })
     return colors
   }, [exercises])
@@ -111,7 +111,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
     })
     const colors = {}
     Object.entries(counts).forEach(([id, n]) => {
-      colors[id] = n >= 3 ? '#FF3B3B' : n >= 2 ? '#FFAA30' : '#4ADE80'
+      colors[id] = n >= 3 ? '#E5352B' : n >= 2 ? '#FF9E4A' : '#46D45A'
     })
     return colors
   }, [exercises])
@@ -122,30 +122,30 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
       <>
         <StatusBar />
         <div style={{ padding: '10px 22px 0', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <button onClick={() => onNavigate('home')} style={{ width: 38, height: 38, borderRadius: '50%', background: '#fff', boxShadow: '0 4px 14px rgba(76,36,120,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E1065" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          <button onClick={() => onNavigate('home')} style={{ width: 38, height: 38, border: NB_BORDER, boxShadow: hardShadow(2), background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: '#2E1065', lineHeight: 1.1 }}>{workoutName}</div>
-            <div style={{ fontSize: 12, color: '#8478A0', fontWeight: 600 }}>{exercises.length} exercises · ~{totalMin} min</div>
+            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1 }}>{workoutName}</div>
+            <div style={{ fontSize: 12, color: '#555', fontWeight: 600 }}>{exercises.length} exercises · ~{totalMin} min</div>
           </div>
         </div>
 
         {/* Progress bar */}
         {completedExercises.size > 0 && (
           <div style={{ padding: '10px 22px 0', flexShrink: 0 }}>
-            <div style={{ height: 7, borderRadius: 4, background: '#E9DAF7', overflow: 'hidden' }}>
-              <div style={{ width: `${progress}%`, height: '100%', background: '#7C3AED', borderRadius: 4, transition: 'width 0.4s' }} />
+            <div style={{ height: 8, border: `2px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+              <div style={{ width: `${progress}%`, height: '100%', background: NB.green, transition: 'width 0.4s' }} />
             </div>
-            <div style={{ fontSize: 11, color: '#8478A0', fontWeight: 700, marginTop: 4 }}>{completedExercises.size} of {exercises.length} done</div>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700, marginTop: 4 }}>{completedExercises.size} of {exercises.length} done</div>
           </div>
         )}
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
 
           {/* Muscles today */}
-          <div style={{ borderRadius: 20, background: '#1E1430', padding: '12px 16px', marginBottom: 12 }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: '#C9B7E8', letterSpacing: '.5px', marginBottom: 8 }}>MUSCLES TODAY</div>
+          <div style={{ border: NB_BORDER, background: NB.ink, padding: '12px 16px', marginBottom: 14 }}>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.yellow, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Muscles Today</div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
               <div style={{ width: 110, height: 185 }}>
                 <MuscleSVG url="/muscle_map_front.svg" muscleColors={workoutFrontColors} />
@@ -159,26 +159,26 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {exercises.map((ex, idx) => {
               const done = completedExercises.has(idx)
-              const catColor = CATEGORY_COLOR[ex.category] || '#7C3AED'
+              const catColor = CATEGORY_COLOR[ex.category] || NB.ink
               return (
                 <button
                   key={idx}
                   onClick={() => goToExercise(idx)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 20, background: done ? '#F3E8FF' : '#fff', border: `1.5px solid ${done ? '#D8B4FE' : '#EDE4F8'}`, boxShadow: '0 4px 12px rgba(76,36,120,.05)', cursor: 'pointer', textAlign: 'left' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', border: `2.5px solid ${NB.ink}`, boxShadow: hardShadow(2), background: done ? NB.green : NB.white, cursor: 'pointer', textAlign: 'left' }}
                 >
-                  <div style={{ width: 44, height: 44, borderRadius: 14, background: done ? '#7C3AED' : `${catColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 44, height: 44, border: `2px solid ${NB.ink}`, background: done ? NB.ink : catColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {done
-                      ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6"/></svg>
-                      : <span style={{ fontSize: 13, fontWeight: 800, color: catColor }}>{idx + 1}</span>
+                      ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+                      : <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, color: NB.ink }}>{idx + 1}</span>
                     }
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#2E1065' }}>{ex.name}</div>
-                    <div style={{ fontSize: 12, color: '#8478A0', marginTop: 2 }}>{ex.sets} sets · {ex.reps} reps</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: NB.ink }}>{ex.name}</div>
+                    <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{ex.sets} sets · {ex.reps} reps</div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                    <span style={{ fontSize: 9, fontWeight: 800, color: catColor, background: `${catColor}18`, padding: '3px 8px', borderRadius: 999 }}>{ex.category}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4B0E0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+                    <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.ink, background: catColor, border: `1.5px solid ${NB.ink}`, padding: '3px 8px' }}>{ex.category}</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
                   </div>
                 </button>
               )
@@ -190,8 +190,8 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
         <div style={{ padding: '10px 22px 16px', flexShrink: 0 }}>
           <button
             onClick={() => goToExercise(0)}
-            style={{ width: '100%', height: 56, borderRadius: 18, background: 'linear-gradient(135deg,#5B21B6,#7C3AED)', color: '#fff', fontWeight: 800, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, border: 'none', cursor: 'pointer', boxShadow: '0 14px 30px rgba(124,58,237,.36)' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M7 4v16l13-8z"/></svg>
+            style={{ width: '100%', height: 56, border: NB_BORDER, background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', boxShadow: hardShadow(5) }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={NB.white}><path d="M7 4v16l13-8z"/></svg>
             Start workout
           </button>
         </div>
@@ -207,47 +207,47 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
       <StatusBar />
 
       <div style={{ padding: '8px 22px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <button onClick={() => setView('list')} style={{ width: 38, height: 38, borderRadius: '50%', background: '#fff', boxShadow: '0 4px 14px rgba(76,36,120,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E1065" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6H5v14h14v-4M15 3h6v6M10 14L21 3"/></svg>
+        <button onClick={() => setView('list')} style={{ width: 38, height: 38, border: NB_BORDER, boxShadow: hardShadow(2), background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6H5v14h14v-4M15 3h6v6M10 14L21 3"/></svg>
         </button>
-        <div style={{ flex: 1, margin: '0 14px', height: 7, borderRadius: 4, background: '#E9DAF7', overflow: 'hidden' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: '#7C3AED', borderRadius: 4, transition: 'width 0.3s' }} />
+        <div style={{ flex: 1, margin: '0 14px', height: 8, border: `2px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+          <div style={{ width: `${progress}%`, height: '100%', background: NB.green, transition: 'width 0.3s' }} />
         </div>
-        <span style={{ fontSize: 13, fontWeight: 800, color: '#7C3AED' }}>{exerciseIdx + 1}/{exercises.length}</span>
+        <span style={{ fontFamily: NB.fontMono, fontSize: 13, fontWeight: 800, color: NB.ink }}>{exerciseIdx + 1}/{exercises.length}</span>
       </div>
 
       <div style={{ padding: '14px 22px 4px', flexShrink: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: '#A99BC4', letterSpacing: '.4px' }}>{exercise.category} · EXERCISE {exerciseIdx + 1} OF {exercises.length}</div>
-        <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 26, color: '#2E1065', lineHeight: 1.1, marginTop: 3 }}>{exercise.name}</div>
+        <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1, textTransform: 'uppercase' }}>{exercise.category} · Exercise {exerciseIdx + 1} of {exercises.length}</div>
+        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1, marginTop: 3 }}>{exercise.name}</div>
       </div>
 
       <div style={{ padding: '10px 22px 0', flexShrink: 0, display: 'flex', gap: 11 }}>
-        <div style={{ flex: 1.5, borderRadius: 20, background: 'linear-gradient(150deg,#EAD9FF,#F7ECFF)', height: 180, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 32, opacity: 0.15, color: '#7C3AED' }}>▶</span>
+        <div style={{ flex: 1.5, border: NB_BORDER, background: NB.yellow, height: 180, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: NB.fontDisplay, fontSize: 32, opacity: 0.2, color: NB.ink }}>▶</span>
           <div style={{ position: 'absolute', top: 10, left: 10 }}>
-            <span style={{ fontSize: 9, fontWeight: 800, color: '#7C3AED', background: '#fff', padding: '4px 8px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="#7C3AED"><path d="M7 4v16l13-8z"/></svg>
+            <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.ink, background: NB.white, border: `1.5px solid ${NB.ink}`, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill={NB.ink}><path d="M7 4v16l13-8z"/></svg>
               LOOP
             </span>
           </div>
           <div style={{ position: 'absolute', bottom: 12, left: 0, right: 0, textAlign: 'center' }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#5B3D8A' }}>{exercise.sets} sets · {exercise.reps} reps</span>
+            <span style={{ fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, color: NB.ink }}>{exercise.sets} sets · {exercise.reps} reps</span>
           </div>
         </div>
 
-        <div style={{ flex: 1, borderRadius: 20, background: '#1E1430', height: 180, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ position: 'absolute', top: 9, left: 0, right: 0, textAlign: 'center', fontSize: 9, fontWeight: 800, color: '#C9B7E8', letterSpacing: '.5px' }}>TARGET</span>
+        <div style={{ flex: 1, border: NB_BORDER, background: NB.ink, height: 180, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ position: 'absolute', top: 9, left: 0, right: 0, textAlign: 'center', fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.yellow, letterSpacing: 1 }}>Target</span>
           <div style={{ marginTop: 12 }}>
             <BodyOutline muscleColors={exercise.muscles} height={140} />
           </div>
-          <span style={{ position: 'absolute', bottom: 10, left: 0, right: 0, textAlign: 'center', fontSize: 11, fontWeight: 800, color: '#fff' }}>{exercise.target}</span>
+          <span style={{ position: 'absolute', bottom: 10, left: 0, right: 0, textAlign: 'center', fontSize: 11, fontWeight: 800, color: NB.white }}>{exercise.target}</span>
         </div>
       </div>
 
       <div style={{ padding: '14px 22px 0', flex: 1, overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: '#2E1065' }}>{exercise.sets} sets · {exercise.reps} reps</span>
-          <span style={{ fontSize: 12, color: '#8478A0', fontWeight: 600 }}>{exercise.target}</span>
+          <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>{exercise.sets} sets · {exercise.reps} reps</span>
+          <span style={{ fontSize: 12, color: '#555', fontWeight: 600 }}>{exercise.target}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
           {Array.from({ length: exercise.sets }, (_, i) => {
@@ -258,13 +258,13 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
               <div
                 key={setNum}
                 onClick={() => !done && active && logSet(setNum)}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderRadius: 16, background: done ? '#F3E8FF' : '#fff', border: active ? '2px solid #7C3AED' : 'none', boxShadow: active ? '0 6px 14px rgba(124,58,237,.12)' : 'none', opacity: !done && !active ? 0.6 : 1, cursor: active ? 'pointer' : 'default', transition: 'all 0.2s' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', border: active ? `2.5px solid ${NB.ink}` : `2px solid ${NB.ink}`, boxShadow: active ? hardShadow(2) : 'none', background: done ? NB.green : NB.white, opacity: !done && !active ? 0.55 : 1, cursor: active ? 'pointer' : 'default' }}
               >
-                <div style={{ width: 26, height: 26, borderRadius: 8, background: done ? '#7C3AED' : active ? '#7C3AED' : '#E9E2F2', color: done || active ? '#fff' : '#A99BC4', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{setNum}</div>
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: done ? '#2E1065' : active ? '#2E1065' : '#A99BC4' }}>{exercise.reps} reps</span>
+                <div style={{ width: 28, height: 28, border: `1.5px solid ${NB.ink}`, background: done || active ? NB.ink : NB.white, color: done || active ? NB.white : NB.ink, fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{setNum}</div>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: NB.ink }}>{exercise.reps} reps</span>
                 {done
-                  ? <svg width="20" height="20" viewBox="0 0 24 24" fill="#7C3AED"><circle cx="12" cy="12" r="11"/><path d="M5 12l4.5 4.5L19 8" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  : active ? <span style={{ fontSize: 12, fontWeight: 800, color: '#7C3AED' }}>Tap to log</span>
+                  ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4.5 4.5L19 8"/></svg>
+                  : active ? <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink, textTransform: 'uppercase' }}>Tap to log</span>
                   : null
                 }
               </div>
@@ -273,22 +273,22 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
         </div>
 
         {restTimer && (
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 16, background: '#EDE4FF' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#5B3D8A' }}>Rest · 0:{restCount.toString().padStart(2, '0')}</span>
-            <button onClick={() => setRestTimer(null)} style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 800, color: '#7C3AED', background: 'none', border: 'none', cursor: 'pointer' }}>Skip</button>
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', border: NB_BORDER, background: NB.lavender }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>Rest · 0:{restCount.toString().padStart(2, '0')}</span>
+            <button onClick={() => setRestTimer(null)} style={{ marginLeft: 'auto', fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink, textTransform: 'uppercase', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>Skip</button>
           </div>
         )}
       </div>
 
       <div style={{ padding: '12px 22px 16px', flexShrink: 0, display: 'flex', gap: 12 }}>
-        <button onClick={prevExercise} disabled={exerciseIdx === 0} style={{ flex: 1, height: 54, borderRadius: 18, background: '#F0E8FB', color: '#6D28D9', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, border: 'none', cursor: exerciseIdx === 0 ? 'not-allowed' : 'pointer', opacity: exerciseIdx === 0 ? 0.5 : 1 }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6D28D9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <button onClick={prevExercise} disabled={exerciseIdx === 0} style={{ flex: 1, height: 54, border: NB_BORDER, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: exerciseIdx === 0 ? 'not-allowed' : 'pointer', opacity: exerciseIdx === 0 ? 0.5 : 1 }}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           Prev
         </button>
-        <button onClick={nextExercise} style={{ flex: 1.6, height: 54, borderRadius: 18, background: '#7C3AED', color: '#fff', fontWeight: 800, fontSize: 15, boxShadow: '0 12px 26px rgba(124,58,237,.32)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: 'none', cursor: 'pointer' }}>
+        <button onClick={nextExercise} style={{ flex: 1.6, height: 54, border: NB_BORDER, background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', boxShadow: hardShadow(4), display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
           {exerciseIdx === exercises.length - 1 ? 'Finish' : 'Next exercise'}
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
       </div>
 

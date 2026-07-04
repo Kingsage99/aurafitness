@@ -27,6 +27,7 @@ export const DEFAULT_GAMIFICATION = {
   workoutDates: [],         // "YYYY-MM-DD" array of all workout days
   activeBanner: 'banner_default',
   activeTheme: 'theme_default',
+  muscleRanks: {},          // { [muscleId]: { rank: 'bronze', rankPoints: 0 } }
 }
 
 // Cumulative XP to reach each level (index = level - 1)
@@ -73,13 +74,22 @@ export const TIER_COLORS = {
 // ─── Rank Definitions ────────────────────────────────────────────────────────
 
 export const RANKS = [
-  { id: 'bronze',   label: 'Bronze',   color: '#CD7C2F', bg: '#FEF0E6', minWorkouts: 0   },
-  { id: 'silver',   label: 'Silver',   color: '#64748B', bg: '#F1F5F9', minWorkouts: 10  },
-  { id: 'gold',     label: 'Gold',     color: '#D97706', bg: '#FEFCE8', minWorkouts: 25  },
-  { id: 'diamond',  label: 'Diamond',  color: '#7C3AED', bg: '#F3E8FF', minWorkouts: 50  },
-  { id: 'olympian', label: 'Olympian', color: '#E11D48', bg: '#FFF1F2', minWorkouts: 100 },
+  { id: 'bronze',   label: 'Bronze',   color: '#fff',    bg: '#CD7F32', minWorkouts: 0   },
+  { id: 'silver',   label: 'Silver',   color: '#0A0A0A', bg: '#B8C0CC', minWorkouts: 8   },
+  { id: 'gold',     label: 'Gold',     color: '#0A0A0A', bg: '#FFC93C', minWorkouts: 18  },
+  { id: 'platinum', label: 'Platinum', color: '#0A0A0A', bg: '#7FE9D6', minWorkouts: 30  },
+  { id: 'diamond',  label: 'Diamond',  color: '#0A0A0A', bg: '#C9B8F5', minWorkouts: 45  },
+  { id: 'master',   label: 'Master',   color: '#fff',    bg: '#FF00E5', minWorkouts: 65  },
+  { id: 'elite',    label: 'Elite',    color: '#fff',    bg: '#FF6A2C', minWorkouts: 90  },
+  { id: 'olympian', label: 'Olympian', color: '#FFD400', bg: '#0A0A0A', minWorkouts: 120 },
 ]
+// Points needed per sub-level. Each tier (except the uncapped top tier) has 4 sub-levels: IV (entry) -> I (about to promote).
 export const RANK_UP_AT = 100
+export const SUB_LEVELS_PER_TIER = 4
+export const SUB_LEVEL_ROMAN = ['IV', 'III', 'II', 'I']
+
+// Minimum total workouts before muscle-group ranks become visible
+export const MUSCLE_RANK_MIN_WORKOUTS = 5
 
 // ─── Daily Quest Pool ─────────────────────────────────────────────────────────
 
@@ -286,22 +296,102 @@ export function checkBadges(g, events = {}) {
   return { updatedG: updated, newBadges }
 }
 
-// Returns { g, rankedUp, newRank }
+// Returns { g, rankedUp, newRank } — newRank includes the sub-level roman numeral, e.g. "Gold III"
+// Olympian (the top tier) has no sub-levels — points accumulate uncapped as a raw leaderboard score.
 export function awardRankPoints(g, amount) {
   const currentIdx = RANKS.findIndex(r => r.id === (g.rank || 'bronze'))
   const isMax = currentIdx === RANKS.length - 1
-  if (isMax) return { g, rankedUp: false, newRank: g.rank }
 
-  const newTotal = (g.rankPoints || 0) + amount
-  if (newTotal >= RANK_UP_AT) {
-    const nextRank = RANKS[currentIdx + 1]
-    return {
-      g: { ...g, rank: nextRank.id, rankPoints: newTotal - RANK_UP_AT },
-      rankedUp: true,
-      newRank: nextRank.label,
+  if (isMax) {
+    return { g: { ...g, rankPoints: (g.rankPoints || 0) + amount }, rankedUp: false, newRank: RANKS[currentIdx].label }
+  }
+
+  let subLevel = g.rankSubLevel || 0
+  let points = (g.rankPoints || 0) + amount
+  let idx = currentIdx
+  let rankedUp = false
+
+  while (points >= RANK_UP_AT) {
+    points -= RANK_UP_AT
+    subLevel += 1
+    rankedUp = true
+    if (subLevel >= SUB_LEVELS_PER_TIER) {
+      subLevel = 0
+      idx += 1
+      if (idx >= RANKS.length - 1) { idx = RANKS.length - 1; break }
     }
   }
-  return { g: { ...g, rankPoints: newTotal }, rankedUp: false, newRank: g.rank }
+
+  const newRank = RANKS[idx]
+  const isTop = idx === RANKS.length - 1
+  return {
+    g: { ...g, rank: newRank.id, rankPoints: points, rankSubLevel: isTop ? 0 : subLevel },
+    rankedUp,
+    newRank: isTop ? newRank.label : `${newRank.label} ${SUB_LEVEL_ROMAN[subLevel]}`,
+  }
+}
+
+// Returns { g, rankedUp, newRank } — same 8-tier/sub-level progression as awardRankPoints, keyed per muscle
+export function awardMuscleRankPoints(g, muscleId, amount) {
+  const muscleRanks = g.muscleRanks || {}
+  const entry = muscleRanks[muscleId] || { rank: 'bronze', rankPoints: 0, subLevel: 0 }
+  const currentIdx = RANKS.findIndex(r => r.id === entry.rank)
+  const isMax = currentIdx === RANKS.length - 1
+
+  if (isMax) {
+    const updated = { rank: entry.rank, rankPoints: (entry.rankPoints || 0) + amount, subLevel: 0 }
+    return { g: { ...g, muscleRanks: { ...muscleRanks, [muscleId]: updated } }, rankedUp: false, newRank: RANKS[currentIdx].label }
+  }
+
+  let subLevel = entry.subLevel || 0
+  let points = (entry.rankPoints || 0) + amount
+  let idx = currentIdx
+  let rankedUp = false
+
+  while (points >= RANK_UP_AT) {
+    points -= RANK_UP_AT
+    subLevel += 1
+    rankedUp = true
+    if (subLevel >= SUB_LEVELS_PER_TIER) {
+      subLevel = 0
+      idx += 1
+      if (idx >= RANKS.length - 1) { idx = RANKS.length - 1; break }
+    }
+  }
+
+  const newRank = RANKS[idx]
+  const isTop = idx === RANKS.length - 1
+  const updated = { rank: newRank.id, rankPoints: points, subLevel: isTop ? 0 : subLevel }
+  return {
+    g: { ...g, muscleRanks: { ...muscleRanks, [muscleId]: updated } },
+    rankedUp,
+    newRank: isTop ? newRank.label : `${newRank.label} ${SUB_LEVEL_ROMAN[subLevel]}`,
+  }
+}
+
+// Returns { unlocked, rank, rankPoints, subLevel, subLevelLabel, tier, isTop, score } — applies the global 5-workout gate.
+// score is -1 when locked (sorts last); otherwise a combined value across all tiers+sub-levels for sorting.
+export function getMuscleRankInfo(g, muscleId) {
+  const unlocked = (g?.totalWorkouts || 0) >= MUSCLE_RANK_MIN_WORKOUTS
+  const entry = g?.muscleRanks?.[muscleId] || { rank: 'bronze', rankPoints: 0, subLevel: 0 }
+  const tierIdx = Math.max(0, RANKS.findIndex(r => r.id === entry.rank))
+  const tier = RANKS[tierIdx]
+  const isTop = tierIdx === RANKS.length - 1
+  const subLevel = isTop ? 0 : (entry.subLevel || 0)
+  const tierScore = tierIdx * SUB_LEVELS_PER_TIER * RANK_UP_AT
+  const score = !unlocked ? -1 : isTop
+    ? tierScore + (entry.rankPoints || 0)
+    : tierScore + subLevel * RANK_UP_AT + (entry.rankPoints || 0)
+  return {
+    unlocked,
+    rank: entry.rank,
+    rankPoints: entry.rankPoints || 0,
+    subLevel,
+    subLevelLabel: isTop ? '' : SUB_LEVEL_ROMAN[subLevel],
+    tier,
+    isTop,
+    score,
+  }
 }
 
 // Returns { g, alreadyDone } — marks quest complete and awards gems
@@ -347,6 +437,32 @@ export function purchaseItem(g, itemId, costOverride) {
   }
 
   return { g: updated, success: true, reason: '' }
+}
+
+// ─── Leaderboard scoring ──────────────────────────────────────────────────────
+
+// metric: 'streaks' | 'ranks' | 'levels'
+export function getMetricScore(g, metric) {
+  g = g || {}
+  if (metric === 'streaks') return g.workoutStreak || 0
+  if (metric === 'levels')  return getLevel(g.xp || 0)
+  if (metric === 'ranks') {
+    const idx = Math.max(0, RANKS.findIndex(r => r.id === (g.rank || 'bronze')))
+    const isTop = idx === RANKS.length - 1
+    const tierScore = idx * SUB_LEVELS_PER_TIER * RANK_UP_AT
+    return isTop ? tierScore + (g.rankPoints || 0) : tierScore + (g.rankSubLevel || 0) * RANK_UP_AT + (g.rankPoints || 0)
+  }
+  return 0
+}
+
+// Returns sort comparator (descending) for the given metric, with tiebreaks
+export function compareByMetric(a, b, metric) {
+  const ga = a.gamification || {}
+  const gb = b.gamification || {}
+  const scoreDiff = getMetricScore(gb, metric) - getMetricScore(ga, metric)
+  if (scoreDiff !== 0) return scoreDiff
+  if (metric === 'levels') return (gb.xp || 0) - (ga.xp || 0)
+  return (gb.totalWorkouts || 0) - (ga.totalWorkouts || 0)
 }
 
 // Checks yesterday's calorie log on app load; awards bonus or deducts a life

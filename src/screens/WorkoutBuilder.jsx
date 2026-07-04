@@ -3,12 +3,13 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
 import allExercises from '../data/exercises.json'
+import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
 const SLOT_COLORS = {
-  main:      '#7C3AED',
-  secondary: '#3B82F6',
-  accessory: '#F59E0B',
-  finisher:  '#EC4899',
+  main:      NB.magenta,
+  secondary: NB.blue,
+  accessory: NB.yellow,
+  finisher:  NB.pink,
 }
 
 const MUSCLE_GROUPS = [
@@ -22,7 +23,6 @@ const MUSCLE_GROUPS = [
   { id: 'calves',    label: 'Calves',    url: '/muscle_map_back.svg',  side: 'back' },
 ]
 
-// Map group id → primary muscle names in exercises.json
 const GROUP_TO_MUSCLES = {
   glutes:    ['glutes', 'glute'],
   legs:      ['hamstrings', 'quads', 'legs'],
@@ -42,7 +42,7 @@ function estimateDuration(exercises) {
 function MuscleGroupCard({ group, selected, onToggle }) {
   const colors = useMemo(() => {
     const mc = {}
-    MUSCLE_SVG_IDS[group.id]?.[group.side]?.forEach(id => { mc[id] = '#7C3AED' })
+    MUSCLE_SVG_IDS[group.id]?.[group.side]?.forEach(id => { mc[id] = NB.ink })
     return mc
   }, [group.id, group.side])
 
@@ -50,23 +50,23 @@ function MuscleGroupCard({ group, selected, onToggle }) {
     <div
       onClick={() => onToggle(group.id)}
       style={{
-        borderRadius: 16, overflow: 'hidden', cursor: 'pointer',
-        border: `2px solid ${selected ? '#7C3AED' : '#EDE4F8'}`,
-        background: selected ? '#F0E8FF' : '#fff',
-        boxShadow: selected ? '0 4px 14px rgba(124,58,237,.16)' : '0 2px 6px rgba(76,36,120,.04)',
-        transition: 'all 0.15s', position: 'relative',
+        overflow: 'hidden', cursor: 'pointer',
+        border: `2.5px solid ${NB.ink}`,
+        background: selected ? NB.teal : NB.white,
+        boxShadow: selected ? hardShadow(3) : hardShadow(1),
+        position: 'relative',
       }}
     >
       {selected && (
-        <div style={{ position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: '50%', background: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <div style={{ position: 'absolute', top: 6, right: 6, width: 20, height: 20, border: `2px solid ${NB.ink}`, background: NB.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
       )}
-      <div style={{ height: 80, background: '#F8F4FF', overflow: 'hidden' }}>
+      <div style={{ height: 80, background: NB.cream, overflow: 'hidden' }}>
         <MuscleSVG url={group.url} muscleColors={colors} />
       </div>
       <div style={{ padding: '8px 6px 10px', textAlign: 'center' }}>
-        <span style={{ fontSize: 12, fontWeight: 800, color: selected ? '#7C3AED' : '#2E1065' }}>{group.label}</span>
+        <span style={{ fontFamily: NB.fontDisplay, fontSize: 12, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>{group.label}</span>
       </div>
     </div>
   )
@@ -122,14 +122,14 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate }) {
 
       {/* Header */}
       <div style={{ padding: '10px 22px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={() => onNavigate('workout')} style={{ background: '#F0E8FF', border: 'none', borderRadius: 12, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <button onClick={() => onNavigate('workout')} style={{ background: NB.white, border: NB_BORDER, boxShadow: hardShadow(2), width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: '#2E1065', flex: 1 }}>Create Workout</div>
+        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink, flex: 1 }}>Create Workout</div>
         <button
           onClick={handleSave}
           disabled={!myExercises.length}
-          style={{ padding: '8px 16px', borderRadius: 12, border: 'none', background: myExercises.length ? '#7C3AED' : '#EDE4F8', color: myExercises.length ? '#fff' : '#8478A0', fontSize: 13, fontWeight: 800, cursor: myExercises.length ? 'pointer' : 'default' }}
+          style={{ padding: '8px 16px', border: `2px solid ${NB.ink}`, boxShadow: myExercises.length ? hardShadow(2) : 'none', background: myExercises.length ? NB.teal : NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', cursor: myExercises.length ? 'pointer' : 'default' }}
         >
           Save
         </button>
@@ -144,13 +144,13 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate }) {
             value={workoutName}
             onChange={e => setWorkoutName(e.target.value)}
             placeholder="Workout name (e.g. Glute Finisher)"
-            style={{ width: '100%', padding: '13px 16px', borderRadius: 14, border: '1.5px solid #EDE4F8', fontSize: 15, color: '#2E1065', fontFamily: 'inherit', background: '#fff', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '13px 16px', border: NB_BORDER, fontSize: 15, color: NB.ink, fontFamily: NB.fontDisplay, background: NB.white, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
 
         {/* Muscle group picker */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#8478A0', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 10 }}>
+          <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
             Pick Target Muscles
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
@@ -168,29 +168,27 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate }) {
         {/* Exercise picker */}
         {filteredExercises.length > 0 && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#8478A0', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 10 }}>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
               Exercises — tap + to add
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredExercises.map(ex => {
                 const added = myExIds.has(ex.id)
-                const color = SLOT_COLORS[ex.slot] || '#8478A0'
+                const color = SLOT_COLORS[ex.slot] || NB.ink
                 return (
-                  <div key={ex.id} style={{ borderRadius: 14, padding: '10px 12px', background: '#fff', border: `1.5px solid ${added ? '#7C3AED44' : '#EDE4F8'}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
-                    </div>
+                  <div key={ex.id} style={{ border: `2px solid ${NB.ink}`, boxShadow: hardShadow(1), padding: '10px 12px', background: NB.white, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 34, height: 34, border: `1.5px solid ${NB.ink}`, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: '#2E1065', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
-                      <div style={{ fontSize: 11, color: '#8478A0' }}>{ex.repsRange?.min ?? 8}–{ex.repsRange?.max ?? 12} reps · {ex.slot}</div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: NB.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
+                      <div style={{ fontSize: 11, color: '#555' }}>{ex.repsRange?.min ?? 8}–{ex.repsRange?.max ?? 12} reps · {ex.slot}</div>
                     </div>
                     <button
                       onClick={() => added ? removeExercise(ex.id) : addExercise(ex)}
-                      style={{ width: 34, height: 34, borderRadius: 10, border: 'none', background: added ? '#7C3AED' : '#F0E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                      style={{ width: 34, height: 34, border: `2px solid ${NB.ink}`, background: added ? NB.ink : NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
                     >
                       {added
-                        ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                       }
                     </button>
                   </div>
@@ -203,25 +201,25 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate }) {
         {/* My Workout list */}
         {myExercises.length > 0 && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#8478A0', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 4 }}>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>
               Your Workout
             </div>
-            <div style={{ fontSize: 12, color: '#8478A0', marginBottom: 10 }}>{myExercises.length} exercises · ~{duration} min</div>
+            <div style={{ fontSize: 12, color: '#555', marginBottom: 10 }}>{myExercises.length} exercises · ~{duration} min</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {myExercises.map((ex, i) => (
-                <div key={ex.id} style={{ borderRadius: 14, padding: '10px 12px', background: '#F0E8FF', border: '1.5px solid #DDD0FA', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 900, color: '#fff' }}>{i + 1}</span>
+                <div key={ex.id} style={{ border: `2px solid ${NB.ink}`, boxShadow: hardShadow(1), padding: '10px 12px', background: NB.yellow, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 28, height: 28, border: `1.5px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontFamily: NB.fontDisplay, fontSize: 12, fontWeight: 900, color: NB.ink }}>{i + 1}</span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: '#2E1065', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
-                    <div style={{ fontSize: 11, color: '#7C3AED' }}>{ex.sets} sets × {ex.reps} reps</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: NB.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
+                    <div style={{ fontSize: 11, color: NB.ink }}>{ex.sets} sets × {ex.reps} reps</div>
                   </div>
                   <button
                     onClick={() => removeExercise(ex.id)}
-                    style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: '#7C3AED22', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ width: 28, height: 28, border: `1.5px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
               ))}
@@ -231,9 +229,9 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate }) {
 
         {/* Empty state */}
         {!selectedMGs.size && (
-          <div style={{ textAlign: 'center', padding: '32px 20px', background: '#F8F4FF', borderRadius: 18, border: '1.5px solid #EDE4F8' }}>
+          <div style={{ textAlign: 'center', padding: '32px 20px', background: NB.white, border: `2.5px dashed ${NB.ink}` }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>💪</div>
-            <div style={{ fontSize: 14, color: '#8478A0', lineHeight: 1.5 }}>
+            <div style={{ fontSize: 14, color: '#555', lineHeight: 1.5 }}>
               Select one or more muscle groups above to see exercises
             </div>
           </div>
@@ -243,7 +241,7 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate }) {
         {myExercises.length > 0 && (
           <button
             onClick={handleSave}
-            style={{ width: '100%', padding: '15px', borderRadius: 16, border: 'none', background: 'linear-gradient(135deg, #7C3AED, #4C1D95)', color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer', boxShadow: '0 6px 18px rgba(124,58,237,.3)' }}
+            style={{ width: '100%', padding: '15px', border: NB_BORDER, boxShadow: hardShadow(4), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
           >
             Save Workout ({myExercises.length} exercises)
           </button>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { StatusBar } from '../components/PhoneFrame'
+import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
 export default function Auth() {
   const [mode, setMode] = useState(null) // null | 'login' | 'signup'
@@ -51,24 +52,23 @@ export default function Auth() {
   }
 
   const inputStyle = {
-    width: '100%', height: 52, borderRadius: 14,
-    border: '1.5px solid #EDE4F8', padding: '0 16px',
-    fontSize: 15, color: '#2E1065', fontFamily: 'inherit',
-    outline: 'none', background: '#FAFAFF', boxSizing: 'border-box',
+    width: '100%', height: 52, border: NB_BORDER,
+    padding: '0 16px', fontSize: 15, color: NB.ink, fontFamily: NB.fontDisplay,
+    outline: 'none', background: NB.white, boxSizing: 'border-box',
   }
 
   if (sent) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: '0 28px', textAlign: 'center' }}>
-        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#7C3AED,#5B21B6)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+        <div style={{ width: 72, height: 72, border: NB_BORDER, boxShadow: hardShadow(5), background: NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
         </div>
-        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 26, color: '#2E1065', marginBottom: 10 }}>Check your email</div>
-        <div style={{ fontSize: 14, color: '#8478A0', lineHeight: 1.6, marginBottom: 28 }}>
+        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink, marginBottom: 10 }}>Check your email</div>
+        <div style={{ fontSize: 14, color: '#444', lineHeight: 1.6, marginBottom: 28 }}>
           We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
         </div>
         <button onClick={() => { setSent(false); setMode('login') }}
-          style={{ fontSize: 14, fontWeight: 700, color: '#7C3AED', background: 'none', border: 'none', cursor: 'pointer' }}>
+          style={{ fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', color: NB.ink, background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer' }}>
           Back to login
         </button>
       </div>
@@ -84,15 +84,15 @@ export default function Auth() {
           {/* Back + title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32, marginTop: 8 }}>
             <button onClick={() => { setMode(null); setError('') }}
-              style={{ background: '#F0E8FF', border: 'none', borderRadius: 12, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              style={{ background: NB.white, border: NB_BORDER, boxShadow: hardShadow(3), width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
-            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: '#2E1065' }}>
+            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink }}>
               {mode === 'login' ? 'Log in' : 'Create account'}
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {mode === 'signup' && (
               <input value={name} onChange={e => setName(e.target.value)}
                 placeholder="Your name" style={inputStyle} />
@@ -105,22 +105,22 @@ export default function Auth() {
           </div>
 
           {error && (
-            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 12, background: '#FEF2F2', border: '1.5px solid #FECACA' }}>
-              <span style={{ fontSize: 13, color: '#DC2626', fontWeight: 600 }}>{error}</span>
+            <div style={{ marginTop: 14, padding: '10px 14px', border: NB_BORDER, background: NB.red }}>
+              <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
             </div>
           )}
 
           <button onClick={handleEmailAuth} disabled={loading}
-            style={{ width: '100%', height: 52, borderRadius: 16, background: loading ? '#C4B0E0' : '#7C3AED', border: 'none', color: '#fff', fontWeight: 700, fontSize: 16, cursor: loading ? 'default' : 'pointer', marginTop: 20, boxShadow: '0 12px 28px rgba(124,58,237,.3)' }}>
+            style={{ width: '100%', height: 54, border: NB_BORDER, boxShadow: loading ? 'none' : hardShadow(5), background: loading ? '#ccc' : NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', cursor: loading ? 'default' : 'pointer', marginTop: 22 }}>
             {loading ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
           </button>
 
           <div style={{ textAlign: 'center', marginTop: 20, paddingBottom: 32 }}>
-            <span style={{ fontSize: 14, color: '#8478A0' }}>
+            <span style={{ fontSize: 14, color: '#555' }}>
               {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
             </span>
             <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError('') }}
-              style={{ fontSize: 14, fontWeight: 700, color: '#7C3AED', background: 'none', border: 'none', cursor: 'pointer' }}>
+              style={{ fontSize: 14, fontWeight: 800, color: NB.ink, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
               {mode === 'login' ? 'Sign up' : 'Log in'}
             </button>
           </div>
@@ -137,16 +137,16 @@ export default function Auth() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ width: 80, height: 80, borderRadius: 26, background: 'linear-gradient(135deg,#7C3AED,#5B21B6)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px', boxShadow: '0 12px 32px rgba(124,58,237,.35)' }}>
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l2.2 5.5L20 9l-4.5 3.8L17 19l-5-3-5 3 1.5-6.2L4 9l5.8-.5z"/></svg>
+          <div style={{ width: 80, height: 80, border: NB_BORDER, boxShadow: hardShadow(6), background: NB.magenta, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l2.2 5.5L20 9l-4.5 3.8L17 19l-5-3-5 3 1.5-6.2L4 9l5.8-.5z"/></svg>
           </div>
-          <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 34, color: '#2E1065', marginBottom: 8 }}>Aura</div>
-          <div style={{ fontSize: 15, color: '#8478A0' }}>Your women's strength companion</div>
+          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 40, textTransform: 'uppercase', letterSpacing: -1, color: NB.ink, marginBottom: 8 }}>Aura</div>
+          <div style={{ fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#555' }}>Your women's strength companion</div>
         </div>
 
         {/* Google — primary CTA */}
         <button onClick={handleGoogle} disabled={loading}
-          style={{ width: '100%', height: 58, borderRadius: 18, border: '1.5px solid #EDE4F8', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, fontSize: 16, fontWeight: 700, color: '#2E1065', cursor: 'pointer', marginBottom: 16, boxShadow: '0 4px 20px rgba(76,36,120,.12)' }}>
+          style={{ width: '100%', height: 58, border: NB_BORDER, boxShadow: hardShadow(5), background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, fontFamily: NB.fontDisplay, fontSize: 16, fontWeight: 800, color: NB.ink, cursor: 'pointer', marginBottom: 18 }}>
           <svg width="22" height="22" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -157,27 +157,27 @@ export default function Auth() {
         </button>
 
         {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div style={{ flex: 1, height: 1, background: '#EDE4F8' }} />
-          <span style={{ fontSize: 12, color: '#A99BC4', fontWeight: 600 }}>or</span>
-          <div style={{ flex: 1, height: 1, background: '#EDE4F8' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+          <div style={{ flex: 1, height: 3, background: NB.ink }} />
+          <span style={{ fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700, textTransform: 'uppercase' }}>or</span>
+          <div style={{ flex: 1, height: 3, background: NB.ink }} />
         </div>
 
         {/* Email options */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => { setMode('login'); setError('') }}
-            style={{ flex: 1, height: 50, borderRadius: 14, background: '#F0E8FF', border: 'none', color: '#7C3AED', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
+            style={{ flex: 1, height: 50, border: NB_BORDER, boxShadow: hardShadow(3), background: NB.yellow, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>
             Log in
           </button>
           <button onClick={() => { setMode('signup'); setError('') }}
-            style={{ flex: 1, height: 50, borderRadius: 14, background: '#F0E8FF', border: 'none', color: '#7C3AED', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
+            style={{ flex: 1, height: 50, border: NB_BORDER, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>
             Sign up
           </button>
         </div>
 
         {error && (
-          <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 12, background: '#FEF2F2', border: '1.5px solid #FECACA' }}>
-            <span style={{ fontSize: 13, color: '#DC2626', fontWeight: 600 }}>{error}</span>
+          <div style={{ marginTop: 16, padding: '10px 14px', border: NB_BORDER, background: NB.red }}>
+            <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
           </div>
         )}
 

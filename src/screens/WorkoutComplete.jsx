@@ -1,6 +1,10 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
+import { getMuscleRankInfo, MUSCLE_RANK_MIN_WORKOUTS } from '../utils/gamification'
+import { MUSCLE_LABELS } from '../utils/muscleLabels'
+import RankLadder from '../components/RankLadder'
+import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
 // Map exercise primary muscle → MUSCLE_SVG_IDS key
 const MUSCLE_TO_GROUP = {
@@ -14,7 +18,7 @@ const MUSCLE_TO_GROUP = {
   calves: 'calves',
 }
 
-const INTENSITY_COLORS = ['#FFB3C1', '#FF6B6B', '#CC2936']
+const INTENSITY_COLORS = ['#FFD8A8', '#FF9E4A', '#E5352B']
 
 function buildColors(exercises, side) {
   const counts = {}
@@ -54,6 +58,10 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
 
   const hasColors = Object.keys(frontColors).length + Object.keys(backColors).length > 0
 
+  const [ladderMuscle, setLadderMuscle] = useState(null)
+  const muscleGateOpen = (gamification?.totalWorkouts || 0) >= MUSCLE_RANK_MIN_WORKOUTS
+  const gainedMuscles  = Object.keys(sessionData?.muscleGains || {})
+
   return (
     <>
       <StatusBar />
@@ -63,39 +71,39 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
         {/* Celebration header */}
         <div style={{ textAlign: 'center', padding: '24px 0 20px' }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
-          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 28, color: '#2E1065', lineHeight: 1.1, marginBottom: 6 }}>
+          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 28, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1, marginBottom: 6 }}>
             Workout Complete!
           </div>
-          <div style={{ fontSize: 14, color: '#8478A0' }}>
+          <div style={{ fontSize: 14, color: '#555' }}>
             {label.replace(/^Day \d+ — /, '')} · {fmt(elapsed)}
           </div>
         </div>
 
         {/* Rewards row */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-          <RewardCard icon="⚡" value={`+${xp}`} label="XP Earned" color="#7C3AED" bg="#F0E8FF" />
-          <RewardCard icon="💎" value={`+${gems}`} label="Gems" color="#0EA5E9" bg="#E0F2FE" />
-          <RewardCard icon="🔥" value={streak} label={`Day Streak`} color="#F97316" bg="#FFF7ED" />
+          <RewardCard icon="⚡" value={`+${xp}`} label="XP Earned" bg={NB.lavender} />
+          <RewardCard icon="💎" value={`+${gems}`} label="Gems" bg={NB.blue} />
+          <RewardCard icon="🔥" value={streak} label="Day Streak" bg={NB.orange} />
         </div>
 
         {/* XP Progress bar */}
-        <div style={{ borderRadius: 16, padding: '14px 16px', background: '#fff', border: '1.5px solid #EDE4F8', marginBottom: 20, boxShadow: '0 2px 8px rgba(76,36,120,.05)' }}>
+        <div style={{ border: NB_BORDER, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#2E1065' }}>Level {gamification?.level ?? 1}</span>
-            <span style={{ fontSize: 12, color: '#8478A0' }}>{gamification?.xp ?? 0} XP</span>
+            <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Level {gamification?.level ?? 1}</span>
+            <span style={{ fontFamily: NB.fontMono, fontSize: 12, color: '#555' }}>{gamification?.xp ?? 0} XP</span>
           </div>
-          <div style={{ height: 7, borderRadius: 4, background: '#EDE4F8', overflow: 'hidden' }}>
-            <div style={{ height: '100%', borderRadius: 4, background: 'linear-gradient(90deg, #7C3AED, #A78BFA)', width: `${Math.min(((gamification?.xp ?? 0) % 500) / 5, 100)}%`, transition: 'width 0.6s ease' }} />
+          <div style={{ height: 10, border: `2px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+            <div style={{ height: '100%', background: NB.green, width: `${Math.min(((gamification?.xp ?? 0) % 500) / 5, 100)}%`, transition: 'width 0.6s ease' }} />
           </div>
         </div>
 
         {/* Muscles worked */}
         {hasColors && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#8478A0', letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 10 }}>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
               Muscles Worked
             </div>
-            <div style={{ borderRadius: 18, background: '#F8F4FF', border: '1.5px solid #EDE4F8', overflow: 'hidden', padding: '10px 10px 6px', display: 'flex', gap: 6 }}>
+            <div style={{ border: NB_BORDER, background: NB.cream, overflow: 'hidden', padding: '10px 10px 6px', display: 'flex', gap: 6 }}>
               <div style={{ flex: 1, aspectRatio: '0.6/1' }}>
                 <MuscleSVG key="front-done" url="/muscle_map_front.svg" muscleColors={frontColors} />
               </div>
@@ -104,18 +112,45 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {[['#FFB3C1','Light'],['#FF6B6B','Moderate'],['#CC2936','High']].map(([c, l]) => (
+              {[['#FFD8A8','Light'],['#FF9E4A','Moderate'],['#E5352B','High']].map(([c, l]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: 2, background: c }} />
-                  <span style={{ fontSize: 11, color: '#8478A0', fontWeight: 600 }}>{l}</span>
+                  <div style={{ width: 10, height: 10, border: `1.5px solid ${NB.ink}`, background: c }} />
+                  <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700 }}>{l}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
+        {/* Muscle Progress */}
+        {muscleGateOpen && gainedMuscles.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
+              Muscle Progress
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {gainedMuscles.map(muscleId => {
+                const info = getMuscleRankInfo(gamification, muscleId)
+                const gained = sessionData.muscleGains[muscleId]
+                const rankedUp = (sessionData.muscleRankUps || []).some(r => r.muscleId === muscleId)
+                return (
+                  <button key={muscleId} onClick={() => setLadderMuscle(muscleId)} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: `2.5px solid ${NB.ink}`,
+                    background: info.tier.bg, cursor: 'pointer', textAlign: 'left',
+                  }}>
+                    <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: info.tier.color, flex: 1 }}>{MUSCLE_LABELS[muscleId] || muscleId}</span>
+                    {rankedUp && <span style={{ fontSize: 11 }}>🏆</span>}
+                    <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: info.tier.color, background: NB.white, border: `1.5px solid ${NB.ink}`, padding: '2px 8px' }}>{info.tier.label}</span>
+                    <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: info.tier.color, fontWeight: 700 }}>+{gained}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Stats summary */}
-        <div style={{ borderRadius: 16, padding: '14px 16px', background: '#fff', border: '1.5px solid #EDE4F8', marginBottom: 24, display: 'flex', gap: 0 }}>
+        <div style={{ border: NB_BORDER, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, marginBottom: 24, display: 'flex', gap: 0 }}>
           <StatItem value={exercises.length} label="Exercises" />
           <Divider />
           <StatItem value={sessionData?.setsCompleted ?? 0} label="Sets Done" />
@@ -126,28 +161,42 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
         {/* Buttons */}
         <button
           onClick={() => onNavigate('workoutPost')}
-          style={{ width: '100%', padding: '15px', borderRadius: 16, border: '1.5px solid #EDE4F8', background: '#fff', color: '#7C3AED', fontSize: 15, fontWeight: 800, cursor: 'pointer', marginBottom: 10 }}
+          style={{ width: '100%', padding: '15px', border: NB_BORDER, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', marginBottom: 12 }}
         >
           Share Workout
         </button>
         <button
           onClick={() => onNavigate('home')}
-          style={{ width: '100%', padding: '15px', borderRadius: 16, border: 'none', background: 'linear-gradient(135deg, #7C3AED, #4C1D95)', color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer', boxShadow: '0 6px 18px rgba(124,58,237,.3)' }}
+          style={{ width: '100%', padding: '15px', border: NB_BORDER, boxShadow: hardShadow(3), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
         >
           Back to Home
         </button>
 
       </div>
+
+      {ladderMuscle && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <div onClick={() => setLadderMuscle(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)' }} />
+          <div style={{ position: 'relative', background: NB.white, borderTop: NB_BORDER, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '0 20px 24px', zIndex: 1, maxHeight: '78%', overflowY: 'auto' }}>
+            <div style={{ width: 38, height: 5, background: NB.ink, margin: '14px auto 14px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 19, textTransform: 'uppercase', color: NB.ink }}>{MUSCLE_LABELS[ladderMuscle] || ladderMuscle} Rank</span>
+              <button onClick={() => setLadderMuscle(null)} style={{ width: 32, height: 32, border: `2px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', color: NB.ink, fontWeight: 800 }}>✕</button>
+            </div>
+            <RankLadder {...getMuscleRankInfo(gamification, ladderMuscle)} />
+          </div>
+        </div>
+      )}
     </>
   )
 }
 
-function RewardCard({ icon, value, label, color, bg }) {
+function RewardCard({ icon, value, label, bg }) {
   return (
-    <div style={{ flex: 1, borderRadius: 16, padding: '14px 10px', background: bg, textAlign: 'center', border: `1.5px solid ${color}22` }}>
+    <div style={{ flex: 1, border: NB_BORDER, boxShadow: hardShadow(3), padding: '14px 10px', background: bg, textAlign: 'center' }}>
       <div style={{ fontSize: 22, marginBottom: 4 }}>{icon}</div>
-      <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color, fontWeight: 400, lineHeight: 1, marginBottom: 4 }}>{value}</div>
-      <div style={{ fontSize: 11, fontWeight: 700, color }}>  {label}</div>
+      <div style={{ fontFamily: NB.fontDisplay, fontSize: 22, color: NB.ink, fontWeight: 900, lineHeight: 1, marginBottom: 4 }}>{value}</div>
+      <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: NB.ink }}>{label}</div>
     </div>
   )
 }
@@ -155,12 +204,12 @@ function RewardCard({ icon, value, label, color, bg }) {
 function StatItem({ value, label }) {
   return (
     <div style={{ flex: 1, textAlign: 'center', padding: '4px 0' }}>
-      <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#2E1065', lineHeight: 1.1, marginBottom: 4 }}>{value}</div>
-      <div style={{ fontSize: 11, color: '#8478A0', fontWeight: 700 }}>{label}</div>
+      <div style={{ fontFamily: NB.fontDisplay, fontSize: 22, color: NB.ink, fontWeight: 900, lineHeight: 1.1, marginBottom: 4 }}>{value}</div>
+      <div style={{ fontFamily: NB.fontMono, fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>{label}</div>
     </div>
   )
 }
 
 function Divider() {
-  return <div style={{ width: 1, background: '#EDE4F8', alignSelf: 'stretch', margin: '4px 0' }} />
+  return <div style={{ width: 2, background: NB.ink, alignSelf: 'stretch', margin: '4px 0' }} />
 }

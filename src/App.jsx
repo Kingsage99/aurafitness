@@ -28,8 +28,10 @@ import { saveWorkoutHistory, fetchPendingRequests, setUsername } from './lib/soc
 import {
   DEFAULT_GAMIFICATION, resetWeeklyIfNeeded, awardGems, awardXP,
   updateStreak, checkBadges, checkCaloriePenalty,
-  awardRankPoints, completeQuest, purchaseItem, QUEST_POOL, SHOP_ITEMS,
+  awardRankPoints, awardMuscleRankPoints, completeQuest, purchaseItem, QUEST_POOL, SHOP_ITEMS,
+  MUSCLE_RANK_MIN_WORKOUTS,
 } from './utils/gamification'
+import { MUSCLE_LABELS } from './utils/muscleLabels'
 import RewardToast from './components/RewardToast'
 
 const DEFAULT_PROFILE = {
@@ -55,7 +57,7 @@ const DEFAULT_PROFILE = {
 
 const Spinner = () => (
   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #EDE4F8', borderTopColor: '#7C3AED', animation: 'spin 0.8s linear infinite' }} />
+    <div style={{ width: 34, height: 34, border: '3px solid #0A0A0A', borderTopColor: 'transparent', animation: 'spin 0.7s linear infinite' }} />
     <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
   </div>
 )
@@ -223,14 +225,15 @@ export default function App() {
         setProfileLoading(false)
       }
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession)
       sessionRef.current = newSession
-      if (newSession) {
+
+      if (event === 'SIGNED_IN') {
         dataReady.current = false
         setProfileLoading(true)
         loadProfile(newSession.user.id)
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         dataReady.current = false
         setProfileLoading(false)
         setScreen('onboarding')
@@ -239,6 +242,9 @@ export default function App() {
         setLoggedMacros({ calories: 0, protein: 0, carbs: 0, fat: 0 })
         setCookbook([])
       }
+      // TOKEN_REFRESHED / USER_UPDATED / INITIAL_SESSION etc: session refs are already
+      // updated above — don't reset dataReady/profileLoading or re-run loadProfile, or
+      // in-memory gamification progress not yet flushed by the debounced save gets clobbered.
     })
     return () => subscription.unsubscribe()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -324,8 +330,31 @@ export default function App() {
     ;({ g, rankedUp, newRank: newRankLabel } = awardRankPoints(g, allWeekDone ? 20 : 10))
     if (rankedUp) pushNotification(`Rank up! You're now ${newRankLabel} 🏆`)
 
+    // Muscle-group rank points
+    const muscleGains = {}   // { muscleId: pointsGainedThisSession }
+    ;(rawSessionData.exercises || []).forEach(ex => {
+      const doneSets = (ex.loggedSets || []).filter(s => s.done)
+      if (doneSets.length === 0) return
+
+      const avgWeight = doneSets.reduce((sum, s) => sum + (parseFloat(s.weight) || 0), 0) / doneSets.length
+      const weightBonus = Math.min(30, Math.round(avgWeight / 5))
+
+      ;(ex.muscles?.primary   || []).forEach(m => { muscleGains[m] = (muscleGains[m] || 0) + 10 + weightBonus })
+      ;(ex.muscles?.secondary || []).forEach(m => { muscleGains[m] = (muscleGains[m] || 0) + 5  + weightBonus })
+    })
+
+    const muscleRankUps = []
+    Object.entries(muscleGains).forEach(([muscleId, points]) => {
+      const { g: g2, rankedUp: muscleRankedUp, newRank: muscleNewRank } = awardMuscleRankPoints(g, muscleId, points)
+      g = g2
+      if (muscleRankedUp) muscleRankUps.push({ muscleId, label: muscleNewRank })
+    })
+    if (g.totalWorkouts >= MUSCLE_RANK_MIN_WORKOUTS) {
+      muscleRankUps.forEach(({ muscleId, label }) => pushNotification(`🏆 ${MUSCLE_LABELS[muscleId] || muscleId} ranked up to ${label}!`))
+    }
+
     setGamification(g)
-    setWorkoutSession({ ...rawSessionData, xpEarned: 50, gemsEarned: 30, streak: g.workoutStreak })
+    setWorkoutSession({ ...rawSessionData, xpEarned: 50, gemsEarned: 30, streak: g.workoutStreak, muscleGains, muscleRankUps })
 
     // Persist workout history (user chooses whether to post via WorkoutPost)
     if (sessionRef.current) {
@@ -385,6 +414,16 @@ export default function App() {
       ...prev,
       dislikedExercises: [...(prev.dislikedExercises || []), exerciseId],
     }))
+  }
+
+  const handleUpdateCountry = async (country) => {
+    setUserProfile(prev => ({ ...prev, country }))
+    if (sessionRef.current) {
+      const { error } = await supabase.from('profiles').update({
+        profile_data: { ...userProfile, country },
+      }).eq('id', sessionRef.current.user.id)
+      if (error) console.error('Country save error:', error.message)
+    }
   }
 
   const todayWorkout = weeklyPlan?.[todayWorkoutIndex]?.workout ?? null
@@ -501,7 +540,15 @@ export default function App() {
       case 'analytics':
         return <Analytics gamification={gamification} userProfile={userProfile} loggedMacros={loggedMacros} session={session} onNavigate={navigate} />
       case 'leaderboard':
-        return <Leaderboard onNavigate={navigate} />
+        return (
+          <Leaderboard
+            session={session}
+            userProfile={userProfile}
+            gamification={gamification}
+            onUpdateCountry={handleUpdateCountry}
+            onNavigate={navigate}
+          />
+        )
       default:
         return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
     }

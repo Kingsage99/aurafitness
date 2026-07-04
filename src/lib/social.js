@@ -198,6 +198,28 @@ export async function fetchWorkoutHistory(userId, limit = 90) {
   return data || []
 }
 
+// ─── Leaderboards ─────────────────────────────────────────────────────────────
+
+// scope: 'friends' | 'global' | 'regional'
+export async function fetchLeaderboardProfiles({ scope, userId, country, limit = 40 }) {
+  let query = supabase.from('profiles').select('id, username, profile_data, gamification')
+
+  if (scope === 'friends') {
+    const friendIds = await fetchFriendIds(userId)
+    const ids = userId ? [...friendIds, userId] : friendIds
+    if (ids.length === 0) return []
+    query = query.in('id', ids)
+  } else if (scope === 'regional') {
+    if (!country) return []
+    query = query.eq('profile_data->>country', country)
+  }
+
+  const { data, error } = await query.limit(limit)
+  if (error) { console.error('fetchLeaderboardProfiles error:', error.message); return [] }
+  console.log(`[leaderboard] scope=${scope} country=${country || 'n/a'} rows=${(data || []).length}`)
+  return data || []
+}
+
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 export function timeAgo(isoString) {
