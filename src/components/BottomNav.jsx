@@ -1,5 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useContext, createContext } from 'react'
 import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+
+// Provided by App with the pending friend-request count, so the badge shows on
+// every screen's nav without each screen having to thread the prop through.
+export const NavBadgeContext = createContext(0)
 
 const MAIN_TABS = [
   {
@@ -80,8 +84,11 @@ const PLUS_ITEMS = [
   },
 ]
 
-export default function BottomNav({ active, onNavigate, pendingRequests = 0 }) {
+export default function BottomNav({ active, onNavigate, pendingRequests }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const ctxPending = useContext(NavBadgeContext)
+  // Explicit prop wins (Discovery passes a live count); otherwise use App's context
+  const pendingCount = pendingRequests ?? ctxPending ?? 0
 
   const handlePlusItem = (id) => {
     setMenuOpen(false)
@@ -109,19 +116,19 @@ export default function BottomNav({ active, onNavigate, pendingRequests = 0 }) {
               onClick={() => handlePlusItem(item.id)}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                background: NB.white, border: NB_BORDER,
+                background: NB.white, border: NB_BORDER, borderRadius: 14,
                 padding: '10px 14px', cursor: 'pointer', minWidth: 70,
                 boxShadow: hardShadow(4), position: 'relative',
               }}
             >
-              <div style={{ width: 32, height: 32, border: NB_BORDER, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 9, border: NB_BORDER, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {item.icon}
               </div>
               <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: NB.ink }}>{item.label}</span>
-              {item.id === 'discovery' && pendingRequests > 0 && (
+              {item.id === 'discovery' && pendingCount > 0 && (
                 <div style={{
                   position: 'absolute', top: -6, right: -6,
-                  width: 20, height: 20, border: NB_BORDER,
+                  width: 20, height: 20, borderRadius: 7, border: NB_BORDER,
                   background: NB.red, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.white }}>{pendingRequests}</span>
@@ -164,6 +171,15 @@ export default function BottomNav({ active, onNavigate, pendingRequests = 0 }) {
                 }}>＋</span>
               </div>
             </div>
+            {pendingCount > 0 && !menuOpen && (
+              <div style={{
+                position: 'absolute', top: -2, right: -2,
+                width: 20, height: 20, borderRadius: 7, border: `2px solid ${NB.ink}`,
+                background: NB.red, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.white }}>{pendingCount}</span>
+              </div>
+            )}
           </button>
         </div>
 
@@ -182,6 +198,7 @@ function TabBtn({ tab, active, onNavigate }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
         background: isActive ? tab.activeBg : 'none',
         border: isActive ? NB_BORDER : '3px solid transparent',
+        borderRadius: 12,
         cursor: 'pointer', padding: '6px 10px',
       }}
     >

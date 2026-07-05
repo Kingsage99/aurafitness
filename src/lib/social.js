@@ -24,6 +24,27 @@ export async function uploadPostMedia(file) {
   return { url: publicUrl, type: file.type.startsWith('video') ? 'video' : 'image' }
 }
 
+// Profile picture upload — reuses the post-media bucket under an avatars/ prefix.
+// One avatar per user: upsert so re-uploads overwrite instead of accumulating orphans.
+export async function uploadAvatar(userId, file) {
+  const ext = file.name.split('.').pop() || 'bin'
+  const path = `avatars/${userId}-${Date.now()}.${ext}`
+  const { data, error } = await supabase.storage.from('post-media').upload(path, file, { upsert: true })
+  if (error) { console.error('uploadAvatar error:', error.message); return null }
+  const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(data.path)
+  return publicUrl
+}
+
+// Custom exercise photo upload — same bucket, under an exercises/ prefix.
+export async function uploadExerciseImage(userId, file) {
+  const ext = file.name.split('.').pop() || 'bin'
+  const path = `exercises/${userId}-${Date.now()}.${ext}`
+  const { data, error } = await supabase.storage.from('post-media').upload(path, file)
+  if (error) { console.error('uploadExerciseImage error:', error.message); return null }
+  const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(data.path)
+  return publicUrl
+}
+
 export async function fetchGlobalFeed(limit = 30) {
   const { data, error } = await supabase
     .from('posts')

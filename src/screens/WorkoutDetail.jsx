@@ -2,14 +2,8 @@ import React, { useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
+import ExerciseThumb from '../components/ExerciseThumb'
 import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
-
-const SLOT_COLORS = {
-  main:      NB.magenta,
-  secondary: NB.blue,
-  accessory: NB.yellow,
-  finisher:  NB.pink,
-}
 
 // Map exercise primary muscle name → MUSCLE_SVG_IDS key
 const MUSCLE_TO_GROUP = {
@@ -66,13 +60,13 @@ function MuscleCard({ group, pct }) {
   if (!config) return null
 
   return (
-    <div style={{ flexShrink: 0, width: 82, border: NB_BORDER, boxShadow: hardShadow(2), background: NB.white, overflow: 'hidden' }}>
+    <div style={{ flexShrink: 0, width: 82, border: NB_BORDER, borderRadius: 14, boxShadow: hardShadow(2), background: NB.white, overflow: 'hidden' }}>
       <div style={{ height: 86, background: NB.cream, overflow: 'hidden' }}>
         <MuscleSVG url={config.url} muscleColors={colors} />
       </div>
       <div style={{ padding: '8px 6px 10px', textAlign: 'center' }}>
         <div style={{ fontFamily: NB.fontDisplay, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>{config.label}</div>
-        <div style={{ background: NB.yellow, border: `1.5px solid ${NB.ink}`, padding: '2px 8px', display: 'inline-block' }}>
+        <div style={{ background: NB.yellow, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '2px 8px', display: 'inline-block' }}>
           <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink }}>{pct}%</span>
         </div>
       </div>
@@ -105,7 +99,7 @@ export default function WorkoutDetail({ activeWorkout, onNavigate }) {
 
       {/* Header */}
       <div style={{ padding: '10px 22px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={() => onNavigate('workout')} style={{ background: NB.white, border: NB_BORDER, boxShadow: hardShadow(2), width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+        <button onClick={() => onNavigate('workout')} style={{ background: NB.white, border: NB_BORDER, borderRadius: 11, boxShadow: hardShadow(2), width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -114,7 +108,7 @@ export default function WorkoutDetail({ activeWorkout, onNavigate }) {
           </div>
           {split && <div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{split}</div>}
         </div>
-        <div style={{ background: NB.yellow, border: `2px solid ${NB.ink}`, padding: '5px 11px', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+        <div style={{ background: NB.yellow, border: `2px solid ${NB.ink}`, borderRadius: 10, padding: '5px 11px', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           <span style={{ fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 800 }}>~{duration} min</span>
         </div>
@@ -142,25 +136,23 @@ export default function WorkoutDetail({ activeWorkout, onNavigate }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8 }}>
             {exercises.map((ex, i) => {
-              const color   = SLOT_COLORS[ex.slot] || NB.ink
               const sets    = ex.sets || 3
               const repsStr = ex.reps
                 ? String(ex.reps)
                 : `${ex.repsRange?.min ?? 8}–${ex.repsRange?.max ?? 12}`
 
               return (
-                <div key={ex.id || i} style={{ border: NB_BORDER, boxShadow: hardShadow(2), padding: '12px 14px', background: NB.white, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {/* Colour badge */}
-                  <div style={{ width: 48, height: 48, border: `2px solid ${NB.ink}`, flexShrink: 0, background: color, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                    <span style={{ fontFamily: NB.fontDisplay, fontSize: 17, fontWeight: 900, color: NB.ink, lineHeight: 1 }}>{i + 1}</span>
-                    <span style={{ fontFamily: NB.fontMono, fontSize: 7, fontWeight: 800, color: NB.ink, textTransform: 'uppercase' }}>{ex.slot}</span>
+                <div key={ex.id || i} style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(2), padding: '12px 14px', background: NB.white, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <ExerciseThumb src={ex.image} slot={ex.slot} size={48} radius={12} />
+                    <span style={{ position: 'absolute', bottom: -5, right: -5, width: 18, height: 18, borderRadius: 6, border: `1.5px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: NB.fontDisplay, fontSize: 10, fontWeight: 900, color: NB.ink }}>{i + 1}</span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
                     <div style={{ fontSize: 12, color: '#555' }}>{sets} sets × {repsStr} reps</div>
                   </div>
                   {ex.cues?.length > 0 && (
-                    <div style={{ flexShrink: 0, width: 28, height: 28, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 9, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
                     </div>
                   )}
@@ -175,7 +167,7 @@ export default function WorkoutDetail({ activeWorkout, onNavigate }) {
       <div style={{ padding: '10px 22px 12px', flexShrink: 0 }}>
         <button
           onClick={() => onNavigate('workoutActive')}
-          style={{ width: '100%', padding: '16px', border: NB_BORDER, boxShadow: hardShadow(4), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 16, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          style={{ width: '100%', padding: '16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(4), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 16, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Start Workout

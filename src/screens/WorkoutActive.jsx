@@ -117,22 +117,22 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
 
       {/* Top bar */}
       <div style={{ padding: '10px 22px 8px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => onNavigate('workoutDetail')} style={{ background: NB.white, border: NB_BORDER, boxShadow: hardShadow(2), width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+        <button onClick={() => onNavigate('workoutDetail')} style={{ background: NB.white, border: NB_BORDER, borderRadius: 11, boxShadow: hardShadow(2), width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
         <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink }}>
           {label.replace(/^Day \d+ — /, '')}
         </div>
         {/* Timer */}
-        <div style={{ background: NB.ink, border: NB_BORDER, padding: '6px 14px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={NB.yellow} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span style={{ fontFamily: NB.fontMono, fontSize: 14, fontWeight: 800, color: NB.white, fontVariantNumeric: 'tabular-nums' }}>{fmt(elapsed)}</span>
+        <div style={{ background: NB.lavender, border: NB_BORDER, borderRadius: 12, padding: '6px 14px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span style={{ fontFamily: NB.fontMono, fontSize: 14, fontWeight: 800, color: NB.ink, fontVariantNumeric: 'tabular-nums' }}>{fmt(elapsed)}</span>
         </div>
       </div>
 
       {/* Progress bar */}
       <div style={{ padding: '0 22px 10px', flexShrink: 0 }}>
-        <div style={{ height: 8, border: `2px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+        <div style={{ height: 8, borderRadius: 4, border: `2px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
           <div style={{ height: '100%', background: NB.green, width: `${exercises.length ? (completedExIdx.size / exercises.length) * 100 : 0}%`, transition: 'width 0.4s ease' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
@@ -155,7 +155,7 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
               key={i}
               onClick={() => setExIdx(i)}
               style={{
-                flexShrink: 0, padding: '7px 14px', border: `2.5px solid ${NB.ink}`,
+                flexShrink: 0, padding: '7px 14px', border: `2.5px solid ${NB.ink}`, borderRadius: 12,
                 background: active ? color : done ? NB.green : NB.white,
                 fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, color: NB.ink,
                 boxShadow: active ? hardShadow(2) : 'none',
@@ -174,7 +174,7 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
 
         {/* Exercise name + badge */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: slotColor, border: `1.5px solid ${NB.ink}`, padding: '4px 10px', marginBottom: 8 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: slotColor, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px', marginBottom: 8 }}>
             <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: NB.ink, textTransform: 'uppercase' }}>{curExercise.slot}</span>
           </div>
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.15, marginBottom: 4 }}>
@@ -189,7 +189,7 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
 
         {/* Form cues */}
         {curExercise.cues?.length > 0 && (
-          <div style={{ border: NB_BORDER, background: NB.yellow, padding: '10px 14px', marginBottom: 16 }}>
+          <div style={{ border: NB_BORDER, borderRadius: 16, background: NB.yellow, padding: '10px 14px', marginBottom: 16 }}>
             <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: NB.ink, marginBottom: 6, letterSpacing: 1, textTransform: 'uppercase' }}>Form Cues</div>
             {curExercise.cues.map((c, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: i < curExercise.cues.length - 1 ? 4 : 0 }}>
@@ -221,11 +221,11 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
                 key={si}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  border: `2px solid ${NB.ink}`, padding: '10px 10px',
+                  border: `2px solid ${NB.ink}`, borderRadius: 12, padding: '10px 10px',
                   background: s.done ? NB.green : NB.white,
                 }}
               >
-                <div style={{ width: 32, height: 32, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 900, color: NB.ink }}>{si + 1}</span>
                 </div>
                 <input
@@ -233,18 +233,18 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
                   value={s.weight}
                   onChange={e => updateSet(si, 'weight', e.target.value)}
                   placeholder="0"
-                  style={{ flex: 1, textAlign: 'center', border: `2px solid ${NB.ink}`, padding: '7px 4px', fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, color: NB.ink, background: NB.white, outline: 'none', minWidth: 0 }}
+                  style={{ flex: 1, textAlign: 'center', border: `2px solid ${NB.ink}`, borderRadius: 8, padding: '7px 4px', fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, color: NB.ink, background: NB.white, outline: 'none', minWidth: 0 }}
                 />
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#555', width: 14, textAlign: 'center', flexShrink: 0 }}>×</div>
                 <input
                   type="number"
                   value={s.reps}
                   onChange={e => updateSet(si, 'reps', e.target.value)}
-                  style={{ flex: 1, textAlign: 'center', border: `2px solid ${NB.ink}`, padding: '7px 4px', fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, color: NB.ink, background: NB.white, outline: 'none', minWidth: 0 }}
+                  style={{ flex: 1, textAlign: 'center', border: `2px solid ${NB.ink}`, borderRadius: 8, padding: '7px 4px', fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, color: NB.ink, background: NB.white, outline: 'none', minWidth: 0 }}
                 />
                 <button
                   onClick={() => toggleSet(si)}
-                  style={{ width: 38, height: 38, border: `2px solid ${NB.ink}`, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: s.done ? NB.ink : NB.white, transition: 'all 0.15s' }}
+                  style={{ width: 38, height: 38, borderRadius: 10, border: `2px solid ${NB.ink}`, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: s.done ? NB.ink : NB.white, transition: 'all 0.15s' }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={s.done ? NB.white : NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12"/>
@@ -256,7 +256,7 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
 
           <button
             onClick={addSet}
-            style={{ marginTop: 10, width: '100%', padding: '10px', border: `2.5px dashed ${NB.ink}`, background: 'transparent', color: NB.ink, fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            style={{ marginTop: 10, width: '100%', padding: '10px', border: `2.5px dashed ${NB.ink}`, borderRadius: 14, background: 'transparent', color: NB.ink, fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Set
@@ -270,7 +270,7 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
         {exIdx > 0 && (
           <button
             onClick={() => setExIdx(i => i - 1)}
-            style={{ flex: 1, padding: '13px', border: NB_BORDER, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
+            style={{ flex: 1, padding: '13px', border: NB_BORDER, borderRadius: 14, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
           >
             ← Prev
           </button>
@@ -278,14 +278,14 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
         {!isLast ? (
           <button
             onClick={() => setExIdx(i => i + 1)}
-            style={{ flex: 2, padding: '13px', border: NB_BORDER, background: NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', boxShadow: hardShadow(3) }}
+            style={{ flex: 2, padding: '13px', border: NB_BORDER, borderRadius: 14, background: NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', boxShadow: hardShadow(3) }}
           >
             Next Exercise →
           </button>
         ) : (
           <button
             onClick={handleFinish}
-            style={{ flex: 2, padding: '13px', border: NB_BORDER, background: allDone ? NB.green : NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', boxShadow: hardShadow(3) }}
+            style={{ flex: 2, padding: '13px', border: NB_BORDER, borderRadius: 14, background: allDone ? NB.green : NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', boxShadow: hardShadow(3) }}
           >
             {allDone ? '✓ Finish Workout' : 'Finish Workout'}
           </button>
@@ -296,5 +296,5 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
 }
 
 function btnStyle(bg) {
-  return { padding: '12px 24px', border: NB_BORDER, boxShadow: hardShadow(3), background: bg, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }
+  return { padding: '12px 24px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: bg, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }
 }

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
-import { suggestMeal, lookupFood } from '../utils/claudeApi'
+import { suggestMeal, adjustMeal, identifyEatenFood, lookupFood } from '../utils/claudeApi'
 import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
 // ─── Daily targets ────────────────────────────────────────────────────────────
@@ -16,25 +16,35 @@ const DAILY_TARGETS = {
 
 const CRAVING_TAGS = ['Pasta', 'Light & fresh', 'Sweet', 'Spicy', 'High-protein', 'Comfort food']
 
-const MODIFIER_CHIPS = [
-  { id: 'more_protein',   label: '+ More protein' },
-  { id: 'less_calories',  label: '- Less calories' },
-  { id: 'more_calories',  label: '+ More calories' },
-  { id: 'higher_fibre',   label: '+ Higher fibre' },
-  { id: 'lower_carbs',    label: '- Lower carbs' },
-  { id: 'higher_volume',  label: '+ Higher volume' },
-  { id: 'quick_prep',     label: 'Quick prep' },
-]
-
 const MEAL_COLORS = {
   breakfast: NB.yellow, lunch: NB.teal, dinner: NB.magenta,
   snack: NB.pink, snack_1: NB.pink, snack_2: NB.orange, snack_3: NB.blue,
-  second_lunch: NB.lavender,
+  second_lunch: NB.lavender, suggested: NB.lavender,
 }
 const MEAL_LABELS = {
   breakfast: 'BREAKFAST', lunch: 'LUNCH', dinner: 'DINNER', snack: 'SNACK',
   snack_1: 'SNACK 1', snack_2: 'SNACK 2', snack_3: 'SNACK 3', second_lunch: 'BRUNCH',
+  suggested: 'SUGGESTED',
 }
+
+// ─── Macro tracking ───────────────────────────────────────────────────────────
+const MACRO_KEYS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'saturatedFat', 'sodium', 'cholesterol', 'potassium']
+const EXTRA_MACRO_FIELDS = [
+  { key: 'fiber', label: 'FIBER', unit: 'g' },
+  { key: 'sugar', label: 'SUGAR', unit: 'g' },
+  { key: 'saturatedFat', label: 'SAT FAT', unit: 'g' },
+  { key: 'sodium', label: 'SODIUM', unit: 'mg' },
+  { key: 'cholesterol', label: 'CHOL', unit: 'mg' },
+  { key: 'potassium', label: 'POTASSIUM', unit: 'mg' },
+]
+const addMacros = (a, b) => {
+  const out = { ...a }
+  MACRO_KEYS.forEach(k => { out[k] = (a?.[k] || 0) + (b?.[k] || 0) })
+  return out
+}
+// Standard nutrition-label daily-value references, used only to compute the
+// "% daily" fill shown per meal for the macros that don't have a personal target.
+const MACRO_DAILY_REF = { fiber: 28, sugar: 50, saturatedFat: 20, sodium: 2300, cholesterol: 300, potassium: 4700 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const slotLabel = t => MEAL_LABELS[t] || t.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
@@ -102,7 +112,7 @@ function CalorieSplitBar({ slots, remaining, onSlotsChange }) {
       <div ref={barRef} style={{ position: 'relative', height: 60, userSelect: 'none', touchAction: 'none' }}
         onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp}>
         {/* Coloured segments */}
-        <div style={{ position: 'absolute', inset: 0, border: NB_BORDER, overflow: 'hidden', display: 'flex' }}>
+        <div style={{ position: 'absolute', inset: 0, border: NB_BORDER, borderRadius: 14, overflow: 'hidden', display: 'flex' }}>
           {segs.map((seg) => (
             <div key={seg.type} style={{
               width: `${seg.pct}%`, height: '100%',
@@ -146,20 +156,20 @@ function CalorieSplitBar({ slots, remaining, onSlotsChange }) {
 
 // ─── Components ──────────────────────────────────────────────────────────────
 
-function MacroRing({ consumed, total, size = 130 }) {
-  const r = 48
-  const circ = 2 * Math.PI * r
-  const pct = Math.min(consumed / total, 1)
-  const offset = circ - pct * circ
+// Conic-gradient macro-composition donut (Protein/Carbs/Fat proportional segments,
+// total calories in the center) — matches the Fitness UI Kit v2 Nutrition section.
+function MacroRing({ protein = 0, carbs = 0, fat = 0, calories = 0, size = 130 }) {
+  const total = Math.max(1, protein + carbs + fat)
+  const pPct = (protein / total) * 100
+  const cPct = (carbs / total) * 100
+  const gradient = `conic-gradient(${NB.magenta} 0 ${pPct}%, ${NB.yellow} 0 ${pPct + cPct}%, ${NB.pink} 0 100%)`
   return (
-    <svg width={size} height={size} viewBox="0 0 110 110">
-      <circle cx="55" cy="55" r={r} fill="none" stroke="#eee" strokeWidth="11" />
-      <circle cx="55" cy="55" r={r} fill="none" stroke={NB.teal} strokeWidth="11"
-        strokeDasharray={circ} strokeDashoffset={offset}
-        transform="rotate(-90 55 55)" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
-      <text x="55" y="48" textAnchor="middle" fill={NB.ink} fontSize="18" fontWeight="900" fontFamily="Archivo,sans-serif">{consumed}</text>
-      <text x="55" y="63" textAnchor="middle" fill="#555" fontSize="10" fontWeight="700" fontFamily="'Space Mono',monospace">/ {total} kcal</text>
-    </svg>
+    <div style={{ width: size, height: size, borderRadius: '50%', border: `2.5px solid ${NB.ink}`, background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ width: size * 0.54, height: size * 0.54, borderRadius: '50%', border: `2.5px solid ${NB.ink}`, background: NB.white, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: size * 0.14, color: NB.ink, lineHeight: 1 }}>{Math.round(calories).toLocaleString()}</span>
+        <span style={{ fontFamily: NB.fontMono, fontSize: size * 0.07, fontWeight: 700, color: '#555' }}>kcal</span>
+      </div>
+    </div>
   )
 }
 
@@ -171,37 +181,87 @@ function MacroBar({ label, consumed, total, color }) {
         <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 700, color: '#555' }}>{label}</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: NB.ink }}>{consumed}<span style={{ color: '#999' }}>/{total}g</span></span>
       </div>
-      <div style={{ height: 8, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+      <div style={{ height: 8, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: color, transition: 'width 0.5s ease' }} />
       </div>
     </div>
   )
 }
 
+// Two-page swipeable macro card: page 1 = main 4 (with targets if given, else plain totals),
+// page 2 = the 6 extra tracked macros (totals only — no daily target for these).
+function MacroSwipeCard({ macros = {}, targets = null, compact = false }) {
+  const scrollRef = useRef()
+  const [page, setPage] = useState(0)
+
+  const onScroll = () => {
+    const el = scrollRef.current
+    if (!el || !el.clientWidth) return
+    setPage(Math.round(el.scrollLeft / el.clientWidth))
+  }
+
+  return (
+    <div>
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+      >
+        {/* Page 1 — main macros */}
+        <div style={{ minWidth: '100%', scrollSnapAlign: 'center', boxSizing: 'border-box' }}>
+          {targets ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+              <MacroRing protein={macros.protein || 0} carbs={macros.carbs || 0} fat={macros.fat || 0} calories={macros.calories || 0} size={compact ? 92 : 130} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <MacroBar label="Protein" consumed={macros.protein || 0} total={targets.protein} color={NB.blue} />
+                <MacroBar label="Carbs" consumed={macros.carbs || 0} total={targets.carbs} color={NB.yellow} />
+                <MacroBar label="Fat" consumed={macros.fat || 0} total={targets.fat} color={NB.pink} />
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+              {[['Cal', macros.calories, NB.teal, ''], ['Protein', macros.protein, NB.blue, 'g'], ['Carbs', macros.carbs, NB.yellow, 'g'], ['Fat', macros.fat, NB.pink, 'g']].map(([l, v, c, u]) => (
+                <div key={l} style={{ border: `1.5px solid ${NB.ink}`, borderRadius: 10, padding: '8px 4px', background: c, textAlign: 'center' }}>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: NB.ink }}>{Math.round(v || 0)}{u}</div>
+                  <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.ink, fontWeight: 700 }}>{l}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Page 2 — extra macros */}
+        <div style={{ minWidth: '100%', scrollSnapAlign: 'center', boxSizing: 'border-box' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+            {EXTRA_MACRO_FIELDS.map(f => (
+              <div key={f.key} style={{ border: `1.5px solid ${NB.ink}`, borderRadius: 10, padding: '8px 4px', background: NB.cream, textAlign: 'center' }}>
+                <div style={{ fontSize: 14, fontWeight: 900, color: NB.ink }}>{Math.round(macros[f.key] || 0)}{f.unit}</div>
+                <div style={{ fontFamily: NB.fontMono, fontSize: 8, color: '#555', fontWeight: 700 }}>{f.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 6 }}>
+        {[0, 1].map(i => (
+          <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: page === i ? NB.ink : '#ccc' }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function CookbookItemSheet({ item, onClose, onLog }) {
-  const color = MEAL_COLORS[item.type] || NB.teal
   const hasFullRecipe = item.ingredients?.length > 0
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
       <div onClick={onClose} style={{ flex: 1, background: 'rgba(0,0,0,.45)' }} />
-      <div style={{ background: NB.white, borderTop: NB_BORDER, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '20px 22px 32px', maxHeight: '82vh', overflowY: 'auto' }}>
+      <div style={{ background: NB.white, borderTop: NB_BORDER, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '20px 22px 32px', maxHeight: '82vh', overflowY: 'auto' }}>
         <div style={{ width: 38, height: 5, background: NB.ink, margin: '0 auto 18px' }} />
         <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' }}>{slotLabel(item.type)}</div>
         <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink, marginBottom: 16, lineHeight: 1.2 }}>{item.name}</div>
 
-        {/* Macros */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-          {[
-            ['Calories', item.macros?.calories ?? item.calories ?? 0, NB.teal, 'kcal'],
-            ['Protein', item.macros?.protein ?? item.protein ?? 0, NB.blue, 'g'],
-            ['Carbs', item.macros?.carbs ?? 0, NB.yellow, 'g'],
-            ['Fat', item.macros?.fat ?? 0, NB.pink, 'g'],
-          ].map(([label, val, clr, unit]) => (
-            <div key={label} style={{ flex: 1, border: `2px solid ${NB.ink}`, background: clr, padding: '10px 8px', textAlign: 'center' }}>
-              <div style={{ fontFamily: NB.fontDisplay, fontSize: 16, fontWeight: 900, color: NB.ink }}>{Math.round(val)}</div>
-              <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.ink, fontWeight: 700 }}>{unit} {label}</div>
-            </div>
-          ))}
+        <div style={{ marginBottom: 20 }}>
+          <MacroSwipeCard macros={item.macros || { calories: item.calories || 0, protein: item.protein || 0 }} />
         </div>
 
         {hasFullRecipe ? (
@@ -224,93 +284,86 @@ function CookbookItemSheet({ item, onClose, onLog }) {
             )}
           </>
         ) : (
-          <div style={{ padding: '12px 16px', border: NB_BORDER, background: NB.cream, marginBottom: 18 }}>
+          <div style={{ padding: '12px 16px', border: NB_BORDER, borderRadius: 12, background: NB.cream, marginBottom: 18 }}>
             <div style={{ fontSize: 13, color: '#555' }}>Full recipe not saved for this item. Log it to track your macros.</div>
           </div>
         )}
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, height: 50, border: NB_BORDER, background: NB.white, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, cursor: 'pointer' }}>Close</button>
-          <button onClick={onLog} style={{ flex: 1.6, height: 50, border: NB_BORDER, boxShadow: hardShadow(4), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>Log this meal</button>
+          <button onClick={onClose} style={{ flex: 1, height: 50, border: NB_BORDER, borderRadius: 14, background: NB.white, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, cursor: 'pointer' }}>Close</button>
+          <button onClick={onLog} style={{ flex: 1.6, height: 50, border: NB_BORDER, borderRadius: 14, boxShadow: hardShadow(4), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>Log this meal</button>
         </div>
       </div>
     </div>
   )
 }
 
-function RecipeDrawer({ meal, mealName, mealType, onClose, onSaveToCookbook }) {
-  const color = MEAL_COLORS[mealType] || NB.teal
+// Swipeable macro grid — pages of up to 4 tiles (name / value+unit / mini progress bar / % daily),
+// with dot indicators. Matches the Fitness UI Kit v2 Meal Detail section.
+function MacroPageGrid({ macros = {}, targets }) {
+  const scrollRef = useRef()
+  const [page, setPage] = useState(0)
+
+  const mainTiles = [
+    { key: 'calories', label: 'Calories', unit: '', color: NB.magenta, ref: targets?.calories },
+    { key: 'protein', label: 'Protein', unit: 'g', color: NB.magenta, ref: targets?.protein },
+    { key: 'carbs', label: 'Carbs', unit: 'g', color: NB.yellow, ref: targets?.carbs },
+    { key: 'fat', label: 'Fat', unit: 'g', color: NB.pink, ref: targets?.fat },
+  ]
+  const extraTiles = EXTRA_MACRO_FIELDS.map(f => ({ key: f.key, label: f.label, unit: f.unit, color: NB.teal, ref: MACRO_DAILY_REF[f.key] }))
+  const allTiles = [...mainTiles, ...extraTiles]
+  const pages = []
+  for (let i = 0; i < allTiles.length; i += 4) pages.push(allTiles.slice(i, i + 4))
+
+  const onScroll = () => {
+    const el = scrollRef.current
+    if (!el || !el.clientWidth) return
+    setPage(Math.round(el.scrollLeft / el.clientWidth))
+  }
+
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 55 }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)' }} />
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: NB.white, borderTop: NB_BORDER, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '20px 22px 32px', maxHeight: '88%', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ width: 38, height: 5, background: NB.ink, margin: '0 auto 16px' }} />
-
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16, flexShrink: 0 }}>
-          <div style={{ width: 44, height: 44, border: `2px solid ${NB.ink}`, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink, letterSpacing: 1 }}>{MEAL_LABELS[mealType] || 'MEAL'}</div>
-            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 21, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.15 }}>{mealName}</div>
-          </div>
-          {meal.prepTimeMinutes && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', border: `1.5px solid ${NB.ink}`, background: NB.white, flexShrink: 0 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-              <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, color: NB.ink }}>{meal.prepTimeMinutes} min</span>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+        <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#888' }}>Swipe →</span>
+      </div>
+      <div ref={scrollRef} onScroll={onScroll} style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory' }}>
+        {pages.map((pg, pi) => (
+          <div key={pi} style={{ minWidth: '100%', scrollSnapAlign: 'start', boxSizing: 'border-box', padding: 2 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {pg.map(tile => {
+                const val = Math.round(macros[tile.key] || 0)
+                const pct = tile.ref ? Math.min(100, Math.round((val / tile.ref) * 100)) : 0
+                return (
+                  <div key={tile.key} style={{ border: `2.5px solid ${NB.ink}`, borderRadius: 14, background: '#F3ECFC', padding: 14 }}>
+                    <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#666' }}>{tile.label}</div>
+                    <div style={{ margin: '6px 0 10px' }}>
+                      <span style={{ fontWeight: 900, fontSize: 28, lineHeight: 1, color: NB.ink }}>{val}</span>
+                      <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, marginLeft: 3, color: NB.ink }}>{tile.unit}</span>
+                    </div>
+                    <div style={{ border: `2px solid ${NB.ink}`, borderRadius: 999, background: NB.white, height: 12, padding: 2, boxSizing: 'border-box' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, borderRadius: 999, background: tile.color }} />
+                    </div>
+                    <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#888', marginTop: 6 }}>{pct}% daily</div>
+                  </div>
+                )
+              })}
             </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexShrink: 0 }}>
-          {[
-            { l: 'Protein', v: meal.macros.protein + 'g', c: NB.blue },
-            { l: 'Carbs', v: meal.macros.carbs + 'g', c: NB.yellow },
-            { l: 'Fat', v: meal.macros.fat + 'g', c: NB.pink },
-            { l: 'Calories', v: String(meal.macros.calories), c: NB.teal },
-          ].map(({ l, v, c }) => (
-            <div key={l} style={{ flex: 1, padding: '7px 6px', border: `2px solid ${NB.ink}`, background: c, textAlign: 'center' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{v}</div>
-              <div style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 700, color: NB.ink }}>{l}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' }}>Ingredients</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-            {meal.ingredients.map((ing, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontWeight: 900, color: NB.ink }}>·</span>
-                <span style={{ fontSize: 13, color: NB.ink, lineHeight: 1.4 }}>{ing}</span>
-              </div>
-            ))}
           </div>
-
-          <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' }}>Method</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-            {meal.instructions.map((step, i) => (
-              <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <div style={{ width: 24, height: 24, border: `1.5px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink }}>{i + 1}</span>
-                </div>
-                <span style={{ fontSize: 13, color: NB.ink, lineHeight: 1.5, flex: 1 }}>{step}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, flexShrink: 0, paddingTop: 8 }}>
-          <button onClick={onClose} style={{ flex: 1, height: 50, border: NB_BORDER, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>Close</button>
-          <button onClick={onSaveToCookbook} style={{ flex: 2, height: 50, border: NB_BORDER, boxShadow: hardShadow(3), background: NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z"/></svg>
-            Save to cookbook
-          </button>
-        </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 14 }}>
+        {pages.map((_, i) => (
+          <span key={i} style={{ width: 10, height: 10, borderRadius: '50%', border: `2px solid ${NB.ink}`, background: page === i ? NB.magenta : NB.white }} />
+        ))}
       </div>
     </div>
   )
 }
 
-function MealCard({ meal, mealType, name, userCraving, isEditingName, onEditNameStart, onNameChange, onEdit, onRegenerate, onViewRecipe, expanded, onToggle }) {
+// Unified meal detail card — used for generated meals, adjusted meals, and "already ate" results.
+// Matches the Fitness UI Kit v2 Meal Detail section 1:1: three separate cards (header photo/name,
+// swipeable macro grid, ingredients/method) — Adjust/Log live outside in <MealActionBar>.
+function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEditNameStart, onNameChange, onSaveToCookbook, saved, targets, showIngredients = true }) {
   const color = MEAL_COLORS[mealType] || NB.teal
   const nameInputRef = useRef()
 
@@ -318,128 +371,148 @@ function MealCard({ meal, mealType, name, userCraving, isEditingName, onEditName
     if (isEditingName) nameInputRef.current?.focus()
   }, [isEditingName])
 
+  const subtitleParts = [
+    meal.macros?.calories ? `${Math.round(meal.macros.calories)} kcal` : null,
+    meal.prepTimeMinutes ? `${meal.prepTimeMinutes} min` : null,
+    MEAL_LABELS[mealType] || (mealType || '').toUpperCase(),
+  ].filter(Boolean)
+
+  const hasIngredients = showIngredients && meal.ingredients?.length > 0
+  const hasMethod = showIngredients && meal.instructions?.length > 0
+
   return (
-    <div style={{ border: NB_BORDER, boxShadow: hardShadow(3), background: NB.white, overflow: 'hidden' }}>
-      <div onClick={onToggle} style={{ padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
-        <div style={{ width: 40, height: 40, border: `2px solid ${NB.ink}`, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink, letterSpacing: 1 }}>{MEAL_LABELS[mealType] || mealType.toUpperCase()}</span>
-            {userCraving && <span style={{ fontSize: 10, color: '#777', fontWeight: 600 }}>for: &ldquo;{userCraving}&rdquo;</span>}
-          </div>
-
-          {isEditingName ? (
-            <input
-              ref={nameInputRef}
-              defaultValue={name}
-              onBlur={e => onNameChange(e.target.value || name)}
-              onKeyDown={e => { if (e.key === 'Enter') onNameChange(e.target.value || name) }}
-              onClick={e => e.stopPropagation()}
-              style={{ width: '100%', fontSize: 15, fontWeight: 700, color: NB.ink, border: 'none', borderBottom: `2px solid ${NB.ink}`, outline: 'none', background: 'transparent', padding: '2px 0', fontFamily: NB.fontDisplay, marginTop: 2 }}
-            />
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: NB.ink, lineHeight: 1.2 }}>{name}</span>
-              <button onClick={e => { e.stopPropagation(); onEditNameStart() }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center', opacity: 0.5 }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-            {[
-              { l: meal.macros.protein + 'g P', c: NB.blue },
-              { l: meal.macros.carbs + 'g C', c: NB.yellow },
-              { l: meal.macros.fat + 'g F', c: NB.pink },
-              { l: meal.macros.calories + ' kcal', c: NB.cream },
-            ].map(({ l, c }) => (
-              <span key={l} style={{ fontSize: 11, fontWeight: 700, color: NB.ink, background: c, border: `1.5px solid ${NB.ink}`, padding: '2px 8px' }}>{l}</span>
-            ))}
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Card 1: photo header + name/rename + favorite */}
+      <div style={{ border: NB_BORDER, borderRadius: 20, boxShadow: hardShadow(6), background: NB.white, overflow: 'hidden' }}>
+        <div style={{ height: 150, background: color, borderBottom: NB_BORDER, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.5"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+          <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: NB.ink, opacity: 0.6 }}>Meal Photo</span>
         </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0, marginTop: 8 }}>
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+
+        <div style={{ padding: '16px 18px 18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {userCraving && <div style={{ fontSize: 10, color: '#777', fontWeight: 600, marginBottom: 3 }}>for: &ldquo;{userCraving}&rdquo;</div>}
+              {isEditingName ? (
+                <input
+                  ref={nameInputRef}
+                  defaultValue={name}
+                  onBlur={e => onNameChange(e.target.value || name)}
+                  onKeyDown={e => { if (e.key === 'Enter') onNameChange(e.target.value || name) }}
+                  style={{ width: '100%', fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, color: NB.ink, textTransform: 'uppercase', border: 'none', borderBottom: `2px solid ${NB.ink}`, outline: 'none', background: 'transparent', padding: '2px 0', boxSizing: 'border-box' }}
+                />
+              ) : (
+                <h3 style={{ margin: 0, fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.05 }}>{name}</h3>
+              )}
+              <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#666', marginTop: 6 }}>{subtitleParts.join(' · ')}</div>
+            </div>
+            {onSaveToCookbook && (
+              <button onClick={onSaveToCookbook} disabled={saved} style={{ width: 40, height: 40, flexShrink: 0, border: `2.5px solid ${NB.ink}`, borderRadius: 11, background: saved ? NB.green : NB.pink, boxShadow: hardShadow(2), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: saved ? 'default' : 'pointer' }}>
+                {saved
+                  ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+                  : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                }
+              </button>
+            )}
+          </div>
+          {onEditNameStart && !isEditingName && (
+            <button onClick={onEditNameStart} style={{ marginTop: 14, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', padding: 12, border: `2.5px solid ${NB.ink}`, borderRadius: 12, background: NB.magenta, color: NB.white, boxShadow: hardShadow(3), cursor: 'pointer' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Rename Meal
+            </button>
+          )}
+        </div>
       </div>
 
-      {expanded && (
-        <div style={{ padding: '0 16px 14px', borderTop: `2px solid ${NB.ink}` }}>
-          {meal.prepTimeMinutes && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 12, marginBottom: 12 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-              <span style={{ fontSize: 12, color: '#555', fontWeight: 600 }}>Prep time: {meal.prepTimeMinutes} min</span>
+      {/* Card 2: swipeable macro grid */}
+      <div style={{ border: NB_BORDER, borderRadius: 20, background: NB.white, boxShadow: hardShadow(6), padding: '18px 20px 6px' }}>
+        <MacroPageGrid macros={meal.macros || {}} targets={targets} />
+      </div>
+
+      {/* Card 3: ingredients + method */}
+      {(hasIngredients || hasMethod) && (
+        <div style={{ border: NB_BORDER, borderRadius: 20, background: NB.white, boxShadow: hardShadow(6), padding: '18px 20px' }}>
+          {hasIngredients && (
+            <div style={{ marginBottom: hasMethod ? 20 : 0 }}>
+              <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>Ingredients</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {meal.ingredients.map((ing, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, border: `2.5px solid ${NB.ink}`, borderRadius: 12, padding: '9px 12px' }}>
+                    <span style={{ width: 22, height: 22, border: `2.5px solid ${NB.ink}`, borderRadius: 6, background: NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+                    </span>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: NB.ink }}>{ing}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onViewRecipe} style={{ flex: 1.2, height: 38, border: `2px solid ${NB.ink}`, background: NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-              Recipe
-            </button>
-            <button onClick={onEdit} style={{ flex: 1, height: 38, border: `2px solid ${NB.ink}`, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Adjust
-            </button>
-            <button onClick={onRegenerate} style={{ flex: 1, height: 38, border: `2px solid ${NB.ink}`, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-              Redo
-            </button>
-          </div>
+
+          {hasMethod && (
+            <div>
+              <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>Method</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {meal.instructions.map((step, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <span style={{ width: 28, height: 28, border: `2.5px solid ${NB.ink}`, borderRadius: 9, background: NB.lavender, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 14, color: NB.ink, flexShrink: 0 }}>{i + 1}</span>
+                    <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, paddingTop: 2, color: NB.ink }}>{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   )
 }
 
-function EditDrawer({ meal, mealType, onClose, onRegenerate }) {
-  const [protein, setProtein] = useState(meal?.macros?.protein ?? 30)
-  const [fat, setFat] = useState(meal?.macros?.fat ?? 14)
-  const [calories, setCalories] = useState(meal?.macros?.calories ?? 500)
+// Adjust/Log action row — deliberately rendered outside MealDetailCard's cards, sticky to the
+// bottom of the scrolling viewport so it stays reachable no matter how far the meal is scrolled.
+function MealActionBar({ onAdjust, onLog, logged }) {
+  return (
+    <div style={{ position: 'sticky', bottom: 0, display: 'flex', gap: 8, padding: '14px 0 4px', background: `linear-gradient(to top, ${NB.bg} 60%, transparent)` }}>
+      <button onClick={onAdjust} style={{ flex: 1, height: 46, border: `2px solid ${NB.ink}`, borderRadius: 12, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer' }}>
+        Adjust
+      </button>
+      <button onClick={onLog} disabled={logged} style={{ flex: 1.4, height: 46, border: NB_BORDER, borderRadius: 12, boxShadow: logged ? 'none' : hardShadow(3), background: logged ? NB.green : NB.magenta, color: logged ? NB.ink : NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: logged ? 'default' : 'pointer' }}>
+        {logged ? 'Logged ✓' : 'Log Meal'}
+      </button>
+    </div>
+  )
+}
+
+// Free-text adjust sheet — replaces the old +/- stepper drawer.
+function AdjustSheet({ onClose, onSubmit }) {
+  const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 50 }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.4)' }} />
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: NB.white, borderTop: NB_BORDER, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '24px 22px 32px' }}>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: NB.white, borderTop: NB_BORDER, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '24px 22px 32px' }}>
         <div style={{ width: 38, height: 5, background: NB.ink, margin: '0 auto 20px' }} />
-        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>Adjust this meal</div>
-        <div style={{ fontSize: 13, color: '#555', marginBottom: 22 }}>Nudge a macro and we'll re-balance the recipe.</div>
-
-        {[
-          { label: 'Protein', val: protein, set: setProtein, unit: 'g' },
-          { label: 'Fat', val: fat, set: setFat, unit: 'g' },
-          { label: 'Calories', val: calories, set: setCalories, unit: '' },
-        ].map(({ label, val, set, unit }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: NB.ink }}>{label}</span>
-            <button onClick={() => set(v => Math.max(0, v - (label === 'Calories' ? 50 : 5)))}
-              style={{ padding: '5px 12px', border: `2px solid ${NB.ink}`, background: NB.white, color: NB.ink, fontWeight: 700, fontSize: 12, cursor: 'pointer', marginRight: 8 }}>Less</button>
-            <button onClick={() => set(v => v + (label === 'Calories' ? 50 : 5))}
-              style={{ padding: '5px 12px', border: `2px solid ${NB.ink}`, background: NB.teal, color: NB.ink, fontWeight: 700, fontSize: 12, cursor: 'pointer', marginRight: 12 }}>More</button>
-            <span style={{ width: 52, fontSize: 16, fontWeight: 800, color: NB.ink, textAlign: 'right' }}>{val}{unit}</span>
-          </div>
-        ))}
-
-        <div style={{ fontSize: 11, color: '#555', marginBottom: 20, padding: '10px 14px', background: NB.cream, border: `1.5px solid ${NB.ink}` }}>
-          Re-generation always respects your diet & allergies.
-        </div>
-
+        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>What would you like to change?</div>
+        <div style={{ fontSize: 13, color: '#555', marginBottom: 16 }}>e.g. "more protein" or "don't want the chicken grilled"</div>
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder="Type your change…"
+          style={{ width: '100%', height: 90, border: NB_BORDER, borderRadius: 14, padding: '12px 14px', fontSize: 14, color: NB.ink, background: NB.white, resize: 'none', boxSizing: 'border-box', fontFamily: NB.fontDisplay, outline: 'none', marginBottom: 20 }}
+        />
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, height: 50, border: NB_BORDER, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>Cancel</button>
-          <button onClick={async () => {
-            setLoading(true)
-            await onRegenerate(mealType, { protein, fat, calories })
-            setLoading(false)
-            onClose()
-          }}
-            style={{ flex: 2, height: 50, border: NB_BORDER, boxShadow: hardShadow(3), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {loading ? 'Regenerating…' : (
-              <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-                Regenerate
-              </>
-            )}
+          <button onClick={onClose} style={{ flex: 1, height: 50, border: NB_BORDER, borderRadius: 14, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>Cancel</button>
+          <button
+            onClick={async () => {
+              if (!text.trim() || loading) return
+              setLoading(true)
+              await onSubmit(text.trim())
+              setLoading(false)
+              onClose()
+            }}
+            style={{ flex: 2, height: 50, border: NB_BORDER, borderRadius: 14, boxShadow: hardShadow(3), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}
+          >
+            {loading ? 'Adjusting…' : 'Adjust'}
           </button>
         </div>
       </div>
@@ -448,11 +521,13 @@ function EditDrawer({ meal, mealType, onClose, onRegenerate }) {
 }
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
-export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, onUpdateLoggedMacros, cookbook = [], onUpdateCookbook, onMealLogged, onNavigate }) {
+export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMacros, cookbook = [], onUpdateCookbook, onMealLogged, onNavigate }) {
   const {
     physique = 'lean_toned', dietary = [], allergies = [], name = 'Maya',
     dailyCalorieTarget = null, fitnessGoal = 'tone_recomp',
   } = userProfile
+
+  const safeLoggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, saturatedFat: 0, sodium: 0, cholesterol: 0, potassium: 0, ...loggedMacros }
 
   const targets = (() => {
     if (dailyCalorieTarget && dailyCalorieTarget > 0) {
@@ -472,12 +547,11 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
 
   // ── Core state ──────────────────────────────────────────────────────────────
   const [view, setView] = useState('home')
+  const [mealMode, setMealMode] = useState('craving') // 'craving' | 'eaten'
   const [craving, setCraving] = useState('')
   const [mealCount, setMealCount] = useState(3)
   const [generating, setGenerating] = useState(false)
   const [generatedMeals, setGeneratedMeals] = useState(null)
-  const [expandedMeal, setExpandedMeal] = useState(null)
-  const [editingMeal, setEditingMeal] = useState(null)
   const [cookbookSearch, setCookbookSearch] = useState('')
   const [viewingCookbookItem, setViewingCookbookItem] = useState(null)
   const inputRef = useRef()
@@ -485,7 +559,14 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
   // ── Craving preview state ───────────────────────────────────────────────────
   const [cravingPreview, setCravingPreview] = useState(null)
   const [cravingPreviewLoading, setCravingPreviewLoading] = useState(false)
-  const [selectedModifiers, setSelectedModifiers] = useState(new Set())
+
+  // ── Already-ate state ───────────────────────────────────────────────────────
+  const [eatenText, setEatenText] = useState('')
+  const [eatenLoading, setEatenLoading] = useState(false)
+  const [eatenResult, setEatenResult] = useState(null)
+  const [eatenLogged, setEatenLogged] = useState(false)
+  const [eatenSaved, setEatenSaved] = useState(false)
+  const [adjustingEaten, setAdjustingEaten] = useState(false)
 
   // ── Full-day builder state ──────────────────────────────────────────────────
   const [builderMode, setBuilderMode] = useState('single')
@@ -495,14 +576,16 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
   // ── Generated meal extras ───────────────────────────────────────────────────
   const [mealNames, setMealNames] = useState({})
   const [editingName, setEditingName] = useState(null)
-  const [viewingRecipe, setViewingRecipe] = useState(null)
   const [mealCravings, setMealCravings] = useState({})
   const [generatedTypes, setGeneratedTypes] = useState([])
   const [generatedFrom, setGeneratedFrom] = useState('builder')
+  const [loggedTypes, setLoggedTypes] = useState(new Set())
+  const [savedTypes, setSavedTypes] = useState(new Set())
+  const [adjustingMeal, setAdjustingMeal] = useState(null)
 
   // ── Craving preview debounce ────────────────────────────────────────────────
   useEffect(() => {
-    if (!craving.trim()) { setCravingPreview(null); setCravingPreviewLoading(false); return }
+    if (mealMode !== 'craving' || !craving.trim()) { setCravingPreview(null); setCravingPreviewLoading(false); return }
     setCravingPreviewLoading(true)
     const t = setTimeout(async () => {
       const result = await lookupFood(craving)
@@ -510,28 +593,19 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
       setCravingPreviewLoading(false)
     }, 700)
     return () => clearTimeout(t)
-  }, [craving])
+  }, [craving, mealMode])
 
   // ── Derived values ──────────────────────────────────────────────────────────
-  const remaining = Math.max(0, targets.calories - loggedMacros.calories)
-  const remainingProtein = Math.max(0, targets.protein - loggedMacros.protein)
-  const remainingCarbs = Math.max(0, targets.carbs - loggedMacros.carbs)
-  const remainingFat = Math.max(0, targets.fat - loggedMacros.fat)
+  const remaining = Math.max(0, targets.calories - safeLoggedMacros.calories)
+  const remainingProtein = Math.max(0, targets.protein - safeLoggedMacros.protein)
+  const remainingCarbs = Math.max(0, targets.carbs - safeLoggedMacros.carbs)
+  const remainingFat = Math.max(0, targets.fat - safeLoggedMacros.fat)
 
   const mealTypes = mealCount === 1 ? ['lunch'] : mealCount === 2 ? ['lunch', 'dinner'] : ['breakfast', 'lunch', 'dinner']
-  const currentMealTypes = builderMode === 'fullday' ? mealSlots.map(s => s.type) : mealTypes
 
   const splitCalories = (n) => {
     const base = Math.floor(remaining / n)
     return Array.from({ length: n }, (_, i) => i === n - 1 ? remaining - base * (n - 1) : base)
-  }
-
-  const toggleModifier = (id) => {
-    setSelectedModifiers(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
   }
 
   // ── Generate handler ─────────────────────────────────────────────────────────
@@ -547,15 +621,19 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
 
     const errorFallback = (type, calTarget, pTarget, cTarget, fTarget) => ({
       name: '⚠️ Generation failed',
-      ingredients: ['Tap "Redo" below to try again.'],
+      ingredients: ['Tap "Adjust" below to try again.'],
       macros: { calories: calTarget, protein: pTarget, carbs: cTarget, fat: fTarget },
       prepTimeMinutes: 0,
-      instructions: ['The AI could not build this recipe. Tap Redo to retry.'],
+      instructions: ['The AI could not build this recipe. Tap Adjust to retry.'],
     })
 
     let orderedTypes = []
 
-    if (builderMode === 'fullday') {
+    // A quick craving-box call (explicit quickCount) always means "generate a single
+    // quick meal", regardless of whatever builderMode was left over from a previous
+    // full-day session — builderMode only drives this when the call came from the
+    // builder screen itself (quickCount === null).
+    if (builderMode === 'fullday' && quickCount === null) {
       orderedTypes = mealSlots.map(s => s.type)
 
       await Promise.all(mealSlots.map(async (slot) => {
@@ -571,7 +649,6 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
           targetCalories: calTarget, targetProtein: pTarget, targetCarbs: cTarget, targetFat: fTarget,
           dietary, allergies, physique,
           craving: slot.craving || '',
-          modifiers: [...selectedModifiers],
         })
 
         results[slot.type] = meal || errorFallback(slot.type, calTarget, pTarget, cTarget, fTarget)
@@ -610,7 +687,6 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
           targetCarbs: cTarget, targetFat: fTarget,
           dietary, allergies, physique, craving: effectiveCraving,
           cravingOnly: isSingleCraving,
-          modifiers: [...selectedModifiers],
         })
 
         results[type] = meal || errorFallback(type, calTarget, pTarget, cTarget, fTarget)
@@ -627,64 +703,97 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
     setGeneratedTypes(orderedTypes)
     setGeneratedFrom(quickCount !== null ? 'home' : 'builder')
     setGenerating(false)
-    setExpandedMeal(orderedTypes[0] ?? null)
+    setLoggedTypes(new Set())
+    setSavedTypes(new Set())
   }
 
-  const handleRegenerateMeal = async (type, adjustments) => {
-    const n = Math.max(currentMealTypes.length, 1)
-    const calTarget = adjustments?.calories ?? Math.round(remaining / n)
-    const pTarget = adjustments?.protein ?? Math.round(remainingProtein / n)
-    const fTarget = adjustments?.fat ?? Math.round(remainingFat / n)
-    const cTarget = Math.round(remainingCarbs / n)
-
-    const meal = await suggestMeal({
-      mealType: type.startsWith('snack') ? 'snack' : type,
-      targetCalories: calTarget, targetProtein: pTarget, targetCarbs: cTarget, targetFat: fTarget,
-      dietary, allergies, physique,
-      craving: mealCravings[type] || craving,
-      modifiers: [...selectedModifiers],
-    })
-
-    if (meal) {
-      setGeneratedMeals(prev => ({ ...prev, [type]: meal }))
-      setMealNames(prev => ({ ...prev, [type]: meal.name }))
+  const handleAdjustMeal = async (type, instruction) => {
+    const meal = generatedMeals?.[type]
+    if (!meal) return
+    const updated = await adjustMeal({ meal, instruction, dietary, allergies })
+    if (updated) {
+      setGeneratedMeals(prev => ({ ...prev, [type]: updated }))
+      setMealNames(prev => ({ ...prev, [type]: updated.name }))
     }
   }
 
-  const handleLogMeals = () => {
-    if (!generatedMeals) return
-    const totals = Object.values(generatedMeals).reduce((acc, m) => ({
-      calories: acc.calories + (m.macros?.calories ?? 0),
-      protein: acc.protein + (m.macros?.protein ?? 0),
-      carbs: acc.carbs + (m.macros?.carbs ?? 0),
-      fat: acc.fat + (m.macros?.fat ?? 0),
-    }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
-
-    const newFaves = Object.entries(generatedMeals).map(([type, m]) => ({
-      name: mealNames[type] || m.name,
-      type,
-      macros: m.macros ?? { calories: 0, protein: 0, carbs: 0, fat: 0 },
-      protein: m.macros?.protein ?? 0,
-      calories: m.macros?.calories ?? 0,
-      ingredients: m.ingredients ?? [],
-      instructions: m.instructions ?? [],
-      prepTimeMinutes: m.prepTimeMinutes ?? null,
+  const handleSaveToCookbook = (type) => {
+    const meal = generatedMeals?.[type]
+    if (!meal || savedTypes.has(type)) return
+    const n = mealNames[type] || meal.name
+    if (onUpdateCookbook) onUpdateCookbook(prev => [{
+      name: n, type,
+      macros: meal.macros ?? {},
+      protein: meal.macros?.protein ?? 0,
+      calories: meal.macros?.calories ?? 0,
+      ingredients: meal.ingredients ?? [],
+      instructions: meal.instructions ?? [],
+      prepTimeMinutes: meal.prepTimeMinutes ?? null,
       savedAt: new Date().toISOString().slice(0, 10),
-    }))
-    if (onUpdateCookbook) onUpdateCookbook(prev => [...newFaves, ...prev].slice(0, 20))
-    if (onUpdateLoggedMacros) {
-      onUpdateLoggedMacros(prev => ({
-        calories: prev.calories + totals.calories, protein: prev.protein + totals.protein,
-        carbs: prev.carbs + totals.carbs, fat: prev.fat + totals.fat,
-      }))
-      const firstName = Object.values(mealNames)[0] || 'Today\'s meal plan'
-      if (onMealLogged) onMealLogged({ name: firstName, macros: totals })
+    }, ...prev].slice(0, 20))
+    const nextSaved = new Set([...savedTypes, type])
+    setSavedTypes(nextSaved)
+    // Leave the review screen once there's nothing left to save — either a single
+    // generated meal, or every meal in a full-day batch has now been saved.
+    if (nextSaved.size >= generatedTypes.length) {
+      setBuilderMode('single')
+      setView('home')
     }
+  }
+
+  const handleLogOneMeal = (type) => {
+    const meal = generatedMeals?.[type]
+    if (!meal || loggedTypes.has(type)) return
+    const m = meal.macros || {}
+    if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => addMacros(prev, m))
+    if (onMealLogged) onMealLogged({ name: mealNames[type] || meal.name, macros: m, ingredients: meal.ingredients || [] }, { offerShare: false })
+    setLoggedTypes(prev => new Set([...prev, type]))
+  }
+
+  // ── Already-ate handlers ─────────────────────────────────────────────────────
+  const handleIdentifyEaten = async () => {
+    if (!eatenText.trim()) return
+    setView('eaten')
+    setEatenResult(null)
+    setEatenLogged(false)
+    setEatenLoading(true)
+    const result = await identifyEatenFood(eatenText.trim())
+    setEatenResult(result)
+    setEatenLoading(false)
+  }
+
+  const handleAdjustEaten = async (instruction) => {
+    const combined = `${eatenText.trim()}. Correction: ${instruction}`
+    const result = await identifyEatenFood(combined)
+    if (result) {
+      setEatenResult(result)
+      setEatenText(combined)
+    }
+  }
+
+  const handleLogEaten = () => {
+    if (!eatenResult || eatenResult.error || eatenLogged) return
+    const m = eatenResult.macros || {}
+    if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => addMacros(prev, m))
+    if (onMealLogged) onMealLogged({ name: eatenResult.identifiedAs, macros: m }, { offerShare: false })
+    setEatenLogged(true)
+  }
+
+  const handleSaveEatenToCookbook = () => {
+    if (!eatenResult || eatenResult.error || eatenSaved) return
+    const m = eatenResult.macros || {}
+    if (onUpdateCookbook) onUpdateCookbook(prev => [{
+      name: eatenResult.identifiedAs, type: 'snack',
+      macros: m,
+      protein: m.protein ?? 0,
+      calories: m.calories ?? 0,
+      ingredients: [],
+      instructions: [],
+      prepTimeMinutes: null,
+      savedAt: new Date().toISOString().slice(0, 10),
+    }, ...prev].slice(0, 20))
+    setEatenSaved(true)
     setView('home')
-    setGeneratedMeals(null)
-    setCraving('')
-    setBuilderMode('single')
-    setSelectedModifiers(new Set())
   }
 
   // ═══ HOME VIEW ════════════════════════════════════════════════════════════════
@@ -703,107 +812,134 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
-          {/* Macro summary */}
-          <div style={{ border: NB_BORDER, boxShadow: hardShadow(5), padding: '18px 20px', background: NB.white, marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-              <MacroRing consumed={loggedMacros.calories} total={targets.calories} />
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <MacroBar label="Protein" consumed={loggedMacros.protein} total={targets.protein} color={NB.blue} />
-                <MacroBar label="Carbs" consumed={loggedMacros.carbs} total={targets.carbs} color={NB.yellow} />
-                <MacroBar label="Fat" consumed={loggedMacros.fat} total={targets.fat} color={NB.pink} />
+          {/* ── Macro Ring card ──────────────────────────────────────────── */}
+          <div style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(5), background: NB.white, padding: '20px 22px', marginBottom: 16 }}>
+            <div style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: NB.ink, marginBottom: 16 }}>Macro Ring</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <MacroRing protein={safeLoggedMacros.protein} carbs={safeLoggedMacros.carbs} fat={safeLoggedMacros.fat} calories={safeLoggedMacros.calories} size={110} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[['Protein', safeLoggedMacros.protein, NB.magenta], ['Carbs', safeLoggedMacros.carbs, NB.yellow], ['Fat', safeLoggedMacros.fat, NB.pink]].map(([label, val, color]) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 16, height: 16, borderRadius: 5, background: color, border: `2px solid ${NB.ink}`, flexShrink: 0 }} />
+                    <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, color: NB.ink }}>{label} {Math.round(val)}g</span>
+                  </div>
+                ))}
               </div>
             </div>
+            <div style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: NB.ink, margin: '20px 0 8px' }}>Calories</div>
+            <div style={{ border: NB_BORDER, borderRadius: 999, background: '#F3ECFC', height: 22, padding: 3, boxSizing: 'border-box' }}>
+              <div style={{ height: '100%', width: `${Math.min(100, Math.round((safeLoggedMacros.calories / Math.max(1, targets.calories)) * 100))}%`, borderRadius: 999, background: NB.magenta, transition: 'width 0.5s ease' }} />
+            </div>
+            <div style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, color: NB.ink, marginTop: 6 }}>{Math.round(safeLoggedMacros.calories).toLocaleString()} / {targets.calories.toLocaleString()} kcal</div>
           </div>
 
-          {/* Craving input card */}
-          <div style={{ border: NB_BORDER, boxShadow: hardShadow(3), background: NB.white, padding: '16px', marginBottom: 14 }}>
-            <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>What are you craving?</div>
-
-            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-              <input
-                ref={inputRef}
-                value={craving}
-                onChange={e => { setCraving(e.target.value); if (!e.target.value.trim()) setCravingPreview(null) }}
-                onKeyDown={e => e.key === 'Enter' && craving.trim() && handleGenerate(1)}
-                placeholder="Type a food or meal…"
-                style={{ flex: 1, height: 44, border: `2px solid ${NB.ink}`, padding: '0 14px', fontSize: 14, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none' }}
-              />
-              <button
-                onClick={() => craving.trim() && handleGenerate(1)}
-                style={{ width: 44, height: 44, border: `2px solid ${NB.ink}`, background: craving.trim() ? NB.magenta : NB.white, cursor: craving.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={craving.trim() ? NB.white : NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Calorie preview */}
-            {(cravingPreviewLoading || cravingPreview) && (
-              <div style={{ border: `2px solid ${NB.ink}`, background: cravingPreview ? prevColor : NB.cream, padding: '10px 12px', marginBottom: 10 }}>
-                {cravingPreviewLoading && !cravingPreview ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.7s linear infinite', flexShrink: 0 }} />
-                    <style>{`@keyframes mealSpin { to { transform: rotate(360deg) } }`}</style>
-                    <span style={{ fontSize: 13, color: NB.ink, fontWeight: 600 }}>Estimating calories…</span>
-                  </div>
-                ) : cravingPreview ? (
-                  <>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>{cravingPreview.name}</div>
-                        <div style={{ fontSize: 11, color: NB.ink }}>{cravingPreview.servingSize}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontFamily: NB.fontDisplay, fontSize: 20, fontWeight: 900, color: NB.ink, lineHeight: 1 }}>{cravingPreview.calories}</div>
-                        <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.ink, fontWeight: 700 }}>KCAL</div>
-                      </div>
-                    </div>
-                    <div style={{ height: 6, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden', marginBottom: 6 }}>
-                      <div style={{ width: `${Math.min(prevPct * 100, 100)}%`, height: '100%', background: NB.ink, transition: 'width 0.5s' }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, color: NB.ink }}>P {cravingPreview.protein}g · C {cravingPreview.carbs}g · F {cravingPreview.fat}g</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: NB.ink }}>
-                        {remaining > 0 ? `${Math.round(prevPct * 100)}% of ${remaining} kcal left` : 'Budget full'}
-                      </span>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-            )}
-
-            {/* Modifier chips */}
-            {cravingPreview && (
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 7 }}>TWEAK THIS MEAL:</div>
-                <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                  {MODIFIER_CHIPS.map(chip => {
-                    const sel = selectedModifiers.has(chip.id)
-                    return (
-                      <button key={chip.id} onClick={() => toggleModifier(chip.id)}
-                        style={{ padding: '6px 11px', border: `2px solid ${NB.ink}`, background: sel ? NB.teal : NB.white, fontSize: 12, fontWeight: sel ? 800 : 600, color: NB.ink, cursor: 'pointer' }}>
-                        {chip.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Quick tags */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {CRAVING_TAGS.map(tag => (
-                <button key={tag} onClick={() => handleGenerate(1, tag)}
-                  style={{ padding: '6px 14px', border: `2px solid ${NB.ink}`, background: craving === tag ? NB.yellow : NB.white, fontSize: 13, fontWeight: 600, color: NB.ink, cursor: 'pointer' }}>
-                  {tag}
+          {/* Craving / Already ate card */}
+          <div style={{ border: NB_BORDER, borderRadius: 20, boxShadow: hardShadow(3), background: NB.white, padding: '16px', marginBottom: 14 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              {[['craving', 'Craving'], ['eaten', 'Already ate']].map(([id, label]) => (
+                <button key={id} onClick={() => setMealMode(id)}
+                  style={{ flex: 1, height: 36, border: `2px solid ${NB.ink}`, borderRadius: 10, background: mealMode === id ? NB.teal : NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', color: NB.ink, cursor: 'pointer' }}>
+                  {label}
                 </button>
               ))}
             </div>
 
-            {remaining > 0 && (
-              <div style={{ marginTop: 10, fontSize: 12, color: NB.ink, fontWeight: 600 }}>
-                We&rsquo;ll fit meals to your <strong>{remaining} kcal</strong> left today.
-              </div>
+            {mealMode === 'craving' ? (
+              <>
+                <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>What are you craving?</div>
+
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  <input
+                    ref={inputRef}
+                    value={craving}
+                    onChange={e => { setCraving(e.target.value); if (!e.target.value.trim()) setCravingPreview(null) }}
+                    onKeyDown={e => e.key === 'Enter' && craving.trim() && handleGenerate(1)}
+                    placeholder="Type a food or meal…"
+                    style={{ flex: 1, height: 44, border: `2px solid ${NB.ink}`, borderRadius: 12, padding: '0 14px', fontSize: 14, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none' }}
+                  />
+                  <button
+                    onClick={() => craving.trim() && handleGenerate(1)}
+                    style={{ width: 44, height: 44, borderRadius: 12, border: `2px solid ${NB.ink}`, background: craving.trim() ? NB.magenta : NB.white, cursor: craving.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={craving.trim() ? NB.white : NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Calorie preview */}
+                {(cravingPreviewLoading || cravingPreview) && (
+                  <div style={{ border: `2px solid ${NB.ink}`, borderRadius: 12, background: cravingPreview ? prevColor : NB.cream, padding: '10px 12px', marginBottom: 10 }}>
+                    {cravingPreviewLoading && !cravingPreview ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.7s linear infinite', flexShrink: 0 }} />
+                        <style>{`@keyframes mealSpin { to { transform: rotate(360deg) } }`}</style>
+                        <span style={{ fontSize: 13, color: NB.ink, fontWeight: 600 }}>Estimating calories…</span>
+                      </div>
+                    ) : cravingPreview ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>{cravingPreview.name}</div>
+                            <div style={{ fontSize: 11, color: NB.ink }}>{cravingPreview.servingSize}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontFamily: NB.fontDisplay, fontSize: 20, fontWeight: 900, color: NB.ink, lineHeight: 1 }}>{cravingPreview.calories}</div>
+                            <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.ink, fontWeight: 700 }}>KCAL</div>
+                          </div>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden', marginBottom: 6 }}>
+                          <div style={{ width: `${Math.min(prevPct * 100, 100)}%`, height: '100%', background: NB.ink, transition: 'width 0.5s' }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: NB.ink }}>P {cravingPreview.protein}g · C {cravingPreview.carbs}g · F {cravingPreview.fat}g</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: NB.ink }}>
+                            {remaining > 0 ? `${Math.round(prevPct * 100)}% of ${remaining} kcal left` : 'Budget full'}
+                          </span>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Quick tags */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {CRAVING_TAGS.map(tag => (
+                    <button key={tag} onClick={() => handleGenerate(1, tag)}
+                      style={{ padding: '6px 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: craving === tag ? NB.yellow : NB.white, fontSize: 13, fontWeight: 600, color: NB.ink, cursor: 'pointer' }}>
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+
+                {remaining > 0 && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: NB.ink, fontWeight: 600 }}>
+                    We&rsquo;ll fit meals to your <strong>{remaining} kcal</strong> left today.
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>What did you eat?</div>
+
+                <div style={{ fontSize: 12, color: '#555', marginBottom: 10 }}>Tell us what you ate and we'll estimate the macros.</div>
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={eatenText}
+                    onChange={e => setEatenText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && eatenText.trim() && handleIdentifyEaten()}
+                    placeholder="e.g. 'McDonald's medium fries'"
+                    style={{ flex: 1, height: 44, border: `2px solid ${NB.ink}`, borderRadius: 12, padding: '0 14px', fontSize: 14, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none' }}
+                  />
+                  <button
+                    onClick={() => eatenText.trim() && handleIdentifyEaten()}
+                    style={{ width: 44, height: 44, borderRadius: 12, border: `2px solid ${NB.ink}`, background: eatenText.trim() ? NB.magenta : NB.white, cursor: eatenText.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={eatenText.trim() ? NB.white : NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
+                    </svg>
+                  </button>
+                </div>
+              </>
             )}
           </div>
 
@@ -813,15 +949,15 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
             setMealSlots(slots)
             setBuilderMode('fullday')
             setView('builder')
-          }} style={{ width: '100%', border: NB_BORDER, background: NB.ink, padding: '16px 18px', cursor: 'pointer', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
-            <div style={{ width: 44, height: 44, border: `2px solid ${NB.white}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={NB.yellow} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
+          }} style={{ width: '100%', border: NB_BORDER, borderRadius: 20, background: NB.lavender, padding: '16px 18px', cursor: 'pointer', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, border: `2px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.white }}>Build my full day</div>
-              <div style={{ fontSize: 12, color: '#bbb' }}>Plan all your meals + snacks for today</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Build my full day</div>
+              <div style={{ fontSize: 12, color: '#555' }}>Plan all your meals + snacks for today</div>
             </div>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
 
           {/* Cookbook favourites */}
@@ -833,8 +969,8 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
             <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
               {cookbook.slice(0, 4).map((item, i) => (
                 <div key={i} onClick={() => setViewingCookbookItem(item)}
-                  style={{ flexShrink: 0, width: 120, border: `2px solid ${NB.ink}`, boxShadow: hardShadow(2), background: NB.white, padding: '12px', cursor: 'pointer' }}>
-                  <div style={{ width: 36, height: 36, border: `1.5px solid ${NB.ink}`, background: MEAL_COLORS[item.type] || NB.teal, marginBottom: 8 }} />
+                  style={{ flexShrink: 0, width: 120, border: `2px solid ${NB.ink}`, borderRadius: 14, boxShadow: hardShadow(2), background: NB.white, padding: '12px', cursor: 'pointer' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 9, border: `1.5px solid ${NB.ink}`, background: MEAL_COLORS[item.type] || NB.teal, marginBottom: 8 }} />
                   <div style={{ fontSize: 12, fontWeight: 700, color: NB.ink, lineHeight: 1.3, marginBottom: 4 }}>{item.name}</div>
                   <div style={{ fontSize: 11, color: '#555' }}>{item.protein}g P · {item.calories} kcal</div>
                 </div>
@@ -850,19 +986,63 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
             item={viewingCookbookItem}
             onClose={() => setViewingCookbookItem(null)}
             onLog={() => {
-              const m = viewingCookbookItem.macros || { calories: viewingCookbookItem.calories || 0, protein: viewingCookbookItem.protein || 0, carbs: 0, fat: 0 }
-              if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => ({
-                calories: prev.calories + (m.calories || 0),
-                protein: prev.protein + (m.protein || 0),
-                carbs: prev.carbs + (m.carbs || 0),
-                fat: prev.fat + (m.fat || 0),
-              }))
+              const m = viewingCookbookItem.macros || { calories: viewingCookbookItem.calories || 0, protein: viewingCookbookItem.protein || 0 }
+              if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => addMacros(prev, m))
               if (onMealLogged) onMealLogged({ name: viewingCookbookItem.name || 'Meal', macros: m, ingredients: viewingCookbookItem.ingredients || [] })
               setViewingCookbookItem(null)
             }}
           />
         )}
       </>
+    )
+  }
+
+  // ═══ EATEN VIEW ═══════════════════════════════════════════════════════════════
+  if (view === 'eaten') {
+    return (
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <StatusBar />
+        <div style={{ padding: '8px 22px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <button onClick={() => setView('home')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            <span style={{ fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, color: NB.ink, textTransform: 'uppercase' }}>Your meals</span>
+          </button>
+          {eatenResult && !eatenResult.error && (
+            <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, color: NB.ink }}>{Math.round(eatenResult.macros?.calories || 0)} kcal</span>
+          )}
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 24px' }}>
+          {eatenLoading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', gap: 16 }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', border: `4px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.8s linear infinite' }} />
+              <div style={{ fontSize: 15, fontWeight: 700, color: NB.ink, textAlign: 'center' }}>Identifying what you ate…</div>
+              <style>{`@keyframes mealSpin { to { transform: rotate(360deg) } }`}</style>
+            </div>
+          ) : eatenResult?.error ? (
+            <div style={{ padding: '12px 16px', border: NB_BORDER, borderRadius: 14, background: NB.red }}>
+              <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>Couldn&rsquo;t identify that — try being more specific.</span>
+            </div>
+          ) : eatenResult ? (
+            <>
+              <MealDetailCard
+                meal={eatenResult}
+                mealType="snack"
+                name={eatenResult.identifiedAs}
+                showIngredients={false}
+                onSaveToCookbook={handleSaveEatenToCookbook}
+                saved={eatenSaved}
+                targets={targets}
+              />
+              <MealActionBar onAdjust={() => setAdjustingEaten(true)} onLog={handleLogEaten} logged={eatenLogged} />
+            </>
+          ) : null}
+        </div>
+
+        {adjustingEaten && (
+          <AdjustSheet onClose={() => setAdjustingEaten(false)} onSubmit={handleAdjustEaten} />
+        )}
+      </div>
     )
   }
 
@@ -894,7 +1074,7 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
           </div>
 
           {!isFullDay && craving && (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', border: `2px solid ${NB.ink}`, background: NB.yellow, marginBottom: 16 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.yellow, marginBottom: 16 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
               <span style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>Craving: {craving}</span>
               <button onClick={() => setCraving('')} style={{ background: 'none', border: 'none', fontSize: 11, color: NB.ink, cursor: 'pointer', fontWeight: 800, textDecoration: 'underline' }}>edit</button>
@@ -907,8 +1087,8 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
               {[1, 2, 3, 4].map(n => (
                 <button key={n} onClick={() => isFullDay ? updateSlotCounts(n, undefined) : setMealCount(n)}
-                  style={{ height: isFullDay ? 58 : 88, border: `2.5px solid ${NB.ink}`, background: mealCount === n ? NB.teal : NB.white, boxShadow: mealCount === n ? hardShadow(3) : hardShadow(1), position: 'relative', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  {mealCount === n && <div style={{ position: 'absolute', top: 5, right: 7, fontSize: 10, fontWeight: 800, color: NB.white, background: NB.ink, padding: '2px 5px' }}>✓</div>}
+                  style={{ height: isFullDay ? 58 : 88, border: `2.5px solid ${NB.ink}`, borderRadius: 14, background: mealCount === n ? NB.teal : NB.white, boxShadow: mealCount === n ? hardShadow(3) : hardShadow(1), position: 'relative', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  {mealCount === n && <div style={{ position: 'absolute', top: 5, right: 7, fontSize: 10, fontWeight: 800, color: NB.white, background: NB.ink, borderRadius: 5, padding: '2px 5px' }}>✓</div>}
                   <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: isFullDay ? 24 : 32, color: NB.ink, lineHeight: 1 }}>{n}</span>
                   {!isFullDay && <span style={{ fontFamily: NB.fontMono, fontSize: 10, color: NB.ink, marginTop: 3, fontWeight: 700, textTransform: 'uppercase' }}>{n === 1 ? 'single' : 'meals'}</span>}
                 </button>
@@ -923,8 +1103,8 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
                 {[0, 1, 2, 3].map(n => (
                   <button key={n} onClick={() => updateSlotCounts(undefined, n)}
-                    style={{ height: 58, border: `2.5px solid ${NB.ink}`, background: snackCount === n ? NB.teal : NB.white, boxShadow: snackCount === n ? hardShadow(3) : hardShadow(1), position: 'relative', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {snackCount === n && <div style={{ position: 'absolute', top: 5, right: 7, fontSize: 10, fontWeight: 800, color: NB.white, background: NB.ink, padding: '2px 5px' }}>✓</div>}
+                    style={{ height: 58, border: `2.5px solid ${NB.ink}`, borderRadius: 14, background: snackCount === n ? NB.teal : NB.white, boxShadow: snackCount === n ? hardShadow(3) : hardShadow(1), position: 'relative', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {snackCount === n && <div style={{ position: 'absolute', top: 5, right: 7, fontSize: 10, fontWeight: 800, color: NB.white, background: NB.ink, borderRadius: 5, padding: '2px 5px' }}>✓</div>}
                     <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 24, color: NB.ink }}>{n}</span>
                   </button>
                 ))}
@@ -949,7 +1129,7 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
                 const diff = totalSlotCals - remaining
                 const ok = Math.abs(diff) < 50
                 return (
-                  <div style={{ padding: '7px 12px', border: `2px solid ${NB.ink}`, background: ok ? NB.green : NB.yellow, marginBottom: 16 }}>
+                  <div style={{ padding: '7px 12px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: ok ? NB.green : NB.yellow, marginBottom: 16 }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: NB.ink }}>
                       {ok
                         ? `${totalSlotCals} kcal total ✓`
@@ -968,14 +1148,14 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
                   const c = MEAL_COLORS[slot.type] || NB.teal
                   return (
                     <div key={slot.type} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 28, height: 28, border: `1.5px solid ${NB.ink}`, background: c, flexShrink: 0 }} />
+                      <div style={{ width: 28, height: 28, borderRadius: 8, border: `1.5px solid ${NB.ink}`, background: c, flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.ink, letterSpacing: 0.5, marginBottom: 3 }}>{slot.label} · {slot.calories} kcal</div>
                         <input
                           value={slot.craving}
                           onChange={e => setMealSlots(prev => prev.map((s, i) => i === idx ? { ...s, craving: e.target.value } : s))}
                           placeholder={`Craving for ${slot.label.toLowerCase()}… (optional)`}
-                          style={{ width: '100%', height: 38, border: `1.5px solid ${NB.ink}`, padding: '0 11px', fontSize: 12, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none', background: NB.white, boxSizing: 'border-box' }}
+                          style={{ width: '100%', height: 38, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '0 11px', fontSize: 12, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none', background: NB.white, boxSizing: 'border-box' }}
                         />
                       </div>
                     </div>
@@ -987,12 +1167,12 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
 
           {/* Daily target card */}
           {!isFullDay && (
-            <div style={{ border: NB_BORDER, background: NB.white, padding: '14px 16px', marginBottom: 14 }}>
+            <div style={{ border: NB_BORDER, borderRadius: 16, background: NB.white, padding: '14px 16px', marginBottom: 14 }}>
               <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 4 }}>DAILY TARGET</div>
               <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink, marginBottom: 8 }}>{remaining.toLocaleString()} kcal remaining</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 {[['P', targets.protein + 'g', NB.blue], ['C', targets.carbs + 'g', NB.yellow], ['F', targets.fat + 'g', NB.pink]].map(([l, v, c]) => (
-                  <div key={l} style={{ flex: 1, padding: '5px 8px', border: `1.5px solid ${NB.ink}`, background: c, textAlign: 'center' }}>
+                  <div key={l} style={{ flex: 1, padding: '5px 8px', border: `1.5px solid ${NB.ink}`, borderRadius: 8, background: c, textAlign: 'center' }}>
                     <div style={{ fontSize: 11, fontWeight: 800, color: NB.ink }}>{l} {v}</div>
                   </div>
                 ))}
@@ -1002,9 +1182,9 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
 
           {/* Auto-split preview (single mode) */}
           {!isFullDay && (
-            <div style={{ border: NB_BORDER, background: NB.white, padding: '14px 16px', marginBottom: 16 }}>
+            <div style={{ border: NB_BORDER, borderRadius: 16, background: NB.white, padding: '14px 16px', marginBottom: 16 }}>
               <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 10 }}>AUTO-SPLIT PREVIEW</div>
-              <div style={{ height: 10, border: `1.5px solid ${NB.ink}`, overflow: 'hidden', display: 'flex', marginBottom: 8 }}>
+              <div style={{ height: 10, borderRadius: 5, border: `1.5px solid ${NB.ink}`, overflow: 'hidden', display: 'flex', marginBottom: 8 }}>
                 {mealTypes.map((t, i) => (
                   <div key={t} style={{ flex: 1, background: MEAL_COLORS[t] || NB.teal, marginRight: i < mealTypes.length - 1 ? 2 : 0 }} />
                 ))}
@@ -1019,19 +1199,11 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
               </div>
             </div>
           )}
-
-          {selectedModifiers.size > 0 && (
-            <div style={{ padding: '10px 14px', border: `2px solid ${NB.ink}`, background: NB.lavender, marginBottom: 14 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>
-                {[...selectedModifiers].map(id => MODIFIER_CHIPS.find(c => c.id === id)?.label).join(' · ')}
-              </span>
-            </div>
-          )}
         </div>
 
         <div style={{ padding: '10px 22px 20px', flexShrink: 0 }}>
-          <button onClick={handleGenerate}
-            style={{ width: '100%', height: 54, border: NB_BORDER, boxShadow: hardShadow(4), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <button onClick={() => handleGenerate()}
+            style={{ width: '100%', height: 54, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(4), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l2.2 5.5L20 9l-4.5 3.8L17 19l-5-3-5 3 1.5-6.2L4 9l5.8-.5z" /></svg>
             {isFullDay ? `Generate full day (${mealSlots.length} meals)` : 'Generate meals'}
           </button>
@@ -1057,7 +1229,7 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
           <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, color: NB.ink }}>{totalGenerated} kcal</span>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 24px' }}>
           {generating ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', gap: 16 }}>
               <div style={{ width: 56, height: 56, borderRadius: '50%', border: `4px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.8s linear infinite' }} />
@@ -1066,69 +1238,30 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
               <style>{`@keyframes mealSpin { to { transform: rotate(360deg) } }`}</style>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 28, paddingBottom: 8 }}>
               {generatedTypes.map(type => generatedMeals?.[type] && (
-                <MealCard
-                  key={type}
-                  meal={generatedMeals[type]}
-                  mealType={type}
-                  name={mealNames[type] || generatedMeals[type].name}
-                  userCraving={mealCravings[type]}
-                  isEditingName={editingName === type}
-                  onEditNameStart={() => setEditingName(type)}
-                  onNameChange={(newName) => { setMealNames(prev => ({ ...prev, [type]: newName })); setEditingName(null) }}
-                  expanded={expandedMeal === type}
-                  onToggle={() => setExpandedMeal(expandedMeal === type ? null : type)}
-                  onEdit={() => setEditingMeal(type)}
-                  onViewRecipe={() => setViewingRecipe(type)}
-                  onRegenerate={() => handleRegenerateMeal(type)}
-                />
+                <div key={type} style={{ display: 'flex', flexDirection: 'column' }}>
+                  <MealDetailCard
+                    meal={generatedMeals[type]}
+                    mealType={type}
+                    name={mealNames[type] || generatedMeals[type].name}
+                    userCraving={mealCravings[type]}
+                    isEditingName={editingName === type}
+                    onEditNameStart={() => setEditingName(type)}
+                    onNameChange={(newName) => { setMealNames(prev => ({ ...prev, [type]: newName })); setEditingName(null) }}
+                    onSaveToCookbook={() => handleSaveToCookbook(type)}
+                    saved={savedTypes.has(type)}
+                    targets={targets}
+                  />
+                  <MealActionBar onAdjust={() => setAdjustingMeal(type)} onLog={() => handleLogOneMeal(type)} logged={loggedTypes.has(type)} />
+                </div>
               ))}
             </div>
           )}
         </div>
 
-        {!generating && (
-          <div style={{ padding: '10px 22px 20px', flexShrink: 0 }}>
-            <button onClick={handleLogMeals}
-              style={{ width: '100%', height: 54, border: NB_BORDER, boxShadow: hardShadow(4), background: NB.ink, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-              Log these meals
-            </button>
-          </div>
-        )}
-
-        {editingMeal && generatedMeals?.[editingMeal] && (
-          <EditDrawer
-            meal={generatedMeals[editingMeal]}
-            mealType={editingMeal}
-            onClose={() => setEditingMeal(null)}
-            onRegenerate={handleRegenerateMeal}
-          />
-        )}
-
-        {viewingRecipe && generatedMeals?.[viewingRecipe] && (
-          <RecipeDrawer
-            meal={generatedMeals[viewingRecipe]}
-            mealName={mealNames[viewingRecipe] || generatedMeals[viewingRecipe].name}
-            mealType={viewingRecipe}
-            onClose={() => setViewingRecipe(null)}
-            onSaveToCookbook={() => {
-              const m = generatedMeals[viewingRecipe]
-              const n = mealNames[viewingRecipe] || m.name
-              if (onUpdateCookbook) onUpdateCookbook(prev => [{
-                name: n, type: viewingRecipe,
-                macros: m.macros ?? { calories: 0, protein: 0, carbs: 0, fat: 0 },
-                protein: m.macros?.protein ?? 0,
-                calories: m.macros?.calories ?? 0,
-                ingredients: m.ingredients ?? [],
-                instructions: m.instructions ?? [],
-                prepTimeMinutes: m.prepTimeMinutes ?? null,
-                savedAt: new Date().toISOString().slice(0, 10),
-              }, ...prev].slice(0, 20))
-              setViewingRecipe(null)
-            }}
-          />
+        {adjustingMeal && generatedMeals?.[adjustingMeal] && (
+          <AdjustSheet onClose={() => setAdjustingMeal(null)} onSubmit={(instruction) => handleAdjustMeal(adjustingMeal, instruction)} />
         )}
       </div>
     )
@@ -1154,16 +1287,16 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
             value={cookbookSearch}
             onChange={e => setCookbookSearch(e.target.value)}
             placeholder="Search saved meals"
-            style={{ width: '100%', height: 44, border: NB_BORDER, paddingLeft: 38, paddingRight: 14, fontSize: 14, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', height: 44, border: NB_BORDER, borderRadius: 12, paddingLeft: 38, paddingRight: 14, fontSize: 14, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingBottom: 16 }}>
           {cookbook.filter(m => m.name.toLowerCase().includes(cookbookSearch.toLowerCase())).map((item, i) => (
             <div key={i} onClick={() => setViewingCookbookItem(item)}
-              style={{ border: `2px solid ${NB.ink}`, boxShadow: hardShadow(2), background: NB.white, padding: '14px', cursor: 'pointer' }}>
+              style={{ border: `2px solid ${NB.ink}`, borderRadius: 14, boxShadow: hardShadow(2), background: NB.white, padding: '14px', cursor: 'pointer' }}>
               <div style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.ink, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' }}>{slotLabel(item.type)}</div>
-              <div style={{ width: 32, height: 32, border: `1.5px solid ${NB.ink}`, background: MEAL_COLORS[item.type] || NB.teal, marginBottom: 8 }} />
+              <div style={{ width: 32, height: 32, borderRadius: 9, border: `1.5px solid ${NB.ink}`, background: MEAL_COLORS[item.type] || NB.teal, marginBottom: 8 }} />
               <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink, lineHeight: 1.3, marginBottom: 4 }}>{item.name}</div>
               <div style={{ fontSize: 11, color: '#555' }}>{item.protein}g P · {item.calories} kcal</div>
             </div>
@@ -1174,13 +1307,8 @@ export default function Meals({ userProfile = {}, loggedMacros = { calories: 0, 
               item={viewingCookbookItem}
               onClose={() => setViewingCookbookItem(null)}
               onLog={() => {
-                const m = viewingCookbookItem.macros || { calories: viewingCookbookItem.calories || 0, protein: viewingCookbookItem.protein || 0, carbs: 0, fat: 0 }
-                if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => ({
-                  calories: prev.calories + (m.calories || 0),
-                  protein: prev.protein + (m.protein || 0),
-                  carbs: prev.carbs + (m.carbs || 0),
-                  fat: prev.fat + (m.fat || 0),
-                }))
+                const m = viewingCookbookItem.macros || { calories: viewingCookbookItem.calories || 0, protein: viewingCookbookItem.protein || 0 }
+                if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => addMacros(prev, m))
                 if (onMealLogged) onMealLogged({ name: viewingCookbookItem.name || 'Meal', macros: m, ingredients: viewingCookbookItem.ingredients || [] })
                 setViewingCookbookItem(null)
               }}

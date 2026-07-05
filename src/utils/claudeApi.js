@@ -1,8 +1,27 @@
+import { supabase } from '../lib/supabase'
+
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
 const API_URL = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-haiku-4-5-20251001'
 
-async function callClaude(systemPrompt, userMessage, maxTokens = 512) {
+// Once the proxy fails at the transport level, skip it for the rest of the
+// session instead of paying a failed round-trip on every call.
+let proxyUnavailable = false
+
+// All Claude traffic goes through the claude-proxy Supabase Edge Function
+// (key lives server-side). The direct browser call only exists as a local-dev
+// fallback and requires VITE_ANTHROPIC_API_KEY in .env.
+async function anthropicRequest({ system, messages, maxTokens = 512 }) {
+  if (!proxyUnavailable) {
+    const { data, error } = await supabase.functions.invoke('claude-proxy', {
+      body: { system, messages, max_tokens: maxTokens },
+    })
+    if (!error && data?.content) return data
+    if (!API_KEY) throw new Error(error?.message || 'Claude proxy error')
+    proxyUnavailable = true
+    console.warn('[claudeApi] proxy unavailable, falling back to direct dev call:', error?.message)
+  }
+
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: {
@@ -11,12 +30,7 @@ async function callClaude(systemPrompt, userMessage, maxTokens = 512) {
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
-    }),
+    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, system, messages }),
   })
 
   if (!res.ok) {
@@ -24,7 +38,15 @@ async function callClaude(systemPrompt, userMessage, maxTokens = 512) {
     throw new Error(err?.error?.message || `Claude API error ${res.status}`)
   }
 
-  const data = await res.json()
+  return res.json()
+}
+
+async function callClaude(systemPrompt, userMessage, maxTokens = 512) {
+  const data = await anthropicRequest({
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userMessage }],
+    maxTokens,
+  })
   return data.content[0].text
 }
 
@@ -49,25 +71,14 @@ Return ONLY the JSON object — no explanation, no markdown.`
   }
 }
 
-const MODIFIER_INSTRUCTIONS = {
-  more_protein:   'Maximise protein content — aim well above the protein target if possible.',
-  less_calories:  'Keep calories as low as possible within the macro budget.',
-  more_calories:  'Make this a higher-calorie, more filling meal.',
-  higher_fibre:   'Include high-fibre ingredients (beans, legumes, veg, whole grains).',
-  lower_carbs:    'Minimise carbohydrates — use vegetable or protein-based substitutes.',
-  higher_volume:  'Maximise food volume and satiety for the same calories (lots of veg, broth, salad).',
-  quick_prep:     'Keep prep time under 15 minutes. Simple, minimal ingredients.',
-}
+const MACRO_SCHEMA = `{"calories": number, "protein": number, "carbs": number, "fat": number, "fiber": number, "sugar": number, "saturatedFat": number, "sodium": number, "cholesterol": number, "potassium": number}`
 
 // --- Meal Suggestion ---
-// Returns { name, ingredients[], macros{calories,protein,carbs,fat}, prepTimeMinutes, instructions[] } or null
+// Returns { name, ingredients[], macros{...full macro schema...}, prepTimeMinutes, instructions[] } or null
 // cravingOnly=true: generate the craved dish authentically — no calorie padding
-export async function suggestMeal({ mealType, targetCalories, targetProtein, targetCarbs, targetFat, dietary, allergies, physique, craving, modifiers = [], cravingOnly = false }) {
+export async function suggestMeal({ mealType, targetCalories, targetProtein, targetCarbs, targetFat, dietary, allergies, physique, craving, cravingOnly = false }) {
   const allergyStr = allergies?.length ? `Never include: ${allergies.join(', ')}.` : ''
   const dietaryStr = dietary?.length ? `Diet: ${dietary.join(', ')}.` : ''
-  const modifiersStr = modifiers.length
-    ? `Extra requirements: ${modifiers.map(m => MODIFIER_INSTRUCTIONS[m]).filter(Boolean).join(' ')}`
-    : ''
 
   let system
   if (cravingOnly && craving) {
@@ -76,7 +87,6 @@ export async function suggestMeal({ mealType, targetCalories, targetProtein, tar
 The user wants to eat: "${craving}".
 ${dietaryStr}
 ${allergyStr}
-${modifiersStr}
 Generate a proper home-cooked recipe for this dish${calHint}.
 Rules:
 - Assume the user is cooking from scratch with standard grocery-store raw ingredients
@@ -85,7 +95,8 @@ Rules:
 - prepTimeMinutes must reflect actual cooking time — never less than 10 minutes for a cooked meal
 - Do NOT add extra side dishes or foods just to inflate calorie count
 Return ONLY valid JSON:
-{ "name": string, "ingredients": [string], "macros": {"calories": number, "protein": number, "carbs": number, "fat": number}, "prepTimeMinutes": number, "instructions": [string] }
+{ "name": string, "ingredients": [string], "macros": ${MACRO_SCHEMA}, "prepTimeMinutes": number, "instructions": [string] }
+Estimate fiber/sugar/saturatedFat/sodium/cholesterol/potassium as best you can (grams for fiber/sugar/saturatedFat, milligrams for sodium/cholesterol/potassium) — these are tracked but not targeted.
 No markdown, no explanation — just the JSON.`
   } else {
     const cravingStr = craving ? `The user is craving: "${craving}". Build the meal around this craving.` : ''
@@ -95,10 +106,10 @@ Generate a single ${mealType} meal fitting these constraints:
 ${dietaryStr}
 ${allergyStr}
 ${cravingStr}
-${modifiersStr}
 Physique goal: ${physique || 'lean_toned'} — lean, high protein, whole foods preferred.
 Return ONLY valid JSON:
-{ "name": string, "ingredients": [string], "macros": {"calories": number, "protein": number, "carbs": number, "fat": number}, "prepTimeMinutes": number, "instructions": [string] }
+{ "name": string, "ingredients": [string], "macros": ${MACRO_SCHEMA}, "prepTimeMinutes": number, "instructions": [string] }
+Estimate fiber/sugar/saturatedFat/sodium/cholesterol/potassium as best you can (grams for fiber/sugar/saturatedFat, milligrams for sodium/cholesterol/potassium) — these are tracked but not targeted.
 No markdown, no explanation — just the JSON.`
   }
 
@@ -108,6 +119,56 @@ No markdown, no explanation — just the JSON.`
     return JSON.parse(text)
   } catch (err) {
     console.error('[suggestMeal] failed for', mealType, err?.message)
+    return null
+  }
+}
+
+// --- Adjust an existing meal via free text ---
+// Returns the same shape as suggestMeal, or null
+export async function adjustMeal({ meal, instruction, dietary, allergies }) {
+  const allergyStr = allergies?.length ? `Never include: ${allergies.join(', ')}.` : ''
+  const dietaryStr = dietary?.length ? `Diet: ${dietary.join(', ')}.` : ''
+
+  const system = `You are a nutrition coach for a women's fitness app called Aura.
+The user has this existing meal:
+${JSON.stringify({ name: meal.name, ingredients: meal.ingredients, instructions: meal.instructions, macros: meal.macros, prepTimeMinutes: meal.prepTimeMinutes })}
+The user wants this change: "${instruction}"
+${dietaryStr}
+${allergyStr}
+Apply the requested change. Keep everything else as similar as possible. Recalculate macros only if the change actually affects them.
+Return ONLY valid JSON:
+{ "name": string, "ingredients": [string], "macros": ${MACRO_SCHEMA}, "prepTimeMinutes": number, "instructions": [string] }
+No markdown, no explanation — just the JSON.`
+
+  try {
+    const raw = await callClaude(system, 'Apply the change.', 1100)
+    const text = raw.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim()
+    return JSON.parse(text)
+  } catch (err) {
+    console.error('[adjustMeal] failed', err?.message)
+    return null
+  }
+}
+
+// --- Identify a food the user already ate, from free text ---
+// Returns { identifiedAs, servingSize, macros{...full macro schema...} } or null
+export async function identifyEatenFood(description) {
+  const system = `You are a nutrition estimator for a women's fitness app called Aura.
+The user tells you what they already ate. Identify the most likely specific food or dish — recognize brand-name/restaurant menu items where mentioned (e.g. "McDonald's medium fries") and use your best knowledge of that item's real nutrition; otherwise estimate from a standard home-cooked or generic serving.
+If multiple items are mentioned, combine them into one total.
+Return ONLY valid JSON with these exact keys:
+{ "identifiedAs": string, "servingSize": string, "macros": ${MACRO_SCHEMA} }
+If you cannot identify anything food-related, return { "error": "not found" }.
+Return ONLY the JSON object — no explanation, no markdown.`
+
+  try {
+    const raw = await callClaude(system, description, 400)
+    const text = raw.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim()
+    const json = JSON.parse(text)
+    if (json.error) return { error: json.error }
+    return json
+  } catch (err) {
+    console.error('[identifyEatenFood] parse error', err?.message)
     return null
   }
 }
@@ -128,24 +189,7 @@ Never give medical advice. Keep responses under 120 words. Be warm, specific, sc
   ]
 
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 300,
-        system,
-        messages,
-      }),
-    })
-
-    if (!res.ok) throw new Error(`API error ${res.status}`)
-    const data = await res.json()
+    const data = await anthropicRequest({ system, messages, maxTokens: 300 })
     return data.content[0].text
   } catch (err) {
     return "Sorry, I couldn't connect right now. Try again in a moment!"

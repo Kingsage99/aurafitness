@@ -81,4 +81,19 @@ export function BodyOutline({ muscleColors = {}, data, height = 260, highlighted
   )
 }
 
+// Photo-aware avatar — renders the user's uploaded photo when present,
+// falling back to the programmatic silhouette otherwise.
+export function Avatar({ url, height = 160, color = NB.ink, style = {} }) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt="Profile"
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', ...style }}
+      />
+    )
+  }
+  return <AvatarSilhouette height={height} color={color} style={style} />
+}
+
 export { MUSCLE_MAP }

@@ -20,6 +20,33 @@ const SESSION_TEMPLATES = {
   5: ['lower', 'upper', 'lower_b', 'upper_b', 'full_c'],
 };
 
+// Real weekday ids, Monday-first (matches Onboarding's trainingDays ids)
+export const DAY_IDS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+// 0=Mon ... 6=Sun, for a given Date (defaults to now)
+export function getWeekdayIndex(date = new Date()) {
+  return (date.getDay() + 6) % 7;
+}
+
+// YYYY-MM-DD key for a given Date (defaults to now) — used to key My Routine assignments
+export function dateKeyFor(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+// Rough duration estimate (minutes) for a list of exercises, ~2 min/set + 5 min warmup
+export function estimateDuration(exercises) {
+  if (!exercises?.length) return 0;
+  return Math.max(15, exercises.reduce((acc, ex) => acc + (ex.sets || 3) * 2, 0) + 5);
+}
+
+// Fallback training-day pattern for legacy profiles with an empty trainingDays array
+const DEFAULT_DAY_PATTERN = {
+  2: ['monday', 'thursday'],
+  3: ['monday', 'wednesday', 'friday'],
+  4: ['monday', 'tuesday', 'thursday', 'friday'],
+  5: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+};
+
 // Which muscle groups each session type prioritises
 const SESSION_FOCUS = {
   full_a:  ['glutes', 'quads', 'chest', 'upper_back'],
@@ -36,18 +63,60 @@ const SLOT_ORDER = ['main', 'main', 'secondary', 'secondary', 'accessory', 'acce
 
 /**
  * Build a weekly workout schedule from a user profile.
- * Returns an array of WorkoutDay objects.
+ * Returns a fixed 7-entry array, one per real weekday (0=Mon...6=Sun).
+ * Training days carry a built workout; rest days carry workout:null.
  */
 export function buildWeeklyPlan(userProfile) {
-  const { daysPerWeek = 3 } = userProfile;
-  const templates = SESSION_TEMPLATES[daysPerWeek] || SESSION_TEMPLATES[3];
+  const { daysPerWeek = 3, trainingDays = [] } = userProfile;
+  const effectiveDays = trainingDays.length > 0 ? trainingDays.length : daysPerWeek;
+  const templates = SESSION_TEMPLATES[effectiveDays] || SESSION_TEMPLATES[3];
 
-  return templates.map((template, index) => ({
-    dayIndex: index,
-    sessionType: template,
-    label: getSessionLabel(template),
-    workout: buildSingleWorkout(userProfile, template),
-  }));
+  const orderedDayIds = (trainingDays.length > 0 ? trainingDays : (DEFAULT_DAY_PATTERN[effectiveDays] || DEFAULT_DAY_PATTERN[3]))
+    .slice()
+    .sort((a, b) => DAY_IDS.indexOf(a) - DAY_IDS.indexOf(b));
+
+  return DAY_IDS.map((dayId, dayIndex) => {
+    const trainingIdx = orderedDayIds.indexOf(dayId);
+    if (trainingIdx === -1) {
+      return { dayIndex, dayId, isTrainingDay: false, sessionType: null, label: 'Rest Day', workout: null };
+    }
+    const template = templates[trainingIdx] || templates[templates.length - 1];
+    return {
+      dayIndex,
+      dayId,
+      isTrainingDay: true,
+      sessionType: template,
+      label: getSessionLabel(template),
+      workout: buildSingleWorkout(userProfile, template),
+    };
+  });
+}
+
+/**
+ * Build a weekly plan from a user-assigned custom schedule (Build Your Own mode).
+ * customSchedule: { [dayId]: { label, exercises } } — same shape as entries in userWorkouts.
+ * Returns the same fixed 7-entry Mon–Sun shape as buildWeeklyPlan, so all existing
+ * consumers (Home, WorkoutHub, WorkoutRoutine, todayWorkout) work unmodified.
+ */
+export function buildCustomWeeklyPlan(customSchedule = {}) {
+  return DAY_IDS.map((dayId, dayIndex) => {
+    const workout = customSchedule[dayId];
+    if (!workout) {
+      return { dayIndex, dayId, isTrainingDay: false, sessionType: null, label: 'Rest Day', workout: null };
+    }
+    return {
+      dayIndex,
+      dayId,
+      isTrainingDay: true,
+      sessionType: null,
+      label: workout.label || 'Workout',
+      workout: {
+        name: workout.label || 'Workout',
+        exercises: workout.exercises || [],
+        estimatedMinutes: estimateDuration(workout.exercises),
+      },
+    };
+  });
 }
 
 /**
@@ -182,6 +251,18 @@ function formatExercise(ex, sets, repRange) {
     cues: ex.cues || [],
     swappable_with: ex.swappable_with || [],
   };
+}
+
+// Returns up to 5 unique primary muscles worked across a list of exercises
+export function getPrimaryMuscles(exercises) {
+  const seen = new Set()
+  const out = []
+  ;(exercises || []).forEach(ex => {
+    ;(ex.muscles?.primary || []).forEach(m => {
+      if (!seen.has(m)) { seen.add(m); out.push(m) }
+    })
+  })
+  return out.slice(0, 5)
 }
 
 function hasEquipment(exEquipment, userEquipment) {

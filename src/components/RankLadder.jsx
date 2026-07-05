@@ -19,12 +19,12 @@ export default function RankLadder({ unlocked, rank: currentRankId, rankPoints =
         return (
           <div key={tier.id} style={{
             display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
-            border: NB_BORDER,
+            border: NB_BORDER, borderRadius: 14,
             background: isCurrent ? tier.bg : NB.white,
             boxShadow: isCurrent ? hardShadow(4) : 'none',
             opacity: achieved || isCurrent ? 1 : 0.5,
           }}>
-            <span style={{ width: 28, height: 28, border: `2.5px solid ${NB.ink}`, background: tier.bg, transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <span style={{ width: 28, height: 28, borderRadius: 6, border: `2.5px solid ${NB.ink}`, background: tier.bg, transform: 'rotate(45deg)', flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 900, textTransform: 'uppercase', color: NB.ink }}>
                 {label}{isCurrent ? ' ← You' : ''}
@@ -42,7 +42,7 @@ export default function RankLadder({ unlocked, rank: currentRankId, rankPoints =
 
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
-        border: NB_BORDER,
+        border: NB_BORDER, borderRadius: 14,
         background: !unlocked ? NB.ink : NB.white,
         opacity: !unlocked ? 1 : 0.4,
       }}>

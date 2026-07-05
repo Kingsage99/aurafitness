@@ -4,7 +4,7 @@ import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
 import { getMuscleRankInfo, MUSCLE_RANK_MIN_WORKOUTS } from '../utils/gamification'
 import { MUSCLE_LABELS } from '../utils/muscleLabels'
 import RankLadder from '../components/RankLadder'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, NB_INTENSITY_RAMP } from '../styles/neoBrutalism'
 
 // Map exercise primary muscle → MUSCLE_SVG_IDS key
 const MUSCLE_TO_GROUP = {
@@ -18,7 +18,7 @@ const MUSCLE_TO_GROUP = {
   calves: 'calves',
 }
 
-const INTENSITY_COLORS = ['#FFD8A8', '#FF9E4A', '#E5352B']
+const INTENSITY_COLORS = [NB_INTENSITY_RAMP[1], NB_INTENSITY_RAMP[3], NB_INTENSITY_RAMP[4]]
 
 function buildColors(exercises, side) {
   const counts = {}
@@ -87,7 +87,7 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
         </div>
 
         {/* XP Progress bar */}
-        <div style={{ border: NB_BORDER, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, marginBottom: 20 }}>
+        <div style={{ border: NB_BORDER, borderRadius: 18, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Level {gamification?.level ?? 1}</span>
             <span style={{ fontFamily: NB.fontMono, fontSize: 12, color: '#555' }}>{gamification?.xp ?? 0} XP</span>
@@ -103,7 +103,7 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
             <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
               Muscles Worked
             </div>
-            <div style={{ border: NB_BORDER, background: NB.cream, overflow: 'hidden', padding: '10px 10px 6px', display: 'flex', gap: 6 }}>
+            <div style={{ border: NB_BORDER, borderRadius: 18, background: NB.cream, overflow: 'hidden', padding: '10px 10px 6px', display: 'flex', gap: 6 }}>
               <div style={{ flex: 1, aspectRatio: '0.6/1' }}>
                 <MuscleSVG key="front-done" url="/muscle_map_front.svg" muscleColors={frontColors} />
               </div>
@@ -112,7 +112,7 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {[['#FFD8A8','Light'],['#FF9E4A','Moderate'],['#E5352B','High']].map(([c, l]) => (
+              {[[NB_INTENSITY_RAMP[1],'Light'],[NB_INTENSITY_RAMP[3],'Moderate'],[NB_INTENSITY_RAMP[4],'High']].map(([c, l]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <div style={{ width: 10, height: 10, border: `1.5px solid ${NB.ink}`, background: c }} />
                   <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700 }}>{l}</span>
@@ -135,12 +135,12 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
                 const rankedUp = (sessionData.muscleRankUps || []).some(r => r.muscleId === muscleId)
                 return (
                   <button key={muscleId} onClick={() => setLadderMuscle(muscleId)} style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: `2.5px solid ${NB.ink}`,
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: `2.5px solid ${NB.ink}`, borderRadius: 14,
                     background: info.tier.bg, cursor: 'pointer', textAlign: 'left',
                   }}>
                     <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: info.tier.color, flex: 1 }}>{MUSCLE_LABELS[muscleId] || muscleId}</span>
                     {rankedUp && <span style={{ fontSize: 11 }}>🏆</span>}
-                    <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: info.tier.color, background: NB.white, border: `1.5px solid ${NB.ink}`, padding: '2px 8px' }}>{info.tier.label}</span>
+                    <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: info.tier.color, background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 7, padding: '2px 8px' }}>{info.tier.label}</span>
                     <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: info.tier.color, fontWeight: 700 }}>+{gained}</span>
                   </button>
                 )
@@ -150,7 +150,7 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
         )}
 
         {/* Stats summary */}
-        <div style={{ border: NB_BORDER, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, marginBottom: 24, display: 'flex', gap: 0 }}>
+        <div style={{ border: NB_BORDER, borderRadius: 18, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, marginBottom: 24, display: 'flex', gap: 0 }}>
           <StatItem value={exercises.length} label="Exercises" />
           <Divider />
           <StatItem value={sessionData?.setsCompleted ?? 0} label="Sets Done" />
@@ -161,13 +161,13 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
         {/* Buttons */}
         <button
           onClick={() => onNavigate('workoutPost')}
-          style={{ width: '100%', padding: '15px', border: NB_BORDER, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', marginBottom: 12 }}
+          style={{ width: '100%', padding: '15px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', marginBottom: 12 }}
         >
           Share Workout
         </button>
         <button
           onClick={() => onNavigate('home')}
-          style={{ width: '100%', padding: '15px', border: NB_BORDER, boxShadow: hardShadow(3), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
+          style={{ width: '100%', padding: '15px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
         >
           Back to Home
         </button>
@@ -177,11 +177,11 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
       {ladderMuscle && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <div onClick={() => setLadderMuscle(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)' }} />
-          <div style={{ position: 'relative', background: NB.white, borderTop: NB_BORDER, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '0 20px 24px', zIndex: 1, maxHeight: '78%', overflowY: 'auto' }}>
+          <div style={{ position: 'relative', background: NB.white, borderTop: NB_BORDER, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '0 20px 24px', zIndex: 1, maxHeight: '78%', overflowY: 'auto' }}>
             <div style={{ width: 38, height: 5, background: NB.ink, margin: '14px auto 14px' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 19, textTransform: 'uppercase', color: NB.ink }}>{MUSCLE_LABELS[ladderMuscle] || ladderMuscle} Rank</span>
-              <button onClick={() => setLadderMuscle(null)} style={{ width: 32, height: 32, border: `2px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', color: NB.ink, fontWeight: 800 }}>✕</button>
+              <button onClick={() => setLadderMuscle(null)} style={{ width: 32, height: 32, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', color: NB.ink, fontWeight: 800 }}>✕</button>
             </div>
             <RankLadder {...getMuscleRankInfo(gamification, ladderMuscle)} />
           </div>
@@ -193,7 +193,7 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
 
 function RewardCard({ icon, value, label, bg }) {
   return (
-    <div style={{ flex: 1, border: NB_BORDER, boxShadow: hardShadow(3), padding: '14px 10px', background: bg, textAlign: 'center' }}>
+    <div style={{ flex: 1, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '14px 10px', background: bg, textAlign: 'center' }}>
       <div style={{ fontSize: 22, marginBottom: 4 }}>{icon}</div>
       <div style={{ fontFamily: NB.fontDisplay, fontSize: 22, color: NB.ink, fontWeight: 900, lineHeight: 1, marginBottom: 4 }}>{value}</div>
       <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: NB.ink }}>{label}</div>

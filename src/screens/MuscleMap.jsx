@@ -1,32 +1,70 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { fetchWorkoutHistory } from '../lib/social'
+import { NB, NB_BORDER, hardShadow, NB_INTENSITY_RAMP } from '../styles/neoBrutalism'
 
-const MUSCLE_GROUPS = [
-  { id: 'glutes',    label: 'Glutes',    volume: 4 },
-  { id: 'legs',      label: 'Legs',      volume: 3 },
-  { id: 'back',      label: 'Back',      volume: 2 },
-  { id: 'core',      label: 'Core',      volume: 2 },
-  { id: 'arms',      label: 'Arms',      volume: 2 },
-  { id: 'shoulders', label: 'Shoulders', volume: 1 },
-  { id: 'chest',     label: 'Chest',     volume: 1 },
-  { id: 'calves',    label: 'Calves',    volume: 1 },
-]
+const GROUP_LABELS = {
+  glutes: 'Glutes', legs: 'Legs', back: 'Back', core: 'Core',
+  arms: 'Arms', shoulders: 'Shoulders', chest: 'Chest', calves: 'Calves',
+}
 
-const VOLUME_COLORS = [null, '#FFD8A8', '#FF9E4A', '#FF6A2C', '#E5352B']
+// Same normalisation Analytics uses — exercise primary muscles → display groups
+const MUSCLE_TO_GROUP = {
+  glutes: 'glutes', glute: 'glutes',
+  hamstrings: 'legs', quads: 'legs', legs: 'legs',
+  chest: 'chest', pecs: 'chest',
+  shoulders: 'shoulders', delts: 'shoulders',
+  back: 'back', lats: 'back', lat: 'back', lower_back: 'back',
+  core: 'core', abs: 'core',
+  arms: 'arms', biceps: 'arms', triceps: 'arms',
+  calves: 'calves',
+}
+
+const VOLUME_COLORS = [null, NB_INTENSITY_RAMP[1], NB_INTENSITY_RAMP[2], NB_INTENSITY_RAMP[3], NB_INTENSITY_RAMP[4]]
 
 const LEGEND = [
-  { color: '#FFD8A8', label: 'Light' },
-  { color: '#FF9E4A', label: 'Moderate' },
-  { color: '#FF6A2C', label: 'High' },
-  { color: '#E5352B', label: 'Max' },
+  { color: NB_INTENSITY_RAMP[1], label: 'Light' },
+  { color: NB_INTENSITY_RAMP[2], label: 'Moderate' },
+  { color: NB_INTENSITY_RAMP[3], label: 'High' },
+  { color: NB_INTENSITY_RAMP[4], label: 'Max' },
 ]
 
-function buildColors(side) {
+// Exercise-count → 0–4 volume scale. Week thresholds are tighter than month.
+function countToVolume(count, period) {
+  const t = period === 'week' ? [1, 3, 5, 8] : [2, 6, 12, 20]
+  if (count >= t[3]) return 4
+  if (count >= t[2]) return 3
+  if (count >= t[1]) return 2
+  if (count >= t[0]) return 1
+  return 0
+}
+
+function buildVolumes(history, period) {
+  const days = period === 'week' ? 7 : 30
+  const cutoff = Date.now() - days * 86400000
+  const counts = {}
+  history.forEach(session => {
+    if (new Date(session.completed_at).getTime() < cutoff) return
+    ;(session.exercises || []).forEach(ex => {
+      ;(ex.muscles?.primary || []).forEach(m => {
+        const g = MUSCLE_TO_GROUP[m?.toLowerCase()]
+        if (g) counts[g] = (counts[g] || 0) + 1
+      })
+    })
+  })
+  return Object.keys(GROUP_LABELS).map(id => ({
+    id,
+    label: GROUP_LABELS[id],
+    count: counts[id] || 0,
+    volume: countToVolume(counts[id] || 0, period),
+  }))
+}
+
+function buildColors(groups, side) {
   const colors = {}
-  MUSCLE_GROUPS.forEach(({ id, volume }) => {
+  groups.forEach(({ id, volume }) => {
     const color = VOLUME_COLORS[volume]
     if (!color) return
     MUSCLE_SVG_IDS[id]?.[side]?.forEach(svgId => { colors[svgId] = color })
@@ -34,15 +72,42 @@ function buildColors(side) {
   return colors
 }
 
-const FRONT_COLORS = buildColors('front')
-const BACK_COLORS  = buildColors('back')
+function recoveryTip(groups, period) {
+  const maxed = groups.filter(g => g.volume >= 4).map(g => g.label)
+  const idle  = groups.filter(g => g.volume === 0).map(g => g.label)
+  if (maxed.length > 0) {
+    return `${maxed.join(' and ')} ${maxed.length > 1 ? 'are' : 'is'} at max volume this ${period}. Consider a rest day before training ${maxed.length > 1 ? 'them' : 'it'} again.`
+  }
+  const trained = groups.filter(g => g.volume > 0)
+  if (trained.length === 0) {
+    return `No workouts logged this ${period} yet — complete a workout and your muscle map will light up.`
+  }
+  if (idle.length > 0 && idle.length <= 3) {
+    return `Nice balance so far. ${idle.join(', ')} ${idle.length > 1 ? "haven't" : "hasn't"} been trained this ${period} — worth a look for your next session.`
+  }
+  return `Training volume looks balanced this ${period}. Keep recovery in mind as you add sessions.`
+}
 
-export default function MuscleMap({ onNavigate }) {
+export default function MuscleMap({ session, onNavigate }) {
   const [period, setPeriod] = useState('week')
   const [selected, setSelected] = useState(null)
   const [view, setView] = useState('front')
+  const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const selectedGroup = MUSCLE_GROUPS.find(g => g.id === selected)
+  useEffect(() => {
+    if (!session?.user?.id) { setLoading(false); return }
+    fetchWorkoutHistory(session.user.id, 90).then(data => {
+      setHistory(data)
+      setLoading(false)
+    })
+  }, [session])
+
+  const groups      = useMemo(() => buildVolumes(history, period), [history, period])
+  const frontColors = useMemo(() => buildColors(groups, 'front'), [groups])
+  const backColors  = useMemo(() => buildColors(groups, 'back'), [groups])
+
+  const selectedGroup = groups.find(g => g.id === selected)
   const selectedColor = selectedGroup ? (VOLUME_COLORS[selectedGroup.volume] || NB.ink) : null
 
   return (
@@ -57,7 +122,7 @@ export default function MuscleMap({ onNavigate }) {
         <div style={{ display: 'flex', gap: 8 }}>
           {['week', 'month'].map(p => (
             <button key={p} onClick={() => setPeriod(p)} style={{
-              padding: '6px 14px', border: `2px solid ${NB.ink}`,
+              padding: '6px 14px', border: `2px solid ${NB.ink}`, borderRadius: 10,
               background: period === p ? NB.teal : NB.white,
               fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
               color: NB.ink,
@@ -72,7 +137,7 @@ export default function MuscleMap({ onNavigate }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
 
         {/* Front / Back toggle */}
-        <div style={{ display: 'flex', border: `2px solid ${NB.ink}`, marginBottom: 14 }}>
+        <div style={{ display: 'flex', border: `2px solid ${NB.ink}`, borderRadius: 12, overflow: 'hidden', marginBottom: 14 }}>
           {['front', 'back'].map(v => (
             <button key={v} onClick={() => setView(v)} style={{
               flex: 1, padding: '8px 0',
@@ -87,18 +152,23 @@ export default function MuscleMap({ onNavigate }) {
         </div>
 
         {/* SVG body diagram */}
-        <div style={{ width: '100%', aspectRatio: '9/16', overflow: 'hidden', background: NB.cream, marginBottom: 14, border: NB_BORDER }}>
+        <div style={{ width: '100%', aspectRatio: '9/16', overflow: 'hidden', background: NB.cream, marginBottom: 14, border: NB_BORDER, borderRadius: 18, position: 'relative' }}>
           {view === 'front'
-            ? <MuscleSVG key="front" url="/muscle_map_front.svg" muscleColors={FRONT_COLORS} />
-            : <MuscleSVG key="back"  url="/muscle_map_back.svg"  muscleColors={BACK_COLORS} />
+            ? <MuscleSVG key={`front-${period}`} url="/muscle_map_front.svg" muscleColors={frontColors} />
+            : <MuscleSVG key={`back-${period}`}  url="/muscle_map_back.svg"  muscleColors={backColors} />
           }
+          {loading && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.6)' }}>
+              <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, color: NB.ink }}>Loading…</span>
+            </div>
+          )}
         </div>
 
         {/* Legend */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
           {LEGEND.map(l => (
             <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 12, height: 12, border: `1.5px solid ${NB.ink}`, background: l.color }} />
+              <div style={{ width: 12, height: 12, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: l.color }} />
               <span style={{ fontSize: 11, color: '#555', fontWeight: 600 }}>{l.label}</span>
             </div>
           ))}
@@ -106,19 +176,19 @@ export default function MuscleMap({ onNavigate }) {
 
         {/* Muscle chips */}
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 14, scrollbarWidth: 'none' }}>
-          {MUSCLE_GROUPS.map(m => {
-            const color = VOLUME_COLORS[m.volume] || NB.ink
+          {groups.map(m => {
+            const color = VOLUME_COLORS[m.volume] || NB.white
             const isSelected = selected === m.id
             return (
               <button key={m.id} onClick={() => setSelected(isSelected ? null : m.id)} style={{
-                flexShrink: 0, padding: '8px 14px', border: `2px solid ${NB.ink}`,
+                flexShrink: 0, padding: '8px 14px', border: `2px solid ${NB.ink}`, borderRadius: 10,
                 background: isSelected ? color : NB.white,
                 fontSize: 12, fontWeight: 700,
                 color: NB.ink,
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6,
               }}>
-                <span style={{ width: 9, height: 9, background: color, border: `1.5px solid ${NB.ink}` }} />
+                <span style={{ width: 9, height: 9, borderRadius: 3, background: color, border: `1.5px solid ${NB.ink}` }} />
                 {m.label}
               </button>
             )
@@ -127,13 +197,16 @@ export default function MuscleMap({ onNavigate }) {
 
         {/* Detail card */}
         {selectedGroup && (
-          <div style={{ border: `2.5px solid ${NB.ink}`, background: NB.white, boxShadow: hardShadow(3), padding: '16px', marginBottom: 16 }}>
+          <div style={{ border: `2.5px solid ${NB.ink}`, borderRadius: 16, background: NB.white, boxShadow: hardShadow(3), padding: '16px', marginBottom: 16 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: NB.ink, marginBottom: 8 }}>{selectedGroup.label} — this {period}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ flex: 1, height: 10, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
-                <div style={{ width: `${(selectedGroup.volume / 4) * 100}%`, height: '100%', background: selectedColor }} />
+              <div style={{ flex: 1, height: 10, borderRadius: 5, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+                <div style={{ width: `${(selectedGroup.volume / 4) * 100}%`, height: '100%', background: selectedColor || 'transparent' }} />
               </div>
               <span style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{selectedGroup.volume}/4</span>
+            </div>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#666', marginTop: 8 }}>
+              {selectedGroup.count} exercise{selectedGroup.count === 1 ? '' : 's'} logged
             </div>
             <p style={{ fontSize: 12, color: '#555', margin: '10px 0 0', lineHeight: 1.5 }}>
               {selectedGroup.volume >= 4
@@ -142,19 +215,21 @@ export default function MuscleMap({ onNavigate }) {
                 ? `${selectedGroup.label} are at high volume. A light stretch day would help recovery.`
                 : selectedGroup.volume >= 2
                 ? `${selectedGroup.label} are at moderate volume — good balance this ${period}.`
-                : `${selectedGroup.label} are lightly worked this ${period}. Room to add more if desired.`}
+                : selectedGroup.volume >= 1
+                ? `${selectedGroup.label} are lightly worked this ${period}. Room to add more if desired.`
+                : `${selectedGroup.label} haven't been trained this ${period} yet.`}
             </p>
           </div>
         )}
 
         {/* Recovery tip */}
-        <div style={{ background: NB.yellow, padding: '14px 16px', border: NB_BORDER, marginBottom: 16 }}>
+        <div style={{ background: NB.yellow, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
             <span style={{ fontSize: 12, fontWeight: 800, color: NB.ink, textTransform: 'uppercase' }}>Recovery tip</span>
           </div>
           <p style={{ fontSize: 13, color: NB.ink, margin: 0, lineHeight: 1.4 }}>
-            Glutes and legs are at max volume this week. Consider adding a rest day before your next leg session.
+            {recoveryTip(groups, period)}
           </p>
         </div>
 

@@ -11,7 +11,7 @@ export default function RewardToast({ notifications }) {
     }}>
       {notifications.map(n => (
         <div key={n.id} style={{
-          background: NB.yellow, border: NB_BORDER, boxShadow: hardShadow(4),
+          background: NB.yellow, border: NB_BORDER, borderRadius: 14, boxShadow: hardShadow(4),
           padding: '11px 16px',
           display: 'flex', alignItems: 'center', gap: 10,
           animation: 'toastIn 0.28s ease',

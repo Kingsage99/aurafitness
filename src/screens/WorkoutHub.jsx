@@ -1,6 +1,7 @@
 import React from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
+import { getWeekdayIndex, getPrimaryMuscles, dateKeyFor } from '../utils/workoutBuilder'
 import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
 function estimateDuration(exercises) {
@@ -8,31 +9,22 @@ function estimateDuration(exercises) {
   return Math.max(15, exercises.reduce((acc, ex) => acc + (ex.sets || 3) * 2, 0) + 5)
 }
 
-function getPrimaryMuscles(exercises) {
-  const seen = new Set()
-  const out = []
-  ;(exercises || []).forEach(ex => {
-    ;(ex.muscles?.primary || []).forEach(m => {
-      if (!seen.has(m)) { seen.add(m); out.push(m) }
-    })
-  })
-  return out.slice(0, 5)
-}
-
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const DAY_LABELS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
-export default function WorkoutHub({ weeklyPlan, todayWorkoutIndex, userWorkouts = [], setActiveWorkout, onNavigate, gamification }) {
-  const today           = weeklyPlan?.[todayWorkoutIndex]
-  const todayWorkoutObj = today?.workout
+export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWorkout, onNavigate, gamification, userProfile, routine = {} }) {
+  const now      = new Date()
+  const todayDow = getWeekdayIndex(now)
+
+  const routineToday    = routine[dateKeyFor(now)]
+  const today           = weeklyPlan?.[todayDow]
+  const isRestDay       = !routineToday && !!weeklyPlan && !today?.isTrainingDay
+  const todayWorkoutObj = routineToday || today?.workout
   const todayEx         = Array.isArray(todayWorkoutObj?.exercises) ? todayWorkoutObj.exercises : []
-  const todayLabel      = todayWorkoutObj?.name ?? today?.label ?? "Today's Workout"
-  const todaySplit      = today?.label ?? ''
+  const todayLabel      = todayWorkoutObj?.name ?? todayWorkoutObj?.label ?? today?.label ?? "Today's Workout"
+  const todaySplit      = routineToday ? (routineToday.split || 'Custom') : (today?.label ?? '')
   const muscles         = getPrimaryMuscles(todayEx)
   const duration        = todayWorkoutObj?.estimatedMinutes ?? estimateDuration(todayEx)
-
-  const now      = new Date()
-  const todayDow = now.getDay() === 0 ? 6 : now.getDay() - 1
 
   const handleViewToday = () => {
     if (!todayEx.length) return
@@ -66,7 +58,7 @@ export default function WorkoutHub({ weeklyPlan, todayWorkoutIndex, userWorkouts
             <div
               onClick={handleViewToday}
               style={{
-                border: NB_BORDER, padding: '20px 20px 18px',
+                border: NB_BORDER, borderRadius: 20, padding: '20px 20px 18px',
                 background: NB.magenta, cursor: 'pointer', position: 'relative', overflow: 'hidden',
                 boxShadow: hardShadow(6),
               }}
@@ -81,7 +73,7 @@ export default function WorkoutHub({ weeklyPlan, todayWorkoutIndex, userWorkouts
                       {todayLabel}
                     </div>
                   </div>
-                  <div style={{ background: NB.white, border: `2px solid ${NB.ink}`, padding: '5px 11px', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, marginLeft: 8 }}>
+                  <div style={{ background: NB.white, border: `2px solid ${NB.ink}`, borderRadius: 10, padding: '5px 11px', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, marginLeft: 8 }}>
                     <ClockIcon />
                     <span style={{ fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700 }}>{duration} min</span>
                   </div>
@@ -89,7 +81,7 @@ export default function WorkoutHub({ weeklyPlan, todayWorkoutIndex, userWorkouts
 
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
                   {muscles.map(m => (
-                    <span key={m} style={{ background: NB.white, border: `1.5px solid ${NB.ink}`, padding: '4px 10px', fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700, textTransform: 'uppercase' }}>
+                    <span key={m} style={{ background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px', fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700, textTransform: 'uppercase' }}>
                       {m}
                     </span>
                   ))}
@@ -97,14 +89,26 @@ export default function WorkoutHub({ weeklyPlan, todayWorkoutIndex, userWorkouts
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{todayEx.length} exercises</span>
-                  <div style={{ background: NB.yellow, border: `2px solid ${NB.ink}`, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ background: NB.yellow, border: `2px solid ${NB.ink}`, borderRadius: 10, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <ChevronRight color={NB.ink} />
                   </div>
                 </div>
               </div>
             </div>
+          ) : isRestDay ? (
+            <div style={{ border: NB_BORDER, borderRadius: 20, padding: 20, background: NB.cream, textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>💆</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>Rest day</div>
+              <div style={{ fontSize: 13, color: '#555' }}>No workout scheduled today — recover up and come back stronger.</div>
+            </div>
+          ) : userProfile?.planningMode === 'custom' ? (
+            <div style={{ border: NB_BORDER, borderRadius: 20, padding: 20, background: NB.lavender, textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>🛠️</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>You're in build-your-own mode</div>
+              <div style={{ fontSize: 13, color: '#555' }}>Create a workout below and it will show up here on the days you schedule it.</div>
+            </div>
           ) : (
-            <div style={{ border: NB_BORDER, padding: 20, background: NB.white, textAlign: 'center' }}>
+            <div style={{ border: NB_BORDER, borderRadius: 20, padding: 20, background: NB.white, textAlign: 'center' }}>
               <div style={{ fontSize: 14, color: '#555' }}>Complete onboarding to get your plan</div>
             </div>
           )}
@@ -118,7 +122,7 @@ export default function WorkoutHub({ weeklyPlan, todayWorkoutIndex, userWorkouts
               <div
                 key={i}
                 onClick={() => { setActiveWorkout(w); onNavigate('workoutDetail') }}
-                style={{ border: NB_BORDER, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, cursor: 'pointer', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, cursor: 'pointer', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <div>
                   <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 2 }}>{w.label}</div>
@@ -130,19 +134,39 @@ export default function WorkoutHub({ weeklyPlan, todayWorkoutIndex, userWorkouts
           </div>
         )}
 
+        {/* ── Muscle Map ────────────────────────────── */}
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel>Muscle Map</SectionLabel>
+          <div
+            onClick={() => onNavigate('musclemap')}
+            style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '16px 18px', background: NB.white, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
+          >
+            <div style={{ width: 50, height: 50, borderRadius: 13, border: `2.5px solid ${NB.ink}`, background: NB.teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <BodyIcon />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 2 }}>See your muscle map</div>
+              <div style={{ fontSize: 12, color: '#555' }}>Training volume & recovery by muscle group</div>
+            </div>
+            <ChevronRight />
+          </div>
+        </div>
+
         {/* ── Create Your Own ──────────────────────── */}
         <div style={{ marginBottom: 22 }}>
           <SectionLabel>Create Your Own</SectionLabel>
           <div
-            onClick={() => onNavigate('workoutBuilder')}
-            style={{ border: NB_BORDER, boxShadow: hardShadow(3), padding: '16px 18px', background: NB.white, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
+            onClick={() => onNavigate(userProfile?.planningMode === 'custom' ? 'assignSchedule' : 'workoutBuilder')}
+            style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '16px 18px', background: NB.white, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
           >
-            <div style={{ width: 50, height: 50, border: `2.5px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 50, height: 50, borderRadius: 13, border: `2.5px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <PlusIcon />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 2 }}>Build a workout</div>
-              <div style={{ fontSize: 12, color: '#555' }}>Pick muscles &amp; choose your exercises</div>
+              <div style={{ fontSize: 12, color: '#555' }}>
+                {userProfile?.planningMode === 'custom' ? 'Manage your workouts & weekly schedule' : 'Pick muscles & choose your exercises'}
+              </div>
             </div>
             <ChevronRight />
           </div>
@@ -153,7 +177,7 @@ export default function WorkoutHub({ weeklyPlan, todayWorkoutIndex, userWorkouts
           <SectionLabel>Routine</SectionLabel>
           <div
             onClick={() => onNavigate('workoutRoutine')}
-            style={{ border: NB_BORDER, boxShadow: hardShadow(3), padding: '16px 18px', background: NB.white, cursor: 'pointer' }}
+            style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '16px 18px', background: NB.white, cursor: 'pointer' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div>
@@ -167,9 +191,9 @@ export default function WorkoutHub({ weeklyPlan, todayWorkoutIndex, userWorkouts
             <div style={{ display: 'flex', gap: 5 }}>
               {DAY_LABELS.map((d, i) => {
                 const isToday    = i === todayDow
-                const hasPlan    = weeklyPlan && i < weeklyPlan.length
+                const hasPlan    = !!weeklyPlan?.[i]?.isTrainingDay
                 return (
-                  <div key={d} style={{ flex: 1, border: `2px solid ${NB.ink}`, padding: '7px 2px 6px', background: isToday ? NB.teal : hasPlan ? NB.cream : NB.white, textAlign: 'center' }}>
+                  <div key={d} style={{ flex: 1, border: `2px solid ${NB.ink}`, borderRadius: 8, padding: '7px 2px 6px', background: isToday ? NB.teal : hasPlan ? NB.cream : NB.white, textAlign: 'center' }}>
                     <div style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 700, color: NB.ink, marginBottom: 5 }}>{d}</div>
                     {hasPlan && <div style={{ width: 6, height: 6, background: NB.ink, margin: '0 auto' }} />}
                   </div>
@@ -214,6 +238,14 @@ function PlusIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  )
+}
+
+function BodyIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="4" r="2.2"/><path d="M12 8v6M12 8c-2.2 0-4 1-4.5 3M12 8c2.2 0 4 1 4.5 3M9 21l1.5-7M15 21l-1.5-7"/>
     </svg>
   )
 }

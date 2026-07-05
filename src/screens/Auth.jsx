@@ -52,7 +52,7 @@ export default function Auth() {
   }
 
   const inputStyle = {
-    width: '100%', height: 52, border: NB_BORDER,
+    width: '100%', height: 52, border: NB_BORDER, borderRadius: 14,
     padding: '0 16px', fontSize: 15, color: NB.ink, fontFamily: NB.fontDisplay,
     outline: 'none', background: NB.white, boxSizing: 'border-box',
   }
@@ -60,7 +60,7 @@ export default function Auth() {
   if (sent) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: '0 28px', textAlign: 'center' }}>
-        <div style={{ width: 72, height: 72, border: NB_BORDER, boxShadow: hardShadow(5), background: NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+        <div style={{ width: 72, height: 72, borderRadius: 20, border: NB_BORDER, boxShadow: hardShadow(5), background: NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
         </div>
         <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink, marginBottom: 10 }}>Check your email</div>
@@ -84,7 +84,7 @@ export default function Auth() {
           {/* Back + title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32, marginTop: 8 }}>
             <button onClick={() => { setMode(null); setError('') }}
-              style={{ background: NB.white, border: NB_BORDER, boxShadow: hardShadow(3), width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+              style={{ background: NB.white, border: NB_BORDER, borderRadius: 12, boxShadow: hardShadow(3), width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink }}>
@@ -105,13 +105,13 @@ export default function Auth() {
           </div>
 
           {error && (
-            <div style={{ marginTop: 14, padding: '10px 14px', border: NB_BORDER, background: NB.red }}>
+            <div style={{ marginTop: 14, padding: '10px 14px', border: NB_BORDER, borderRadius: 12, background: NB.red }}>
               <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
             </div>
           )}
 
           <button onClick={handleEmailAuth} disabled={loading}
-            style={{ width: '100%', height: 54, border: NB_BORDER, boxShadow: loading ? 'none' : hardShadow(5), background: loading ? '#ccc' : NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', cursor: loading ? 'default' : 'pointer', marginTop: 22 }}>
+            style={{ width: '100%', height: 54, border: NB_BORDER, borderRadius: 16, boxShadow: loading ? 'none' : hardShadow(5), background: loading ? '#ccc' : NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', cursor: loading ? 'default' : 'pointer', marginTop: 22 }}>
             {loading ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
           </button>
 
@@ -137,7 +137,7 @@ export default function Auth() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ width: 80, height: 80, border: NB_BORDER, boxShadow: hardShadow(6), background: NB.magenta, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+          <div style={{ width: 80, height: 80, borderRadius: 20, border: NB_BORDER, boxShadow: hardShadow(6), background: NB.magenta, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
             <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l2.2 5.5L20 9l-4.5 3.8L17 19l-5-3-5 3 1.5-6.2L4 9l5.8-.5z"/></svg>
           </div>
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 40, textTransform: 'uppercase', letterSpacing: -1, color: NB.ink, marginBottom: 8 }}>Aura</div>
@@ -146,7 +146,7 @@ export default function Auth() {
 
         {/* Google — primary CTA */}
         <button onClick={handleGoogle} disabled={loading}
-          style={{ width: '100%', height: 58, border: NB_BORDER, boxShadow: hardShadow(5), background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, fontFamily: NB.fontDisplay, fontSize: 16, fontWeight: 800, color: NB.ink, cursor: 'pointer', marginBottom: 18 }}>
+          style={{ width: '100%', height: 58, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(5), background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, fontFamily: NB.fontDisplay, fontSize: 16, fontWeight: 800, color: NB.ink, cursor: 'pointer', marginBottom: 18 }}>
           <svg width="22" height="22" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -166,17 +166,17 @@ export default function Auth() {
         {/* Email options */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => { setMode('login'); setError('') }}
-            style={{ flex: 1, height: 50, border: NB_BORDER, boxShadow: hardShadow(3), background: NB.yellow, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>
+            style={{ flex: 1, height: 50, border: NB_BORDER, borderRadius: 14, boxShadow: hardShadow(3), background: NB.yellow, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>
             Log in
           </button>
           <button onClick={() => { setMode('signup'); setError('') }}
-            style={{ flex: 1, height: 50, border: NB_BORDER, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>
+            style={{ flex: 1, height: 50, border: NB_BORDER, borderRadius: 14, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: 'pointer' }}>
             Sign up
           </button>
         </div>
 
         {error && (
-          <div style={{ marginTop: 16, padding: '10px 14px', border: NB_BORDER, background: NB.red }}>
+          <div style={{ marginTop: 16, padding: '10px 14px', border: NB_BORDER, borderRadius: 12, background: NB.red }}>
             <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
           </div>
         )}

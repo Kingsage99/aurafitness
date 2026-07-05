@@ -16,6 +16,7 @@ export default function ProgressBar({ step, total = 8 }) {
           style={{
             flex: 1,
             height: 6,
+            borderRadius: 3,
             border: NB_BORDER,
             background: i < step ? NB.teal : NB.white,
             transition: 'background 0.3s',

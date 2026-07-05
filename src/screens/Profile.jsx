@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
-import AvatarSilhouette from '../components/AvatarSilhouette'
-import { supabase } from '../lib/supabase'
+import { Avatar } from '../components/AvatarSilhouette'
+import { uploadAvatar } from '../lib/social'
 import { BADGES, FRAMES, AURAS, TIER_COLORS, xpProgress, RANKS, RANK_UP_AT, getDailyQuests } from '../utils/gamification'
 import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
@@ -53,20 +53,20 @@ const NAV_TABS = [
   { id: 'calendar',  label: 'Calendar'  },
 ]
 
-export default function Profile({ userProfile, session, gamification = {}, onShopPurchase, onNavigate, onResetOnboarding, initialTab = 'overview' }) {
+export default function Profile({ userProfile, session, gamification = {}, onShopPurchase, onNavigate, onUpdateProfile, initialTab = 'overview' }) {
   const g = gamification
   const [activeTab, setActiveTab] = useState(initialTab)
-  const [signingOut, setSigningOut] = useState(false)
-  const [resetting, setResetting] = useState(false)
   const [storeSubTab, setStoreSubTab] = useState('borders')
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const avatarFileRef = useRef()
 
-  const handleSignOut = async () => {
-    setSigningOut(true)
-    await supabase.auth.signOut()
-  }
-  const handleResetOnboarding = async () => {
-    setResetting(true)
-    await onResetOnboarding?.()
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !session?.user?.id) return
+    setAvatarUploading(true)
+    const url = await uploadAvatar(session.user.id, file)
+    if (url) onUpdateProfile?.({ avatarUrl: url })
+    setAvatarUploading(false)
   }
 
   const xp      = xpProgress(g.xp || 0)
@@ -82,19 +82,19 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
     const isOwned = item.cost === 0 || owned.has(item.id)
     const canAfford = (g.gems ?? 0) >= item.cost
     return (
-      <div style={{ background: NB.white, border: NB_BORDER, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 48, height: 48, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
+      <div style={{ background: NB.white, border: NB_BORDER, borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{item.label}</div>
           <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{item.desc}</div>
         </div>
         {isOwned ? (
-          <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink, background: NB.green, border: `1.5px solid ${NB.ink}`, padding: '4px 10px', whiteSpace: 'nowrap' }}>Owned</span>
+          <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink, background: NB.green, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px', whiteSpace: 'nowrap' }}>Owned</span>
         ) : (
           <button
             onClick={() => onShopPurchase?.(item.id, item.cost)}
             disabled={!canAfford}
-            style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, whiteSpace: 'nowrap', background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed' }}
+            style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, whiteSpace: 'nowrap', background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed' }}
           >
             {item.cost} 💎
           </button>
@@ -106,7 +106,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
   // ── Overview tab ────────────────────────────────────────────────────────────
   const OverviewTab = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ background: rank.bg, border: NB_BORDER, padding: 16 }}>
+      <div style={{ background: rank.bg, border: NB_BORDER, borderRadius: 18, padding: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <span style={{ fontSize: 26 }}>{rankIcon}</span>
           <div>
@@ -120,7 +120,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <div style={{ flex: 1, background: NB.white, border: NB_BORDER, boxShadow: hardShadow(3), padding: 14 }}>
+        <div style={{ flex: 1, background: NB.white, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: 14 }}>
           <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: '#555', fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>CURRENT STREAK</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{ fontSize: 18 }}>🔥</span>
@@ -129,7 +129,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
           </div>
           <div style={{ fontSize: 10, color: '#777', marginTop: 4 }}>Best: {g.longestStreak ?? 0} days</div>
         </div>
-        <div style={{ flex: 1, background: NB.magenta, border: NB_BORDER, boxShadow: hardShadow(3), padding: 14 }}>
+        <div style={{ flex: 1, background: NB.magenta, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: 14 }}>
           <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.white, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>THIS WEEK</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{ fontSize: 18 }}>💪</span>
@@ -138,17 +138,6 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
           </div>
           <div style={{ fontSize: 10, color: '#f0d9ff', marginTop: 4 }}>Total: {g.totalWorkouts ?? 0} workouts</div>
         </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-        <button onClick={handleResetOnboarding} disabled={resetting} style={{ flex: 1, height: 46, border: `2px solid ${NB.ink}`, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          {resetting ? '…' : 'Redo Onboarding'}
-        </button>
-        <button onClick={handleSignOut} disabled={signingOut} style={{ flex: 1, height: 46, border: `2px solid ${NB.ink}`, background: NB.red, color: NB.white, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-          {signingOut ? '…' : 'Sign Out'}
-        </button>
       </div>
     </div>
   )
@@ -170,7 +159,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
               <button
                 key={badge.id}
                 onClick={() => onNavigate('medals')}
-                style={{ border: `2px solid ${NB.ink}`, padding: '10px 4px', background: earned ? tc.bg : '#eee', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer', opacity: earned ? 1 : 0.5 }}
+                style={{ border: `2px solid ${NB.ink}`, borderRadius: 12, padding: '10px 4px', background: earned ? tc.bg : '#eee', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer', opacity: earned ? 1 : 0.5 }}
               >
                 <span style={{ fontSize: 20, filter: earned ? 'none' : 'grayscale(1)' }}>{badge.icon}</span>
                 <span style={{ fontSize: 7.5, fontWeight: 800, color: NB.ink, textAlign: 'center', lineHeight: 1.2 }}>{badge.label}</span>
@@ -178,7 +167,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
             )
           })}
         </div>
-        <button onClick={() => onNavigate('medals')} style={{ width: '100%', marginTop: 14, height: 48, border: NB_BORDER, boxShadow: hardShadow(3), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>
+        <button onClick={() => onNavigate('medals')} style={{ width: '100%', marginTop: 14, height: 48, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>
           Open Medal Room →
         </button>
       </div>
@@ -194,7 +183,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Daily Quests</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: NB.ink, background: NB.yellow, border: `1.5px solid ${NB.ink}`, padding: '3px 9px' }}>{completed.length}/3</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: NB.ink, background: NB.yellow, border: `1.5px solid ${NB.ink}`, borderRadius: 7, padding: '3px 9px' }}>{completed.length}/3</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {quests.map(quest => {
@@ -203,7 +192,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
               <button
                 key={quest.id}
                 onClick={() => onNavigate('quests')}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, background: done ? NB.green : NB.white, border: `2px solid ${NB.ink}`, padding: '14px 16px', cursor: 'pointer', textAlign: 'left' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, background: done ? NB.green : NB.white, border: `2px solid ${NB.ink}`, borderRadius: 14, padding: '14px 16px', cursor: 'pointer', textAlign: 'left' }}
               >
                 <span style={{ fontSize: 22 }}>{quest.icon}</span>
                 <div style={{ flex: 1 }}>
@@ -218,7 +207,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
             )
           })}
         </div>
-        <button onClick={() => onNavigate('quests')} style={{ width: '100%', marginTop: 14, height: 48, border: NB_BORDER, boxShadow: hardShadow(3), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>
+        <button onClick={() => onNavigate('quests')} style={{ width: '100%', marginTop: 14, height: 48, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>
           View Quest Board →
         </button>
       </div>
@@ -232,13 +221,13 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
       <div>
         <div style={{ display: 'flex', overflowX: 'auto', gap: 6, marginBottom: 14, paddingBottom: 2 }}>
           {subTabs.map(t => (
-            <button key={t.id} onClick={() => setStoreSubTab(t.id)} style={{ flexShrink: 0, height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, background: storeSubTab === t.id ? NB.teal : NB.white, color: NB.ink, fontWeight: storeSubTab === t.id ? 800 : 700, fontSize: 12, cursor: 'pointer' }}>
+            <button key={t.id} onClick={() => setStoreSubTab(t.id)} style={{ flexShrink: 0, height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: storeSubTab === t.id ? NB.teal : NB.white, color: NB.ink, fontWeight: storeSubTab === t.id ? 800 : 700, fontSize: 12, cursor: 'pointer' }}>
               {t.label}
             </button>
           ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, background: NB.yellow, border: NB_BORDER, padding: '8px 12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, background: NB.yellow, border: NB_BORDER, borderRadius: 12, padding: '8px 12px' }}>
           <span style={{ width: 12, height: 12, background: NB.blue, border: `1.5px solid ${NB.ink}`, transform: 'rotate(45deg)' }} />
           <span style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{g.gems ?? 0} gems available</span>
         </div>
@@ -249,20 +238,20 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
 
         {storeSubTab === 'gems' && (
           <div>
-            <div style={{ border: NB_BORDER, background: NB.ink, padding: 16, marginBottom: 14 }}>
-              <div style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.yellow, fontWeight: 700 }}>Top up your gems</div>
-              <div style={{ fontSize: 13, color: NB.white, fontWeight: 700, marginTop: 4 }}>Gems never expire — use them to unlock exclusive cosmetics</div>
+            <div style={{ border: NB_BORDER, borderRadius: 16, background: NB.lavender, padding: 16, marginBottom: 14 }}>
+              <div style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700 }}>Top up your gems</div>
+              <div style={{ fontSize: 13, color: NB.ink, fontWeight: 700, marginTop: 4 }}>Gems never expire — use them to unlock exclusive cosmetics</div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {GEM_PACKAGES.map(pkg => (
-                <div key={pkg.id} style={{ background: NB.white, border: NB_BORDER, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
-                  {pkg.tag && <div style={{ position: 'absolute', top: -10, right: 12, background: NB.magenta, color: NB.white, fontSize: 9, fontWeight: 800, padding: '3px 8px', border: `1.5px solid ${NB.ink}` }}>{pkg.tag}</div>}
-                  <div style={{ width: 48, height: 48, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>💎</div>
+                <div key={pkg.id} style={{ background: NB.white, border: NB_BORDER, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+                  {pkg.tag && <div style={{ position: 'absolute', top: -10, right: 12, background: NB.magenta, color: NB.white, fontSize: 9, fontWeight: 800, borderRadius: 6, padding: '3px 8px', border: `1.5px solid ${NB.ink}` }}>{pkg.tag}</div>}
+                  <div style={{ width: 48, height: 48, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>💎</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{pkg.label}</div>
                     <div style={{ fontSize: 11, color: '#555' }}>{pkg.gems.toLocaleString()} gems</div>
                   </div>
-                  <button style={{ height: 36, padding: '0 16px', border: `2px solid ${NB.ink}`, background: NB.teal, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>{pkg.price}</button>
+                  <button style={{ height: 36, padding: '0 16px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.teal, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>{pkg.price}</button>
                 </div>
               ))}
             </div>
@@ -271,7 +260,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
 
         {storeSubTab === 'lives' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ background: NB.red, border: NB_BORDER, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ background: NB.red, border: NB_BORDER, borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ display: 'flex', gap: 3 }}>
                 {[1,2,3].map(i => <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill={i <= (g.lives ?? 3) ? NB.white : 'rgba(255,255,255,.3)'}><path d="M12 21.593c-.5-.388-10-6.77-10-12.093 0-3.314 2.686-6 6-6 1.878 0 3.561.888 4.666 2.276C13.771 4.388 15.453 3.5 17.333 3.5 20.648 3.5 23 6.186 23 9.5c0 5.323-9.5 11.705-10 12.093z"/></svg>)}
               </div>
@@ -280,13 +269,13 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
             {LIFE_ITEMS.map(item => {
               const canAfford = (g.gems ?? 0) >= item.cost
               return (
-                <div key={item.id} style={{ background: NB.white, border: NB_BORDER, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 48, height: 48, border: `2px solid ${NB.ink}`, background: NB.pink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
+                <div key={item.id} style={{ background: NB.white, border: NB_BORDER, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.pink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{item.label}</div>
                     <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{item.desc}</div>
                   </div>
-                  <button onClick={() => onShopPurchase?.(item.id, item.cost)} disabled={!canAfford} style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
+                  <button onClick={() => onShopPurchase?.(item.id, item.cost)} disabled={!canAfford} style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
                     {item.cost} 💎
                   </button>
                 </div>
@@ -311,7 +300,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
       <div>
         <div style={{ fontSize: 13, fontWeight: 800, color: NB.ink, marginBottom: 14 }}>Owned ({ownedItems.length} items)</div>
         {ownedItems.length <= 3 && (
-          <div style={{ textAlign: 'center', padding: '24px 0', color: '#555', fontSize: 13, marginBottom: 14, background: NB.cream, border: NB_BORDER }}>
+          <div style={{ textAlign: 'center', padding: '24px 0', color: '#555', fontSize: 13, marginBottom: 14, background: NB.cream, border: NB_BORDER, borderRadius: 14 }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>🛍️</div>
             Visit the Store to unlock more cosmetics!
           </div>
@@ -321,13 +310,13 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
             <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 8 }}>{cat.label.toUpperCase()}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {cat.items.map(item => (
-                <div key={item.id} style={{ background: NB.white, border: `2px solid ${NB.ink}`, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div key={item.id} style={{ background: NB.white, border: `2px solid ${NB.ink}`, borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 22 }}>{item.icon}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>{item.label}</div>
                     <div style={{ fontSize: 11, color: '#555' }}>{item.desc}</div>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: NB.green, border: `1.5px solid ${NB.ink}`, padding: '3px 8px' }}>Owned</span>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: NB.green, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '3px 8px' }}>Owned</span>
                 </div>
               ))}
             </div>
@@ -339,11 +328,11 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
 
   // ── Nutrition tab ───────────────────────────────────────────────────────────
   const NutritionTab = () => (
-    <button onClick={() => onNavigate('meals')} style={{ width: '100%', border: NB_BORDER, boxShadow: hardShadow(5), background: NB.green, padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
+    <button onClick={() => onNavigate('meals')} style={{ width: '100%', border: NB_BORDER, borderRadius: 20, boxShadow: hardShadow(5), background: NB.green, padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
       <span style={{ fontSize: 44 }}>🥗</span>
       <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink, marginTop: 12 }}>Nutrition & Meals</div>
       <div style={{ fontSize: 13, color: NB.ink, marginTop: 5 }}>Log meals, track macros & recipes</div>
-      <div style={{ marginTop: 16, height: 44, padding: '0 28px', border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', color: NB.ink, fontWeight: 800, fontSize: 14, textTransform: 'uppercase' }}>Go to Nutrition →</div>
+      <div style={{ marginTop: 16, height: 44, padding: '0 28px', border: `2px solid ${NB.ink}`, borderRadius: 12, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', color: NB.ink, fontWeight: 800, fontSize: 14, textTransform: 'uppercase' }}>Go to Nutrition →</div>
     </button>
   )
 
@@ -369,7 +358,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink }}>{monthName} {year}</div>
-          <div style={{ fontSize: 12, color: NB.ink, fontWeight: 700, background: NB.yellow, border: `1.5px solid ${NB.ink}`, padding: '4px 10px' }}>{thisMonthCount} workouts</div>
+          <div style={{ fontSize: 12, color: NB.ink, fontWeight: 700, background: NB.yellow, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px' }}>{thisMonthCount} workouts</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 6 }}>
           {['M','T','W','T','F','S','S'].map((d, i) => (
@@ -383,7 +372,7 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
             const hasWorkout = workoutSet.has(dateStr)
             const isToday = dateStr === todayStr
             return (
-              <div key={i} style={{ height: 34, border: isToday ? `2px solid ${NB.ink}` : '1.5px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', background: hasWorkout ? NB.teal : isToday ? NB.cream : 'transparent' }}>
+              <div key={i} style={{ height: 34, borderRadius: 8, border: isToday ? `2px solid ${NB.ink}` : '1.5px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', background: hasWorkout ? NB.teal : isToday ? NB.cream : 'transparent' }}>
                 <span style={{ fontSize: 11, fontWeight: hasWorkout || isToday ? 800 : 400, color: NB.ink }}>{day}</span>
               </div>
             )
@@ -391,11 +380,11 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
         </div>
         <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 12, height: 12, background: NB.teal, border: `1.5px solid ${NB.ink}` }} />
+            <div style={{ width: 12, height: 12, borderRadius: 4, background: NB.teal, border: `1.5px solid ${NB.ink}` }} />
             <span style={{ fontSize: 11, color: '#555' }}>Workout day</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 12, height: 12, border: `2px solid ${NB.ink}` }} />
+            <div style={{ width: 12, height: 12, borderRadius: 4, border: `2px solid ${NB.ink}` }} />
             <span style={{ fontSize: 11, color: '#555' }}>Today</span>
           </div>
         </div>
@@ -408,38 +397,49 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
       <StatusBar />
 
       {/* Header */}
-      <div style={{ background: NB.ink, padding: '10px 18px 18px', flexShrink: 0 }}>
-        {/* Redo + Sign out */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14 }}>
-          <button onClick={handleResetOnboarding} disabled={resetting} style={{ height: 32, padding: '0 10px', border: `1.5px solid ${NB.white}`, background: 'transparent', color: NB.white, fontWeight: 700, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            {resetting ? '…' : 'Redo'}
-          </button>
-          <button onClick={handleSignOut} disabled={signingOut} style={{ height: 32, padding: '0 10px', border: `1.5px solid ${NB.red}`, background: NB.red, color: NB.white, fontWeight: 700, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-            {signingOut ? '…' : 'Sign out'}
+      <div style={{ background: NB.lavender, padding: '18px 18px 18px', flexShrink: 0 }}>
+        {/* Settings */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+          <button onClick={() => onNavigate('settings')} style={{ width: 38, height: 38, borderRadius: 12, border: `2px solid ${NB.ink}`, background: NB.white, boxShadow: hardShadow(2), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
           </button>
         </div>
 
         {/* Avatar + info centered */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ width: 90, height: 90, border: `3px solid ${NB.white}`, background: NB.lavender, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <AvatarSilhouette height={78} color={NB.ink} />
+          <input ref={avatarFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              onClick={() => avatarFileRef.current?.click()}
+              style={{ width: 90, height: 90, borderRadius: '50%', border: `3px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: 'pointer' }}
+            >
+              {avatarUploading
+                ? <div style={{ width: 22, height: 22, borderRadius: '50%', border: `2.5px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'avatarSpin 0.7s linear infinite' }} />
+                : <Avatar url={userProfile?.avatarUrl} height={78} color={NB.ink} />
+              }
+            </div>
+            <button
+              onClick={() => avatarFileRef.current?.click()}
+              style={{ width: 34, height: 34, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
           </div>
+          <style>{`@keyframes avatarSpin { to { transform: rotate(360deg) } }`}</style>
 
-          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.white, marginTop: 10 }}>
+          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink, marginTop: 10 }}>
             {userProfile?.name || 'Aura User'}
           </div>
 
           {userProfile?.username && (
-            <div style={{ fontSize: 13, color: '#aaa', marginTop: 2 }}>
+            <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
               @{userProfile.username}
             </div>
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 8 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink, background: NB.white, border: `1.5px solid ${NB.white}`, padding: '3px 10px' }}>{g.title || 'Beginner'}</span>
-            <span style={{ fontSize: 11, fontWeight: 800, color: rank.color === '#fff' ? NB.ink : rank.color, background: rank.bg, border: `1.5px solid ${NB.white}`, padding: '3px 10px' }}>{rankIcon} {rank.label}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink, background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '3px 10px' }}>{g.title || 'Beginner'}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: rank.color === '#fff' ? NB.ink : rank.color, background: rank.bg, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '3px 10px' }}>{rankIcon} {rank.label}</span>
           </div>
 
           {/* Stats row */}
@@ -451,26 +451,26 @@ export default function Profile({ userProfile, session, gamification = {}, onSho
             ].map((s, i) => (
               <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                 <span style={{ fontSize: 14 }}>{s.icon}</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: NB.white, lineHeight: 1.1 }}>{s.value}</span>
-                <span style={{ fontFamily: NB.fontMono, fontSize: 9, color: '#999' }}>{s.label}</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: NB.ink, lineHeight: 1.1 }}>{s.value}</span>
+                <span style={{ fontFamily: NB.fontMono, fontSize: 9, color: '#555' }}>{s.label}</span>
               </div>
             ))}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
               <div style={{ display: 'flex', gap: 2 }}>
-                {[1,2,3].map(j => <svg key={j} width="11" height="11" viewBox="0 0 24 24" fill={j <= (g.lives ?? 3) ? NB.red : '#444'}><path d="M12 21.593c-.5-.388-10-6.77-10-12.093 0-3.314 2.686-6 6-6 1.878 0 3.561.888 4.666 2.276C13.771 4.388 15.453 3.5 17.333 3.5 20.648 3.5 23 6.186 23 9.5c0 5.323-9.5 11.705-10 12.093z"/></svg>)}
+                {[1,2,3].map(j => <svg key={j} width="11" height="11" viewBox="0 0 24 24" fill={j <= (g.lives ?? 3) ? NB.red : '#fff'} stroke={NB.ink} strokeWidth="1"><path d="M12 21.593c-.5-.388-10-6.77-10-12.093 0-3.314 2.686-6 6-6 1.878 0 3.561.888 4.666 2.276C13.771 4.388 15.453 3.5 17.333 3.5 20.648 3.5 23 6.186 23 9.5c0 5.323-9.5 11.705-10 12.093z"/></svg>)}
               </div>
-              <span style={{ fontSize: 16, fontWeight: 800, color: NB.white, lineHeight: 1.1 }}>{g.lives ?? 3}</span>
-              <span style={{ fontFamily: NB.fontMono, fontSize: 9, color: '#999' }}>lives</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: NB.ink, lineHeight: 1.1 }}>{g.lives ?? 3}</span>
+              <span style={{ fontFamily: NB.fontMono, fontSize: 9, color: '#555' }}>lives</span>
             </div>
           </div>
 
           {/* XP bar */}
           <div style={{ width: '100%', marginTop: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-              <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.yellow }}>LVL {xp.level}</span>
-              <span style={{ fontSize: 10, color: '#999', fontWeight: 600 }}>{xp.current} / {xp.needed} XP</span>
+              <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink }}>LVL {xp.level}</span>
+              <span style={{ fontSize: 10, color: '#555', fontWeight: 600 }}>{xp.current} / {xp.needed} XP</span>
             </div>
-            <div style={{ height: 8, border: `1.5px solid ${NB.white}`, background: 'transparent', overflow: 'hidden' }}>
+            <div style={{ height: 8, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
               <div style={{ width: `${xpPct}%`, height: '100%', background: NB.yellow }} />
             </div>
           </div>

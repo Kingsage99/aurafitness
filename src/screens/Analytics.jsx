@@ -133,10 +133,10 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
             <StatCard icon="💪" label="Total Workouts" value={g.totalWorkouts || 0} />
             <StatCard icon="🔥" label="Streak" value={`${g.workoutStreak || 0} days`} />
-            <div style={{ border: NB_BORDER, boxShadow: hardShadow(2), padding: '14px 16px', background: NB.white }}>
+            <div style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(2), padding: '14px 16px', background: NB.white }}>
               <div style={{ fontSize: 11, color: '#555', fontWeight: 700, marginBottom: 4 }}>⚡ Level {curLvl}</div>
               <div style={{ fontSize: 20, fontWeight: 900, color: NB.ink, marginBottom: 8 }}>{g.xp || 0} XP</div>
-              <div style={{ height: 8, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+              <div style={{ height: 8, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${xpPct * 100}%`, background: NB.teal }} />
               </div>
               <div style={{ fontSize: 10, color: '#555', marginTop: 4 }}>{xpEnd - (g.xp || 0)} XP to next level</div>
@@ -170,6 +170,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
                         width: '100%', height: barH || 3,
                         background: isThisWeek ? NB.magenta : w.count > 0 ? NB.teal : '#eee',
                         border: w.count > 0 ? `1.5px solid ${NB.ink}` : 'none',
+                        borderRadius: 3,
                         minHeight: 3,
                       }} />
                       <div style={{ fontFamily: NB.fontMono, fontSize: 8, color: NB.ink, fontWeight: isThisWeek ? 800 : 600, whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '100%', textOverflow: 'ellipsis' }}>
@@ -182,7 +183,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
             )}
 
             {expanded === 'activity' && !loading && history.slice(0, 8).map((s, i) => (
-              <div key={i} style={{ border: `1.5px solid ${NB.ink}`, padding: '10px 12px', background: NB.cream, marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div key={i} style={{ border: `1.5px solid ${NB.ink}`, borderRadius: 12, padding: '10px 12px', background: NB.cream, marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>{s.label || 'Workout'}</div>
                   <div style={{ fontSize: 11, color: '#555' }}>{new Date(s.completed_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}</div>
@@ -208,7 +209,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 8 }}>
               {[['#e5c9e5', '1–2 sessions'], [NB.magenta, '3–5'], [NB.ink, '6+']].map(([c, l]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <div style={{ width: 10, height: 10, border: `1.5px solid ${NB.ink}`, background: c }} />
+                  <div style={{ width: 10, height: 10, borderRadius: 3, border: `1.5px solid ${NB.ink}`, background: c }} />
                   <span style={{ fontSize: 10, color: '#555', fontWeight: 600 }}>{l}</span>
                 </div>
               ))}
@@ -225,7 +226,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
                     <span style={{ fontSize: 12, fontWeight: 700, color: NB.ink }}>{m.label}</span>
                     <span style={{ fontSize: 12, color: '#555' }}>{m.value}{m.unit} / {m.target}{m.unit}</span>
                   </div>
-                  <div style={{ height: 8, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
+                  <div style={{ height: 8, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct * 100}%`, background: m.color, transition: 'width 0.6s' }} />
                   </div>
                 </div>
@@ -236,17 +237,17 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
           {/* Achievements */}
           <Section title="Achievements">
             <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ flex: 1, border: `1.5px solid ${NB.ink}`, padding: '12px 10px', background: NB.cream, textAlign: 'center' }}>
+              <div style={{ flex: 1, border: `1.5px solid ${NB.ink}`, borderRadius: 12, padding: '12px 10px', background: NB.cream, textAlign: 'center' }}>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>🏅</div>
                 <div style={{ fontSize: 18, fontWeight: 900, color: NB.ink }}>{(g.badges || []).length}</div>
                 <div style={{ fontSize: 10, color: '#555', fontWeight: 600 }}>/ 16 badges</div>
               </div>
-              <div style={{ flex: 1, border: `1.5px solid ${NB.ink}`, padding: '12px 10px', background: NB.cream, textAlign: 'center' }}>
+              <div style={{ flex: 1, border: `1.5px solid ${NB.ink}`, borderRadius: 12, padding: '12px 10px', background: NB.cream, textAlign: 'center' }}>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>🏆</div>
                 <div style={{ fontSize: 16, fontWeight: 900, color: NB.ink, textTransform: 'capitalize' }}>{g.rank || 'Bronze'}</div>
                 <div style={{ fontSize: 10, color: '#555', fontWeight: 600 }}>{g.rankPoints || 0} pts</div>
               </div>
-              <div style={{ flex: 1, border: `1.5px solid ${NB.ink}`, padding: '12px 10px', background: NB.cream, textAlign: 'center' }}>
+              <div style={{ flex: 1, border: `1.5px solid ${NB.ink}`, borderRadius: 12, padding: '12px 10px', background: NB.cream, textAlign: 'center' }}>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>🥗</div>
                 <div style={{ fontSize: 18, fontWeight: 900, color: NB.ink }}>{g.calorieGoalStreak || 0}</div>
                 <div style={{ fontSize: 10, color: '#555', fontWeight: 600 }}>cal streak</div>
@@ -254,7 +255,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
             </div>
             <button
               onClick={() => onNavigate('medals')}
-              style={{ marginTop: 12, width: '100%', padding: '10px', border: `2px solid ${NB.ink}`, background: NB.white, color: NB.ink, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer' }}
+              style={{ marginTop: 12, width: '100%', padding: '10px', border: `2px solid ${NB.ink}`, borderRadius: 12, background: NB.white, color: NB.ink, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer' }}
             >
               View all badges →
             </button>
@@ -270,7 +271,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
 
 function StatCard({ icon, label, value }) {
   return (
-    <div style={{ border: NB_BORDER, boxShadow: hardShadow(2), padding: '14px 16px', background: NB.white }}>
+    <div style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(2), padding: '14px 16px', background: NB.white }}>
       <div style={{ fontSize: 11, color: '#555', fontWeight: 700, marginBottom: 4 }}>{icon} {label}</div>
       <div style={{ fontSize: 24, fontWeight: 900, color: NB.ink }}>{value}</div>
     </div>
@@ -279,14 +280,14 @@ function StatCard({ icon, label, value }) {
 
 function Section({ title, subtitle, children, expandable, expanded, onToggle }) {
   return (
-    <div style={{ border: NB_BORDER, boxShadow: hardShadow(2), background: NB.white, padding: '14px 16px', marginBottom: 16 }}>
+    <div style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(2), background: NB.white, padding: '14px 16px', marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div>
           <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>{title}</div>
           {subtitle && <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{subtitle}</div>}
         </div>
         {expandable && (
-          <button onClick={onToggle} style={{ background: NB.yellow, border: `1.5px solid ${NB.ink}`, padding: '4px 10px', fontSize: 11, color: NB.ink, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={onToggle} style={{ background: NB.yellow, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px', fontSize: 11, color: NB.ink, fontWeight: 700, cursor: 'pointer' }}>
             {expanded ? 'Less' : 'Details'}
           </button>
         )}

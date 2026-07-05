@@ -90,7 +90,7 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
 
       {/* Header */}
       <div style={{ padding: '10px 22px 10px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => onNavigate('workoutComplete')} style={{ background: NB.white, border: NB_BORDER, boxShadow: hardShadow(2), width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+        <button onClick={() => onNavigate('workoutComplete')} style={{ background: NB.white, border: NB_BORDER, borderRadius: 11, boxShadow: hardShadow(2), width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink, flex: 1 }}>Share Workout</div>
@@ -102,7 +102,7 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
         <input ref={fileRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handlePickMedia} />
         <div
           onClick={() => fileRef.current?.click()}
-          style={{ overflow: 'hidden', marginBottom: 18, cursor: 'pointer', border: mediaPreview ? NB_BORDER : `2.5px dashed ${NB.ink}`, background: mediaPreview ? 'transparent' : NB.cream, minHeight: mediaPreview ? 0 : 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ overflow: 'hidden', marginBottom: 18, cursor: 'pointer', border: mediaPreview ? NB_BORDER : `2.5px dashed ${NB.ink}`, borderRadius: 18, background: mediaPreview ? 'transparent' : NB.cream, minHeight: mediaPreview ? 0 : 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           {mediaPreview ? (
             mediaIsVideo
@@ -123,12 +123,12 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
         )}
 
         {/* Workout summary */}
-        <div style={{ border: NB_BORDER, boxShadow: hardShadow(3), background: NB.white, padding: '14px 16px', marginBottom: 18 }}>
+        <div style={{ border: NB_BORDER, borderRadius: 18, boxShadow: hardShadow(3), background: NB.white, padding: '14px 16px', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <div style={{ fontFamily: NB.fontDisplay, fontSize: 17, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>
               {label.replace(/^Day \d+ — /, '')}
             </div>
-            <span style={{ background: NB.yellow, border: `1.5px solid ${NB.ink}`, padding: '3px 10px', fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink }}>WORKOUT</span>
+            <span style={{ background: NB.yellow, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '3px 10px', fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink }}>WORKOUT</span>
           </div>
           <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#555', marginBottom: 10 }}>
             <span>⏱ {fmt(elapsed)}</span>
@@ -138,7 +138,7 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
           {muscles.length > 0 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
               {muscles.map(m => (
-                <span key={m} style={{ background: NB.white, border: `1.5px solid ${NB.ink}`, padding: '3px 10px', fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700, textTransform: 'uppercase' }}>{m}</span>
+                <span key={m} style={{ background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '3px 10px', fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700, textTransform: 'uppercase' }}>{m}</span>
               ))}
             </div>
           )}
@@ -162,13 +162,13 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
             onChange={e => setCaption(e.target.value)}
             placeholder="How did it feel? Share your victory…"
             maxLength={280}
-            style={{ width: '100%', height: 80, border: NB_BORDER, padding: '10px 14px', fontSize: 14, color: NB.ink, background: NB.white, resize: 'none', boxSizing: 'border-box', fontFamily: NB.fontDisplay, outline: 'none' }}
+            style={{ width: '100%', height: 80, border: NB_BORDER, borderRadius: 14, padding: '10px 14px', fontSize: 14, color: NB.ink, background: NB.white, resize: 'none', boxSizing: 'border-box', fontFamily: NB.fontDisplay, outline: 'none' }}
           />
           <div style={{ textAlign: 'right', fontFamily: NB.fontMono, fontSize: 10, color: '#555', marginTop: 4 }}>{caption.length}/280</div>
         </div>
 
         {error && (
-          <div style={{ padding: '10px 14px', border: NB_BORDER, background: NB.red, marginBottom: 16 }}>
+          <div style={{ padding: '10px 14px', border: NB_BORDER, borderRadius: 12, background: NB.red, marginBottom: 16 }}>
             <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
           </div>
         )}
@@ -177,13 +177,13 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
         <button
           onClick={handlePost}
           disabled={posting}
-          style={{ width: '100%', padding: '15px', border: NB_BORDER, boxShadow: posting ? 'none' : hardShadow(4), background: posting ? '#ccc' : NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: posting ? 'default' : 'pointer', marginBottom: 12 }}
+          style={{ width: '100%', padding: '15px', border: NB_BORDER, borderRadius: 16, boxShadow: posting ? 'none' : hardShadow(4), background: posting ? '#ccc' : NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: posting ? 'default' : 'pointer', marginBottom: 12 }}
         >
           {posting ? 'Posting…' : 'Post Workout'}
         </button>
         <button
           onClick={() => onNavigate('home')}
-          style={{ width: '100%', padding: '13px', border: NB_BORDER, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
+          style={{ width: '100%', padding: '13px', border: NB_BORDER, borderRadius: 16, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
         >
           Skip
         </button>

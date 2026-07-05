@@ -1,0 +1,137 @@
+import { describe, it, expect } from 'vitest'
+import {
+  DAY_IDS, buildWeeklyPlan, buildCustomWeeklyPlan, buildSingleWorkout,
+  getSwapOptions, getPrimaryMuscles, estimateDuration,
+} from './workoutBuilder'
+import exercises from '../data/exercises.json'
+
+const baseProfile = {
+  physique: 'lean_toned',
+  experience: 'some',
+  daysPerWeek: 3,
+  equipment: ['gym'],
+  injuries: [],
+  dislikedExercises: [],
+  trainingStyle: 'strength',
+  trainingDays: [],
+}
+
+describe('buildWeeklyPlan', () => {
+  it('returns a fixed 7-day Mon–Sun array', () => {
+    const plan = buildWeeklyPlan(baseProfile)
+    expect(plan).toHaveLength(7)
+    expect(plan.map(d => d.dayId)).toEqual(DAY_IDS)
+  })
+
+  it('schedules exactly daysPerWeek training days', () => {
+    for (const days of [2, 3, 4, 5]) {
+      const plan = buildWeeklyPlan({ ...baseProfile, daysPerWeek: days })
+      expect(plan.filter(d => d.isTrainingDay)).toHaveLength(days)
+    }
+  })
+
+  it('respects an explicit trainingDays selection', () => {
+    const plan = buildWeeklyPlan({ ...baseProfile, trainingDays: ['tuesday', 'saturday'] })
+    const trainingIds = plan.filter(d => d.isTrainingDay).map(d => d.dayId)
+    expect(trainingIds).toEqual(['tuesday', 'saturday'])
+  })
+
+  it('training days carry a built workout, rest days carry null', () => {
+    const plan = buildWeeklyPlan(baseProfile)
+    plan.forEach(d => {
+      if (d.isTrainingDay) expect(d.workout.exercises.length).toBeGreaterThan(0)
+      else expect(d.workout).toBeNull()
+    })
+  })
+})
+
+describe('buildSingleWorkout', () => {
+  it('sizes the session by experience level', () => {
+    expect(buildSingleWorkout({ ...baseProfile, experience: 'starter' }).exercises).toHaveLength(5)
+    expect(buildSingleWorkout({ ...baseProfile, experience: 'active' }).exercises.length).toBeGreaterThanOrEqual(6)
+  })
+
+  it('never includes disliked exercises', () => {
+    const control = buildSingleWorkout(baseProfile, 'lower')
+    const dislikedId = control.exercises[0].id
+    const rebuilt = buildSingleWorkout({ ...baseProfile, dislikedExercises: [dislikedId] }, 'lower')
+    expect(rebuilt.exercises.map(e => e.id)).not.toContain(dislikedId)
+  })
+
+  it('only picks bodyweight exercises when the user has no equipment', () => {
+    const workout = buildSingleWorkout({ ...baseProfile, equipment: ['none'] })
+    workout.exercises.forEach(ex => {
+      const source = exercises.find(e => e.id === ex.id)
+      expect(source.equipment).toContain('none')
+    })
+  })
+
+  it('avoids exercises conflicting with reported injuries', () => {
+    const workout = buildSingleWorkout({ ...baseProfile, injuries: ['knees'] }, 'lower')
+    workout.exercises.forEach(ex => {
+      const source = exercises.find(e => e.id === ex.id)
+      expect(source.injuries_avoid || []).not.toContain('knees')
+    })
+  })
+
+  it('applies the training-style rep range to non-timed exercises', () => {
+    const workout = buildSingleWorkout({ ...baseProfile, trainingStyle: 'hypertrophy' })
+    workout.exercises.filter(e => e.reps !== null).forEach(ex => {
+      expect(ex.repsMin).toBe(8)
+      expect(ex.repsMax).toBe(12)
+    })
+  })
+})
+
+describe('buildCustomWeeklyPlan', () => {
+  it('maps assigned days and rests the others', () => {
+    const plan = buildCustomWeeklyPlan({
+      monday: { label: 'Push Day', exercises: [{ id: 'x', sets: 3 }] },
+    })
+    expect(plan).toHaveLength(7)
+    expect(plan[0].isTrainingDay).toBe(true)
+    expect(plan[0].label).toBe('Push Day')
+    expect(plan.slice(1).every(d => !d.isTrainingDay)).toBe(true)
+  })
+})
+
+describe('getSwapOptions', () => {
+  it('returns alternatives that share the slot and never repeats current workout exercises', () => {
+    const workout = buildSingleWorkout(baseProfile, 'lower')
+    const target = workout.exercises[0]
+    const currentIds = workout.exercises.map(e => e.id)
+    const options = getSwapOptions(target.id, baseProfile, currentIds)
+    expect(options.length).toBeGreaterThan(0)
+    options.forEach(o => expect(currentIds).not.toContain(o.id))
+  })
+})
+
+describe('helpers', () => {
+  it('getPrimaryMuscles dedupes across exercises', () => {
+    const muscles = getPrimaryMuscles([
+      { muscles: { primary: ['glutes'] } },
+      { muscles: { primary: ['glutes', 'quads'] } },
+    ])
+    expect(muscles.filter(m => m === 'glutes')).toHaveLength(1)
+  })
+
+  it('estimateDuration returns 0 for empty and ≥15 otherwise', () => {
+    expect(estimateDuration([])).toBe(0)
+    expect(estimateDuration([{ sets: 3 }])).toBeGreaterThanOrEqual(15)
+  })
+})
+
+describe('exercise data integrity', () => {
+  it('all exercise ids are unique', () => {
+    expect(new Set(exercises.map(e => e.id)).size).toBe(exercises.length)
+  })
+
+  it('all swappable_with references point to real exercises', () => {
+    const ids = new Set(exercises.map(e => e.id))
+    exercises.forEach(ex => {
+      ;(ex.swappable_with || []).forEach(ref => {
+        expect(ids.has(ref), `${ex.id} → dangling swap ref ${ref}`).toBe(true)
+      })
+    })
+  })
+})

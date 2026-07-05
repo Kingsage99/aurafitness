@@ -102,6 +102,8 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
         zIndex: 35,
         background: NB.white,
         borderTop: open ? NB_BORDER : 'none',
+        borderTopLeftRadius: open ? 22 : 0,
+        borderTopRightRadius: open ? 22 : 0,
         boxShadow: open ? `0 -6px 0 ${NB.ink}` : 'none',
         display: 'flex', flexDirection: 'column',
       }}>
@@ -112,7 +114,7 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
 
         {/* Header */}
         <div style={{ flexShrink: 0, padding: '8px 22px 10px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `2px solid ${NB.ink}` }}>
-          <div style={{ width: 36, height: 36, background: NB.magenta, border: NB_BORDER, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 11, background: NB.magenta, border: NB_BORDER, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 3l2.2 5.5L20 9l-4.5 3.8L17 19l-5-3-5 3 1.5-6.2L4 9l5.8-.5z" />
             </svg>
@@ -128,7 +130,7 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
           {messages.map(msg => (
             <div key={msg.id} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
               {msg.role === 'assistant' && (
-                <div style={{ width: 26, height: 26, background: NB.magenta, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 7, marginTop: 2 }}>
+                <div style={{ width: 26, height: 26, borderRadius: 8, background: NB.magenta, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 7, marginTop: 2 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 3l2.2 5.5L20 9l-4.5 3.8L17 19l-5-3-5 3 1.5-6.2L4 9l5.8-.5z" />
                   </svg>
@@ -136,7 +138,7 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
               )}
               <div style={{
                 maxWidth: '78%', padding: '10px 14px',
-                border: `2px solid ${NB.ink}`,
+                border: `2px solid ${NB.ink}`, borderRadius: 14,
                 background: msg.role === 'user' ? NB.yellow : NB.cream,
                 color: NB.ink,
                 fontSize: 13, lineHeight: 1.55, fontWeight: 500,
@@ -148,12 +150,12 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
 
           {loading && (
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 7 }}>
-              <div style={{ width: 26, height: 26, background: NB.magenta, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 26, height: 26, borderRadius: 8, background: NB.magenta, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 3l2.2 5.5L20 9l-4.5 3.8L17 19l-5-3-5 3 1.5-6.2L4 9l5.8-.5z" />
                 </svg>
               </div>
-              <div style={{ background: NB.cream, border: `2px solid ${NB.ink}` }}>
+              <div style={{ background: NB.cream, border: `2px solid ${NB.ink}`, borderRadius: 12 }}>
                 <TypingDots />
               </div>
             </div>
@@ -170,7 +172,7 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
             onKeyDown={e => e.key === 'Enter' && send()}
             placeholder="Ask Aura anything…"
             style={{
-              flex: 1, height: 42, border: `2px solid ${NB.ink}`,
+              flex: 1, height: 42, border: `2px solid ${NB.ink}`, borderRadius: 12,
               padding: '0 14px', fontSize: 14, color: NB.ink,
               fontFamily: 'inherit', outline: 'none', background: NB.white,
             }}
@@ -179,7 +181,7 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
             onClick={send}
             disabled={!input.trim() || loading}
             style={{
-              width: 42, height: 42, border: `2px solid ${NB.ink}`,
+              width: 42, height: 42, borderRadius: 12, border: `2px solid ${NB.ink}`,
               background: input.trim() && !loading ? NB.teal : NB.white,
               cursor: input.trim() && !loading ? 'pointer' : 'default',
               display: 'flex', alignItems: 'center', justifyContent: 'center',

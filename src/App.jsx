@@ -1,35 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react'
 import PhoneFrame from './components/PhoneFrame'
+import { NavBadgeContext } from './components/BottomNav'
 import Auth from './screens/Auth'
 import Onboarding from './screens/Onboarding'
 import WhyAura from './screens/WhyAura'
 import Home from './screens/Home'
-import WorkoutPlayer from './screens/WorkoutPlayer'
 import WorkoutHub from './screens/WorkoutHub'
 import WorkoutDetail from './screens/WorkoutDetail'
 import WorkoutActive from './screens/WorkoutActive'
 import WorkoutComplete from './screens/WorkoutComplete'
 import WorkoutPost from './screens/WorkoutPost'
 import WorkoutBuilder from './screens/WorkoutBuilder'
+import AssignSchedule from './screens/AssignSchedule'
 import WorkoutRoutine from './screens/WorkoutRoutine'
 import MuscleMap from './screens/MuscleMap'
 import Meals from './screens/Meals'
 import Profile from './screens/Profile'
-import Stats from './screens/Stats'
 import MedalsScreen from './screens/MedalsScreen'
 import QuestsScreen from './screens/QuestsScreen'
 import Discovery from './screens/Discovery'
 import MealPost from './screens/MealPost'
 import Analytics from './screens/Analytics'
 import Leaderboard from './screens/Leaderboard'
-import { buildWeeklyPlan } from './utils/workoutBuilder'
+import Settings from './screens/Settings'
+import { buildWeeklyPlan, buildCustomWeeklyPlan, getWeekdayIndex, dateKeyFor } from './utils/workoutBuilder'
 import { supabase } from './lib/supabase'
 import { saveWorkoutHistory, fetchPendingRequests, setUsername } from './lib/social'
 import {
   DEFAULT_GAMIFICATION, resetWeeklyIfNeeded, awardGems, awardXP,
-  updateStreak, checkBadges, checkCaloriePenalty,
+  updateStreak, checkBadges, checkCaloriePenalty, calorieGoalStatus,
   awardRankPoints, awardMuscleRankPoints, completeQuest, purchaseItem, QUEST_POOL, SHOP_ITEMS,
-  MUSCLE_RANK_MIN_WORKOUTS,
+  MUSCLE_RANK_MIN_WORKOUTS, claimWeeklyChallenge,
 } from './utils/gamification'
 import { MUSCLE_LABELS } from './utils/muscleLabels'
 import RewardToast from './components/RewardToast'
@@ -53,11 +54,20 @@ const DEFAULT_PROFILE = {
   age: null,
   tdee: null,
   dailyCalorieTarget: null,
+  avatarUrl: null,
+  units: 'metric',
+  notificationsEnabled: true,
+  planningMode: 'guided',
+}
+
+const DEFAULT_LOGGED_MACROS = {
+  calories: 0, protein: 0, carbs: 0, fat: 0,
+  fiber: 0, sugar: 0, saturatedFat: 0, sodium: 0, cholesterol: 0, potassium: 0,
 }
 
 const Spinner = () => (
   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <div style={{ width: 34, height: 34, border: '3px solid #0A0A0A', borderTopColor: 'transparent', animation: 'spin 0.7s linear infinite' }} />
+    <div style={{ width: 34, height: 34, border: '3px solid #1A1A1A', borderTopColor: 'transparent', animation: 'spin 0.7s linear infinite' }} />
     <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
   </div>
 )
@@ -68,8 +78,7 @@ export default function App() {
   const [screen, setScreen] = useState('onboarding')
   const [userProfile, setUserProfile] = useState(DEFAULT_PROFILE)
   const [weeklyPlan, setWeeklyPlan] = useState(null)
-  const [todayWorkoutIndex, setTodayWorkoutIndex] = useState(0)
-  const [loggedMacros, setLoggedMacros] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 })
+  const [loggedMacros, setLoggedMacros] = useState(DEFAULT_LOGGED_MACROS)
   const [cookbook, setCookbook] = useState([])
   const [gamification, setGamification] = useState(DEFAULT_GAMIFICATION)
   const [notifications, setNotifications] = useState([])
@@ -79,6 +88,10 @@ export default function App() {
   const [routine, setRoutine] = useState({})
   const [pendingRequests, setPendingRequests] = useState([])
   const [mealPostData, setMealPostData] = useState(null)
+  const [missState, setMissState] = useState(null)
+  const [onboardingFlow, setOnboardingFlow] = useState(false)
+  const [customSchedule, setCustomSchedule] = useState({})
+  const [customExercises, setCustomExercises] = useState([])
 
   // Tracks whether data has been loaded from DB — prevents auto-saves on initial load
   const dataReady = useRef(false)
@@ -97,7 +110,7 @@ export default function App() {
 
     const { data: fullData, error: fullError } = await supabase
       .from('profiles')
-      .select('profile_data, onboarding_done, cookbook, daily_log_date, daily_log, gamification, username')
+      .select('profile_data, onboarding_done, cookbook, daily_log_date, daily_log, gamification, username, user_workouts, routine, custom_schedule, custom_exercises')
       .eq('id', userId)
       .single()
 
@@ -137,12 +150,18 @@ export default function App() {
       }
 
       setUserProfile(profile)
-      const plan = buildWeeklyPlan(profile)
+      const plan = profile.planningMode === 'custom'
+        ? buildCustomWeeklyPlan(data.custom_schedule || {})
+        : buildWeeklyPlan(profile)
       setWeeklyPlan(plan)
       setScreen('home')
 
       if (!usedFallback) {
         if (data.cookbook && Array.isArray(data.cookbook)) setCookbook(data.cookbook)
+        setUserWorkouts(Array.isArray(data.user_workouts) ? data.user_workouts : [])
+        setRoutine(data.routine && typeof data.routine === 'object' ? data.routine : {})
+        setCustomSchedule(data.custom_schedule && typeof data.custom_schedule === 'object' ? data.custom_schedule : {})
+        setCustomExercises(Array.isArray(data.custom_exercises) ? data.custom_exercises : [])
         const todayKey = new Date().toISOString().slice(0, 10)
         if (data.daily_log_date === todayKey && data.daily_log) setLoggedMacros(data.daily_log)
 
@@ -164,6 +183,16 @@ export default function App() {
             pushNotification('+20 💎  Yesterday\'s calorie goal achieved!')
           }
         }
+
+        // Unified "did the user miss yesterday" detection — feeds the Home banner,
+        // the Discovery lock, and the missed-workout make-up prompt from one pass.
+        const yesterdayDow = getWeekdayIndex(ydDate)
+        const yesterdaySlot = plan?.[yesterdayDow] ?? null
+        const workoutMissedYesterday = !!yesterdaySlot?.isTrainingDay && !(g.workoutDates || []).includes(yesterdayKey)
+        const cStatus = calorieGoalStatus(profile.dailyCalorieTarget, data.daily_log_date === yesterdayKey ? data.daily_log : null)
+        const calorieMissedYesterday = cStatus === 'missed' || cStatus === 'not_logged'
+        setMissState({ yesterdayKey, workoutMissedYesterday, missedWorkoutEntry: workoutMissedYesterday ? yesterdaySlot : null, calorieMissedYesterday })
+        if (workoutMissedYesterday) pushNotification(`😔 You missed ${yesterdaySlot.label} yesterday`)
 
         setGamification(g)
       }
@@ -215,6 +244,46 @@ export default function App() {
     return () => clearTimeout(t)
   }, [gamification]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-save user-built workouts to Supabase (debounced 1.5s)
+  useEffect(() => {
+    if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
+    const t = setTimeout(async () => {
+      const { error } = await supabase.from('profiles').update({ user_workouts: userWorkouts }).eq('id', sessionRef.current.user.id)
+      if (error) console.error('User workouts save error:', error.message)
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [userWorkouts]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save My Routine assignments to Supabase (debounced 1.5s)
+  useEffect(() => {
+    if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
+    const t = setTimeout(async () => {
+      const { error } = await supabase.from('profiles').update({ routine }).eq('id', sessionRef.current.user.id)
+      if (error) console.error('Routine save error:', error.message)
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [routine]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save custom weekly schedule to Supabase (debounced 1.5s)
+  useEffect(() => {
+    if (!dataReady.current || !sessionRef.current) return
+    const t = setTimeout(async () => {
+      const { error } = await supabase.from('profiles').update({ custom_schedule: customSchedule }).eq('id', sessionRef.current.user.id)
+      if (error) console.error('Custom schedule save error:', error.message)
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [customSchedule]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save user-created custom exercises to Supabase (debounced 1.5s)
+  useEffect(() => {
+    if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
+    const t = setTimeout(async () => {
+      const { error } = await supabase.from('profiles').update({ custom_exercises: customExercises }).eq('id', sessionRef.current.user.id)
+      if (error) console.error('Custom exercises save error:', error.message)
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [customExercises]) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -239,7 +308,7 @@ export default function App() {
         setScreen('onboarding')
         setUserProfile(DEFAULT_PROFILE)
         setWeeklyPlan(null)
-        setLoggedMacros({ calories: 0, protein: 0, carbs: 0, fat: 0 })
+        setLoggedMacros(DEFAULT_LOGGED_MACROS)
         setCookbook([])
       }
       // TOKEN_REFRESHED / USER_UPDATED / INITIAL_SESSION etc: session refs are already
@@ -254,8 +323,9 @@ export default function App() {
   const handleOnboardingComplete = async (answers) => {
     const profile = { ...DEFAULT_PROFILE, ...answers }
     setUserProfile(profile)
-    const plan = buildWeeklyPlan(profile)
+    const plan = profile.planningMode === 'custom' ? null : buildWeeklyPlan(profile)
     setWeeklyPlan(plan)
+    setCustomSchedule({})
 
     if (sessionRef.current) {
       const { error } = await supabase.from('profiles').upsert({
@@ -263,6 +333,10 @@ export default function App() {
         onboarding_done: true,
         profile_data: profile,
         cookbook: [],
+        user_workouts: [],
+        routine: {},
+        custom_schedule: {},
+        custom_exercises: [],
         updated_at: new Date().toISOString(),
       })
       if (error) console.error('Profile save failed:', error.message, error.code)
@@ -279,7 +353,12 @@ export default function App() {
       }
     }
 
-    navigate('whyaura')
+    if (profile.planningMode === 'custom') {
+      setOnboardingFlow(true)
+      navigate('workoutBuilder')
+    } else {
+      navigate('whyaura')
+    }
   }
 
   const handleResetOnboarding = async () => {
@@ -289,7 +368,7 @@ export default function App() {
     dataReady.current = false
     setUserProfile(DEFAULT_PROFILE)
     setWeeklyPlan(null)
-    setLoggedMacros({ calories: 0, protein: 0, carbs: 0, fat: 0 })
+    setLoggedMacros(DEFAULT_LOGGED_MACROS)
     setCookbook([])
     setScreen('onboarding')
   }
@@ -302,6 +381,7 @@ export default function App() {
     const existingDates = g.workoutDates || []
     if (!existingDates.includes(today)) g = { ...g, workoutDates: [...existingDates, today] }
     g = updateStreak(g, today)
+    if (activeWorkout?.source === 'makeup') g = { ...g, lastMakeupDate: today }
 
     // Base workout reward
     g = awardGems(g, 30)
@@ -364,8 +444,33 @@ export default function App() {
     navigate('workoutComplete')
   }
 
+  const handleStartMakeup = () => {
+    const entry = missState?.missedWorkoutEntry
+    if (!entry?.workout) return
+    setActiveWorkout({ ...entry.workout, label: entry.workout.name ?? entry.label, split: entry.label, source: 'makeup' })
+    navigate('workoutDetail')
+  }
+
+  const handleSkipMakeup = () => {
+    const today = new Date().toISOString().slice(0, 10)
+    setGamification(g => ({ ...g, lastMakeupDate: today }))
+  }
+
   const handleSaveWorkout = (workout) => {
     setUserWorkouts(prev => [...prev, workout])
+  }
+
+  const handleAddCustomExercise = (exercise) => {
+    setCustomExercises(prev => [...prev, exercise])
+  }
+
+  const handleAssignScheduleDay = (dayId, workout) => {
+    setCustomSchedule(prev => ({ ...prev, [dayId]: workout }))
+  }
+
+  const handleScheduleDone = (schedule) => {
+    setWeeklyPlan(buildCustomWeeklyPlan(schedule))
+    navigate('whyaura')
   }
 
   const handleUpdateRoutine = (updatedRoutine) => {
@@ -382,6 +487,14 @@ export default function App() {
     }
   }
 
+  const handleClaimChallenge = (challengeId) => {
+    const { g: updated, awarded } = claimWeeklyChallenge(resetWeeklyIfNeeded(gamification), challengeId)
+    if (awarded > 0) {
+      setGamification(updated)
+      pushNotification(`Weekly challenge complete! +${awarded} 💎`)
+    }
+  }
+
   const handleShopPurchase = (itemId, costOverride) => {
     const { g: updated, success } = purchaseItem(gamification, itemId, costOverride)
     if (success) {
@@ -393,7 +506,7 @@ export default function App() {
     }
   }
 
-  const handleMealLogged = (mealData = {}) => {
+  const handleMealLogged = (mealData = {}, { offerShare = true } = {}) => {
     let g = resetWeeklyIfNeeded(gamification)
     g = awardGems(g, 5)
     ;({ g } = awardXP(g, 10))
@@ -403,17 +516,10 @@ export default function App() {
     pushNotification('+5 💎  Meal logged!')
     newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
 
-    if (mealData.name) {
+    if (offerShare && mealData.name) {
       setMealPostData(mealData)
       navigate('mealPost')
     }
-  }
-
-  const handleSwapExercise = (exerciseId) => {
-    setUserProfile(prev => ({
-      ...prev,
-      dislikedExercises: [...(prev.dislikedExercises || []), exerciseId],
-    }))
   }
 
   const handleUpdateCountry = async (country) => {
@@ -426,27 +532,51 @@ export default function App() {
     }
   }
 
-  const todayWorkout = weeklyPlan?.[todayWorkoutIndex]?.workout ?? null
+  const handleUpdateProfile = async (partial) => {
+    const next = { ...userProfile, ...partial }
+    setUserProfile(next)
+    if (next.planningMode !== 'custom' && ('trainingStyle' in partial || 'daysPerWeek' in partial || 'trainingDays' in partial)) {
+      setWeeklyPlan(buildWeeklyPlan(next))
+    }
+    if (sessionRef.current) {
+      const { error } = await supabase.from('profiles').update({
+        profile_data: next,
+      }).eq('id', sessionRef.current.user.id)
+      if (error) console.error('Profile update error:', error.message)
+    }
+  }
+
+  const routineToday = routine[dateKeyFor()]
+  const todayWorkout = routineToday
+    ? { ...routineToday, name: routineToday.name ?? routineToday.label }
+    : weeklyPlan?.[getWeekdayIndex()]?.workout ?? null
 
   const renderScreen = () => {
     switch (screen) {
       case 'onboarding':
         return <Onboarding onComplete={handleOnboardingComplete} />
       case 'whyaura':
-        return <WhyAura userProfile={userProfile} onContinue={() => navigate('home')} />
+        return (
+          <WhyAura
+            userProfile={userProfile}
+            weeklyPlan={weeklyPlan}
+            onContinue={() => { setOnboardingFlow(false); navigate('home') }}
+          />
+        )
       case 'home':
-        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} missState={missState} onStartMakeup={handleStartMakeup} onSkipMakeup={handleSkipMakeup} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
 
       // ── Workout section ──────────────────────────────────────────────────────
       case 'workout':
         return (
           <WorkoutHub
             weeklyPlan={weeklyPlan}
-            todayWorkoutIndex={todayWorkoutIndex}
             userWorkouts={userWorkouts}
             setActiveWorkout={setActiveWorkout}
             onNavigate={navigate}
             gamification={gamification}
+            userProfile={userProfile}
+            routine={routine}
           />
         )
       case 'workoutDetail':
@@ -466,7 +596,30 @@ export default function App() {
       case 'mealPost':
         return <MealPost mealData={mealPostData} userProfile={userProfile} session={session} onNavigate={navigate} />
       case 'workoutBuilder':
-        return <WorkoutBuilder onSaveWorkout={handleSaveWorkout} onNavigate={navigate} />
+        return (
+          <WorkoutBuilder
+            onSaveWorkout={handleSaveWorkout}
+            onNavigate={navigate}
+            postSaveScreen={userProfile.planningMode === 'custom' ? 'assignSchedule' : 'workout'}
+            isOnboarding={onboardingFlow}
+            userId={session?.user?.id}
+            customExercises={customExercises}
+            onAddCustomExercise={handleAddCustomExercise}
+          />
+        )
+      case 'assignSchedule':
+        return (
+          <AssignSchedule
+            trainingDays={userProfile.trainingDays}
+            userWorkouts={userWorkouts}
+            customSchedule={customSchedule}
+            onAssignDay={handleAssignScheduleDay}
+            onBuildAnother={() => navigate('workoutBuilder')}
+            onDone={handleScheduleDone}
+            onNavigate={navigate}
+            isOnboarding={onboardingFlow}
+          />
+        )
       case 'workoutRoutine':
         return (
           <WorkoutRoutine
@@ -478,20 +631,8 @@ export default function App() {
             onNavigate={navigate}
           />
         )
-      // ── Legacy workout player (kept, accessible via internal nav if needed) ─
-      case 'workoutLegacy':
-        return (
-          <WorkoutPlayer
-            workout={todayWorkout}
-            userProfile={userProfile}
-            onSwapExercise={handleSwapExercise}
-            onWorkoutComplete={handleWorkoutComplete}
-            onNavigate={navigate}
-          />
-        )
-
       case 'musclemap':
-        return <MuscleMap workout={todayWorkout} onNavigate={navigate} />
+        return <MuscleMap session={session} onNavigate={navigate} />
       case 'meals':
         return (
           <Meals
@@ -513,7 +654,7 @@ export default function App() {
             gamification={gamification}
             onShopPurchase={handleShopPurchase}
             onNavigate={navigate}
-            onResetOnboarding={handleResetOnboarding}
+            onUpdateProfile={handleUpdateProfile}
           />
         )
       case 'store':
@@ -525,18 +666,36 @@ export default function App() {
             gamification={gamification}
             onShopPurchase={handleShopPurchase}
             onNavigate={navigate}
-            onResetOnboarding={handleResetOnboarding}
+            onUpdateProfile={handleUpdateProfile}
             initialTab="store"
           />
         )
-      case 'stats':
-        return <Stats weeklyPlan={weeklyPlan} onNavigate={navigate} />
+      case 'settings':
+        return (
+          <Settings
+            userProfile={userProfile}
+            onNavigate={navigate}
+            onUpdateProfile={handleUpdateProfile}
+            onResetOnboarding={handleResetOnboarding}
+          />
+        )
       case 'medals':
         return <MedalsScreen gamification={gamification} onNavigate={navigate} />
       case 'quests':
-        return <QuestsScreen gamification={gamification} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+        return <QuestsScreen gamification={gamification} onQuestComplete={handleQuestComplete} onClaimChallenge={handleClaimChallenge} onNavigate={navigate} />
       case 'discovery':
-        return <Discovery session={session} userProfile={userProfile} onNavigate={navigate} />
+        return (
+          <Discovery
+            session={session}
+            userProfile={userProfile}
+            gamification={gamification}
+            loggedMacros={loggedMacros}
+            missState={missState}
+            onStartMakeup={handleStartMakeup}
+            onPendingChange={setPendingRequests}
+            onNavigate={navigate}
+          />
+        )
       case 'analytics':
         return <Analytics gamification={gamification} userProfile={userProfile} loggedMacros={loggedMacros} session={session} onNavigate={navigate} />
       case 'leaderboard':
@@ -559,9 +718,11 @@ export default function App() {
   if (profileLoading) return <PhoneFrame hideStatus={true}><Spinner /></PhoneFrame>
 
   return (
-    <PhoneFrame hideStatus={true}>
-      {renderScreen()}
-      <RewardToast notifications={notifications} />
-    </PhoneFrame>
+    <NavBadgeContext.Provider value={pendingRequests.length}>
+      <PhoneFrame hideStatus={true}>
+        {renderScreen()}
+        <RewardToast notifications={notifications} />
+      </PhoneFrame>
+    </NavBadgeContext.Provider>
   )
 }

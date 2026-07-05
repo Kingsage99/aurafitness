@@ -15,6 +15,7 @@ export const DEFAULT_GAMIFICATION = {
   weeklyWorkoutsDone: 0,  // reset Monday
   lastCalorieDate: '',    // last date calorie penalty/reward was checked
   calorieGoalStreak: 0,   // consecutive days calorie goal hit
+  lastMakeupDate: '',     // "YYYY-MM-DD" a missed-workout make-up was completed or explicitly skipped
   badges: [],
   title: 'Beginner',
   frame: 'default',
@@ -22,6 +23,7 @@ export const DEFAULT_GAMIFICATION = {
   rank: 'bronze',
   rankPoints: 0,
   dailyQuests: { date: '', completed: [] },
+  weeklyChallenges: { week: '', claimed: [] },   // week = Monday "YYYY-MM-DD"
   purchasedItems: [],
   inventory: { streakFreezes: 0 },
   workoutDates: [],         // "YYYY-MM-DD" array of all workout days
@@ -75,13 +77,13 @@ export const TIER_COLORS = {
 
 export const RANKS = [
   { id: 'bronze',   label: 'Bronze',   color: '#fff',    bg: '#CD7F32', minWorkouts: 0   },
-  { id: 'silver',   label: 'Silver',   color: '#0A0A0A', bg: '#B8C0CC', minWorkouts: 8   },
-  { id: 'gold',     label: 'Gold',     color: '#0A0A0A', bg: '#FFC93C', minWorkouts: 18  },
-  { id: 'platinum', label: 'Platinum', color: '#0A0A0A', bg: '#7FE9D6', minWorkouts: 30  },
-  { id: 'diamond',  label: 'Diamond',  color: '#0A0A0A', bg: '#C9B8F5', minWorkouts: 45  },
-  { id: 'master',   label: 'Master',   color: '#fff',    bg: '#FF00E5', minWorkouts: 65  },
-  { id: 'elite',    label: 'Elite',    color: '#fff',    bg: '#FF6A2C', minWorkouts: 90  },
-  { id: 'olympian', label: 'Olympian', color: '#FFD400', bg: '#0A0A0A', minWorkouts: 120 },
+  { id: 'silver',   label: 'Silver',   color: '#1A1A1A', bg: '#B8C0CC', minWorkouts: 8   },
+  { id: 'gold',     label: 'Gold',     color: '#1A1A1A', bg: '#FFC93C', minWorkouts: 18  },
+  { id: 'platinum', label: 'Platinum', color: '#1A1A1A', bg: '#C9F3EB', minWorkouts: 30  },
+  { id: 'diamond',  label: 'Diamond',  color: '#1A1A1A', bg: '#7FE6D0', minWorkouts: 45  },
+  { id: 'master',   label: 'Master',   color: '#1A1A1A', bg: '#E7DCFB', minWorkouts: 65  },
+  { id: 'elite',    label: 'Elite',    color: '#1A1A1A', bg: '#B48CF2', minWorkouts: 90  },
+  { id: 'olympian', label: 'Olympian', color: '#fff',    bg: '#9366E6', minWorkouts: 120 },
 ]
 // Points needed per sub-level. Each tier (except the uncapped top tier) has 4 sub-levels: IV (entry) -> I (about to promote).
 export const RANK_UP_AT = 100
@@ -115,6 +117,33 @@ export function getDailyQuests(dateStr) {
     if (!indices.includes(idx)) indices.push(idx)
   }
   return indices.map(i => QUEST_POOL[i])
+}
+
+// ─── Weekly Challenges ────────────────────────────────────────────────────────
+// Progress is derived from already-tracked weekly counters — no manual completion.
+
+export const WEEKLY_CHALLENGES = [
+  { id: 'workouts_3', label: 'Complete 3 workouts',  icon: '🏋️', reward: 60, target: 3,   progress: g => g.weeklyWorkoutsDone || 0 },
+  { id: 'gems_100',   label: 'Earn 100 gems',        icon: '💎', reward: 50, target: 100, progress: g => g.weeklyGemsEarned || 0 },
+  { id: 'streak_7',   label: 'Reach a 7-day streak', icon: '🔥', reward: 80, target: 7,   progress: g => g.workoutStreak || 0 },
+]
+
+// Current-week claim state, self-invalidating when a new Monday starts
+export function getWeeklyChallengeState(g) {
+  const thisMonday = getMondayDate(new Date().toISOString())
+  return g.weeklyChallenges?.week === thisMonday
+    ? g.weeklyChallenges
+    : { week: thisMonday, claimed: [] }
+}
+
+// Returns { g, awarded } — pays out only if the target is met and not yet claimed
+export function claimWeeklyChallenge(g, challengeId) {
+  const ch = WEEKLY_CHALLENGES.find(c => c.id === challengeId)
+  if (!ch) return { g, awarded: 0 }
+  const wc = getWeeklyChallengeState(g)
+  if (wc.claimed.includes(challengeId) || ch.progress(g) < ch.target) return { g, awarded: 0 }
+  const paid = awardGems(g, ch.reward)
+  return { g: { ...paid, weeklyChallenges: { week: wc.week, claimed: [...wc.claimed, challengeId] } }, awarded: ch.reward }
 }
 
 // ─── Shop Definitions ─────────────────────────────────────────────────────────
@@ -465,6 +494,16 @@ export function compareByMetric(a, b, metric) {
   return (gb.totalWorkouts || 0) - (ga.totalWorkouts || 0)
 }
 
+// Pure classification of a day's calorie log against the target — no side effects.
+// Returns 'no_target' | 'not_logged' | 'hit' | 'missed'
+export function calorieGoalStatus(dailyCalorieTarget, dayLog) {
+  if (!dailyCalorieTarget || dailyCalorieTarget <= 0) return 'no_target'
+  if (!dayLog) return 'not_logged'
+  const calories  = dayLog.calories || 0
+  const threshold = dailyCalorieTarget * 0.20
+  return Math.abs(calories - dailyCalorieTarget) > threshold ? 'missed' : 'hit'
+}
+
 // Checks yesterday's calorie log on app load; awards bonus or deducts a life
 // Returns { g, penaltyApplied, lifeLost, goalHit }
 export function checkCaloriePenalty(g, yesterdayStr, dailyCalorieTarget, yesterdayLog) {
@@ -472,22 +511,37 @@ export function checkCaloriePenalty(g, yesterdayStr, dailyCalorieTarget, yesterd
 
   let updated = { ...g, lastCalorieDate: yesterdayStr }
 
-  if (!yesterdayLog || !dailyCalorieTarget || dailyCalorieTarget <= 0) {
+  const status = calorieGoalStatus(dailyCalorieTarget, yesterdayLog)
+  if (status === 'no_target' || status === 'not_logged') {
     return { g: updated, penaltyApplied: 0, lifeLost: false, goalHit: false }
   }
 
-  const calories  = yesterdayLog.calories || 0
-  const threshold = dailyCalorieTarget * 0.20
-  const missed    = Math.abs(calories - dailyCalorieTarget) > threshold
-
-  if (missed) {
-    const { g: pg, penaltyApplied } = loseLife(updated)
+  if (status === 'missed') {
+    const { g: pg, penaltyApplied } = loseLife({ ...updated, calorieGoalStreak: 0 })
     return { g: pg, penaltyApplied, lifeLost: true, goalHit: false }
   }
 
-  // Goal hit — award gems + XP + streak
+  // Goal hit — award gems + XP + streak (extends the same streak a workout would)
   updated = awardGems(updated, 20)
   const { g: g2 } = awardXP(updated, 30)
   updated = { ...g2, calorieGoalStreak: (g.calorieGoalStreak || 0) + 1 }
+  updated = updateStreak(updated, yesterdayStr)
   return { g: updated, penaltyApplied: 0, lifeLost: false, goalHit: true }
+}
+
+// ─── Unified miss-detection flags ────────────────────────────────────────────
+// One derivation, shared by the Home banner and the Discovery lock, so
+// "has this miss been resolved yet" logic isn't written twice.
+// missState: { workoutMissedYesterday, missedWorkoutEntry, calorieMissedYesterday } | null
+// Returns { showWorkoutMiss, showCalorieMiss, missedWorkoutEntry }
+export function getMissFlags(missState, gamification = {}, loggedMacros = { calories: 0 }) {
+  if (!missState) return { showWorkoutMiss: false, showCalorieMiss: false, missedWorkoutEntry: null }
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const showWorkoutMiss = !!missState.workoutMissedYesterday && gamification.lastMakeupDate !== todayKey
+  const showCalorieMiss = !!missState.calorieMissedYesterday && !((loggedMacros.calories || 0) > 0)
+  return {
+    showWorkoutMiss,
+    showCalorieMiss,
+    missedWorkoutEntry: showWorkoutMiss ? missState.missedWorkoutEntry : null,
+  }
 }

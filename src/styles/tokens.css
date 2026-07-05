@@ -1,21 +1,21 @@
 :root {
-  --color-bg: #F5F0DC;
-  --color-ink: #0A0A0A;
+  --color-bg: #F3EDF7;
+  --color-ink: #1A1A1A;
   --color-white: #ffffff;
   --color-cream: #F7F4E6;
 
-  --color-teal: #00C2C8;
-  --color-magenta: #FF00E5;
-  --color-yellow: #FFD400;
-  --color-gold: #FFC93C;
-  --color-green: #46D45A;
-  --color-orange: #FF6A2C;
-  --color-blue: #4AA3FF;
-  --color-lavender: #C9B8F5;
-  --color-red: #E5352B;
+  --color-teal: #7FE6D0;
+  --color-magenta: #B48CF2;
+  --color-yellow: #F7CF4A;
+  --color-gold: #F7CF4A;
+  --color-green: #C2E84B;
+  --color-orange: #F79AC6;
+  --color-blue: #B48CF2;
+  --color-lavender: #E7DCFB;
+  --color-red: #E5484D;
 
   --nb-border-w: 3px;
-  --nb-border: 3px solid #0A0A0A;
+  --nb-border: 3px solid #1A1A1A;
 
   --font-display: 'Archivo', sans-serif;
   --font-mono: 'Space Mono', monospace;
@@ -32,8 +32,6 @@
 body {
   margin: 0;
   background-color: var(--color-bg);
-  background-image: radial-gradient(rgba(10,10,10,0.10) 1.5px, transparent 1.5px);
-  background-size: 20px 20px;
   font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
 }

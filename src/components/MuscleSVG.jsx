@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { NB_INTENSITY_RAMP } from '../styles/neoBrutalism'
 
 export const MUSCLE_SVG_IDS = {
   glutes:    { back: ['glute'],                                          front: [] },
@@ -59,7 +60,7 @@ export const SVG_TO_TARGET_AREA = {
   back_shoulder: 'Back', scapular_muscle: 'Back', front_shoulder: 'Back',
 }
 
-const DEFAULT_FILL = '#EAE6D2'
+const DEFAULT_FILL = NB_INTENSITY_RAMP[0]
 const VIEW_BOX = '640 0 640 1080'
 
 // All known muscle SVG IDs (used for reset before re-coloring)

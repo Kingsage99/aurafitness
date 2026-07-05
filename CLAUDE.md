@@ -7,27 +7,19 @@ A women's strength & physique app. Soft purple design, mobile-first (384×832 ph
 ## Tech Stack
 
 - **React 18 + Vite 6** — SPA, no routing library (screen state in App.jsx)
-- **No backend yet** — all state is in-memory React state; persistence comes later (Firebase or Supabase)
-- **Fonts:** DM Serif Display (headings), Plus Jakarta Sans (body) — loaded via Google Fonts in index.html
-- **Styling:** Inline styles matching the design system (no CSS framework)
+- **Supabase backend** — auth, `profiles` table (jsonb columns for profile/gamification/cookbook/workouts/routine), `workout_history`, social tables (posts, friends, reactions), storage for media uploads. Schema changes are applied via MCP migrations (no local migration files).
+- **Fonts:** Archivo (display/headings), Space Mono (labels/numbers) — loaded via Google Fonts in index.html
+- **Styling:** Inline styles, neo-brutalist design system (no CSS framework)
 
-## Design System Tokens (`src/styles/tokens.css`)
+## Design System (`src/styles/neoBrutalism.js`)
 
-| Token | Value | Use |
-|-------|-------|-----|
-| Primary purple | `#7C3AED` | Buttons, active states, progress |
-| Dark purple | `#2E1065` | Headings, text |
-| Background | `#E9E5F2` | App background |
-| Card background | `#FBF7FF → #F4ECFB` | Phone frame gradient |
-| Muted text | `#8478A0` | Subtitles, hints |
-| Border | `#EDE4F8` | Card borders |
-| Card shadow | `0 24px 60px rgba(76,36,120,.18)` | Elevated cards |
+All colors/fonts come from the `NB` token object — screens never hardcode hex. Key exports: `NB` (palette: ink `#1A1A1A`, purple `#B48CF2`, deep purple `#9366E6`, mint `#7FE6D0`, lime `#C2E84B`, yellow `#F7CF4A`, pink `#F79AC6`, lavender `#E7DCFB`), `NB_BORDER` (3px ink), `hardShadow(px)` (hard offset shadow, no blur), `NB_INTENSITY_RAMP` (5-step muscle-heat scale). Source of truth is the "Fitness UI Kit v2" Claude Design project. `src/styles/tokens.css` mirrors the palette as CSS custom properties.
 
 ## Screen Navigation
 
-`App.jsx` holds a `currentScreen` string state. All screens are in `src/screens/`. Navigation is done by calling `setScreen('screenName')` passed as a prop.
+`App.jsx` holds a `screen` string state. All screens are in `src/screens/`. Navigation is done by calling `navigate('screenName')` passed as an `onNavigate` prop.
 
-Screens: `onboarding` → `whyaura` → `home` → `workout` / `musclemap` / `meals` / `profile` / `stats` / `squad`
+Main tabs (bottom nav): `home` / `workout` / `meals` / `profile`, plus a center "+" menu → `discovery` / `analytics` / `leaderboard`. Other screens: `onboarding` → `whyaura` (first run), `workoutDetail` → `workoutActive` → `workoutComplete` → `workoutPost`, `workoutBuilder`, `assignSchedule`, `workoutRoutine`, `musclemap`, `mealPost`, `store`, `settings`, `medals`, `quests`.
 
 Bottom nav appears on all post-onboarding screens.
 
@@ -121,59 +113,31 @@ When user taps "Swap this exercise":
 | 4 | Upper A / Lower A / Upper B / Lower B |
 | 5 | Lower / Upper / Lower / Upper / Full body |
 
-## Nutrition (Edamam + Claude)
+## Nutrition (Claude Haiku for everything)
 
-### Food Logging → Edamam Food Database API
-Used when user manually searches/logs food ("I ate 200g chicken breast").
+All nutrition AI lives in `src/utils/claudeApi.js` — there is **no Edamam integration** (it was planned, then dropped; Claude handles food lookup too). Functions:
 
-- Endpoint: `https://api.edamam.com/api/food-database/v2/parser`
-- Auth: `app_id` + `app_key` query params
-- Returns: food name, calories, protein, carbs, fat per serving
-- Plan: Enterprise Basic — $14/month, 100K requests/month
+- `lookupFood(query)` — quick macro estimate for the craving-box preview
+- `suggestMeal({...targets, dietary, allergies, physique, craving})` — full recipe generation (name, ingredients, method, full 10-field macros: calories/protein/carbs/fat/fiber/sugar/saturatedFat/sodium/cholesterol/potassium)
+- `adjustMeal({meal, instruction, dietary, allergies})` — free-text recipe adjustment ("make it dairy free")
+- `identifyEatenFood(description)` — "already ate" mode: identifies a described meal and estimates macros
+- `chatWithCoach(message, userProfile, history)` — the floating AI coach (Home, Meals, workout screens)
 
-### Meal Recipe Generation → Claude Haiku 4.5
-Used when user taps "Suggest a meal" or chats with the AI coach.
-
-System prompt template (kept in `src/utils/claudePrompts.js`):
-```
-You are a nutrition coach for a women's fitness app called Aura.
-Generate a meal fitting these constraints:
-- Target calories: ~{remainingCalories} kcal
-- Macros: Protein {protein}g, Carbs {carbs}g, Fat {fat}g
-- Dietary preference: {dietary}
-- Allergies (never include): {allergies}
-- Physique goal: {physique}
-Return ONLY valid JSON: { name, ingredients[], macros{calories,protein,carbs,fat}, prepTimeMinutes, instructions[] }
-```
-
-## AI Chat Coach → Claude Haiku 4.5
-
-Floating chat button on Home, Meals, and WorkoutPlayer screens.
-
-System prompt (in `src/utils/claudePrompts.js`):
-```
-You are Aura, a supportive AI fitness coach for women. 
-The user's profile: physique goal={physique}, experience={experience}, equipment={equipment}.
-Be warm, concise, and science-backed. Answer workout form questions, suggest meal swaps, 
-give motivation. Never give medical advice. Keep responses under 120 words.
-```
-
-Model: `claude-haiku-4-5-20251001`
-API: Anthropic Messages API (`https://api.anthropic.com/v1/messages`)
+Model: `claude-haiku-4-5-20251001`, via the Anthropic Messages API. All prompts are inline in `claudeApi.js` (there is no `claudePrompts.js`).
 
 ## API Keys — Environment Variables
 
 All keys go in `.env` at the project root. Never commit this file (it's in `.gitignore`).
 
 ```
-VITE_EDAMAM_APP_ID=your_edamam_app_id
-VITE_EDAMAM_APP_KEY=your_edamam_app_key
-VITE_ANTHROPIC_API_KEY=your_anthropic_api_key
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_ANTHROPIC_API_KEY=your_anthropic_api_key   # dev fallback only — see below
 ```
 
-Access in code: `import.meta.env.VITE_EDAMAM_APP_ID`
+Access in code: `import.meta.env.VITE_SUPABASE_URL`
 
-Note: In production, Anthropic API calls must go through a backend (never expose the key in the browser). For MVP/dev, calling from the frontend is acceptable for testing.
+**Production note:** Claude calls go through the `claude-proxy` Supabase Edge Function (key stored as a Supabase secret, never shipped to the browser). `claudeApi.js` calls the proxy first and only falls back to a direct browser call with `VITE_ANTHROPIC_API_KEY` in local dev when the proxy isn't deployed.
 
 ## Running the App
 
@@ -191,7 +155,7 @@ Node path (if needed): `C:\Users\PC\AppData\Local\node-portable\node-v20.18.1-wi
 | Service | Cost |
 |---------|------|
 | Workout algorithm | $0 (custom) |
-| Edamam food lookup | $14/mo |
-| Claude Haiku (chat + meals) | ~$30–50/mo |
+| Claude Haiku (chat + meals + food lookup) | ~$35–60/mo |
+| Supabase (free tier → Pro if needed) | $0–25/mo |
 | Avatar/images | $0 (SVG) |
-| **Total** | **~$44–64/mo** |
+| **Total** | **~$35–85/mo** |

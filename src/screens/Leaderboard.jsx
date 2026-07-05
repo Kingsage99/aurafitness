@@ -78,7 +78,7 @@ function secondaryLabel(entry, metric, rankMode) {
 
 function chipStyle(active) {
   return {
-    flexShrink: 0, padding: '6px 12px', border: `2px solid ${NB.ink}`,
+    flexShrink: 0, padding: '6px 12px', border: `2px solid ${NB.ink}`, borderRadius: 10,
     background: active ? NB.teal : NB.white,
     color: NB.ink,
     fontFamily: NB.fontMono, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -89,7 +89,7 @@ function Avatar({ name, size = 40, ring }) {
   const initial = (name || '?').trim().charAt(0).toUpperCase() || '?'
   return (
     <div style={{
-      width: size, height: size, border: `2px solid ${NB.ink}`, flexShrink: 0,
+      width: size, height: size, borderRadius: Math.round(size * 0.28), border: `2px solid ${NB.ink}`, flexShrink: 0,
       background: NB.lavender,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       ...(ring ? { boxShadow: hardShadow(3, ring) } : {}),
@@ -120,7 +120,7 @@ function PodiumSlot({ entry, place, metric, rankMode }) {
         {entry ? displayName(entry) : '—'}{entry?.you ? ' (you)' : ''}
       </div>
       <div style={{
-        marginTop: 6, width: '100%', height: pedH, border: `2px solid ${NB.ink}`,
+        marginTop: 6, width: '100%', height: pedH, borderRadius: 10, border: `2px solid ${NB.ink}`,
         background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
       }}>
         <span style={{ fontFamily: NB.fontDisplay, fontSize: place === 1 ? 18 : 14, fontWeight: 900, color: NB.ink }}>{place}</span>
@@ -136,12 +136,12 @@ function BoardRow({ entry, rank, metric, rankMode }) {
 
   return (
     <div style={{
-      border: `2.5px solid ${NB.ink}`, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+      border: `2.5px solid ${NB.ink}`, borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
       background: entry.you ? NB.yellow : NB.white,
       boxShadow: entry.you ? hardShadow(3) : hardShadow(1),
     }}>
       <div style={{
-        width: 32, height: 32, border: `2px solid ${NB.ink}`, flexShrink: 0, background: badgeBg,
+        width: 32, height: 32, borderRadius: 10, border: `2px solid ${NB.ink}`, flexShrink: 0, background: badgeBg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 14, fontWeight: 800, color: NB.ink,
       }}>
@@ -155,8 +155,8 @@ function BoardRow({ entry, rank, metric, rankMode }) {
           {metric === 'ranks' && (() => {
             const { tier, unranked } = getRankDisplay(entry, rankMode)
             return unranked
-              ? <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: '#e5e5e5', border: `1.5px solid ${NB.ink}`, padding: '1px 6px', flexShrink: 0 }}>Unranked</span>
-              : <span style={{ fontSize: 10, fontWeight: 800, color: tier.color === '#fff' ? NB.ink : tier.color, background: tier.bg, border: `1.5px solid ${NB.ink}`, padding: '1px 6px', flexShrink: 0 }}>{tier.label}</span>
+              ? <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: '#e5e5e5', border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '1px 6px', flexShrink: 0 }}>Unranked</span>
+              : <span style={{ fontSize: 10, fontWeight: 800, color: tier.color === '#fff' ? NB.ink : tier.color, background: tier.bg, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '1px 6px', flexShrink: 0 }}>{tier.label}</span>
           })()}
         </div>
         {sub && <div style={{ fontSize: 12, color: '#555' }}>{sub}</div>}
@@ -186,14 +186,14 @@ function PinnedYouRow({ entry, rank, metric, rankMode, rankModeLabel }) {
 
   return (
     <div style={{
-      border: `2.5px solid ${NB.ink}`, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
-      background: NB.ink,
+      border: `2.5px solid ${NB.ink}`, borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+      background: NB.lavender,
     }}>
-      <div style={{ width: 32, height: 32, border: `1.5px solid ${NB.white}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: NB.white }}>N/A</div>
+      <div style={{ width: 32, height: 32, borderRadius: 10, border: `1.5px solid ${NB.ink}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: NB.ink }}>N/A</div>
       <span style={{ fontSize: 18 }}>🔒</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: NB.white }}>You</div>
-        <div style={{ fontSize: 11, color: '#ccc', lineHeight: 1.4 }}>{copy}</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>You</div>
+        <div style={{ fontSize: 11, color: '#555', lineHeight: 1.4 }}>{copy}</div>
       </div>
     </div>
   )
@@ -208,15 +208,15 @@ function CountrySheet({ onSelect, onClose }) {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 60, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)' }} />
-      <div style={{ position: 'relative', background: NB.white, borderTop: NB_BORDER, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '0 20px 24px', zIndex: 1, maxHeight: '78%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'relative', background: NB.white, borderTop: NB_BORDER, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '0 20px 24px', zIndex: 1, maxHeight: '78%', display: 'flex', flexDirection: 'column' }}>
         <div style={{ width: 38, height: 5, background: NB.ink, margin: '14px auto 14px', flexShrink: 0 }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexShrink: 0 }}>
           <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 19, textTransform: 'uppercase', color: NB.ink }}>Choose your country</span>
-          <button onClick={onClose} style={{ width: 32, height: 32, border: `2px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', color: NB.ink, fontSize: 16, fontWeight: 700 }}>✕</button>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', color: NB.ink, fontSize: 16, fontWeight: 700 }}>✕</button>
         </div>
         <input
           value={q} onChange={e => setQ(e.target.value)} placeholder="Search country"
-          style={{ width: '100%', height: 44, border: `2px solid ${NB.ink}`, padding: '0 14px', fontSize: 14, color: NB.ink, background: NB.white, outline: 'none', boxSizing: 'border-box', fontFamily: NB.fontDisplay, marginBottom: 10, flexShrink: 0 }}
+          style={{ width: '100%', height: 44, border: `2px solid ${NB.ink}`, borderRadius: 12, padding: '0 14px', fontSize: 14, color: NB.ink, background: NB.white, outline: 'none', boxSizing: 'border-box', fontFamily: NB.fontDisplay, marginBottom: 10, flexShrink: 0 }}
         />
         <div style={{ overflowY: 'auto' }}>
           {results.map(c => (
@@ -252,7 +252,9 @@ export default function Leaderboard({ session, userProfile = {}, gamification = 
     if (scope === 'regional' && !country) { setBoard([]); setLoading(false); return }
     setLoading(true)
 
-    const rows = await fetchLeaderboardProfiles({ scope, userId, country, limit: 40 })
+    // High cap, not a real page size — the board only ever displays the top 18 (+ pinned "you"),
+    // but ranking has to be computed from every user, not an arbitrary slice fetched pre-sort.
+    const rows = await fetchLeaderboardProfiles({ scope, userId, country, limit: 1000 })
 
     const youEntry = {
       id: userId,
@@ -296,14 +298,14 @@ export default function Leaderboard({ session, userProfile = {}, gamification = 
       {/* Header */}
       <div style={{ padding: '8px 22px 0', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button onClick={() => onNavigate('home')} style={{ width: 32, height: 32, background: NB.white, border: `2px solid ${NB.ink}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: NB.ink }}>
+          <button onClick={() => onNavigate('home')} style={{ width: 32, height: 32, borderRadius: 10, background: NB.white, border: `2px solid ${NB.ink}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: NB.ink }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
           </button>
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink }}>Leaderboards</div>
           <div style={{ position: 'relative' }}>
-            <button onClick={() => setInfoOpen(o => !o)} style={{ width: 32, height: 32, background: NB.yellow, border: `2px solid ${NB.ink}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: NB.ink, fontSize: 13, fontWeight: 800 }}>i</button>
+            <button onClick={() => setInfoOpen(o => !o)} style={{ width: 32, height: 32, borderRadius: 10, background: NB.yellow, border: `2px solid ${NB.ink}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: NB.ink, fontSize: 13, fontWeight: 800 }}>i</button>
             {infoOpen && (
-              <div style={{ position: 'absolute', right: 0, top: 38, width: 200, background: NB.ink, color: NB.white, border: `2px solid ${NB.ink}`, boxShadow: hardShadow(3), padding: '10px 12px', fontSize: 11, lineHeight: 1.5, zIndex: 30 }}>
+              <div style={{ position: 'absolute', right: 0, top: 38, width: 200, background: NB.lavender, color: NB.ink, border: `2px solid ${NB.ink}`, borderRadius: 12, boxShadow: hardShadow(3), padding: '10px 12px', fontSize: 11, lineHeight: 1.5, zIndex: 30 }}>
                 {INFO_COPY[metric]}
               </div>
             )}
@@ -314,7 +316,7 @@ export default function Leaderboard({ session, userProfile = {}, gamification = 
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           {SCOPES.map(([id, label]) => (
             <button key={id} onClick={() => setScope(id)} style={{
-              flex: 1, height: 40, border: `2.5px solid ${NB.ink}`,
+              flex: 1, height: 40, border: `2.5px solid ${NB.ink}`, borderRadius: 12,
               background: scope === id ? NB.teal : NB.white,
               boxShadow: scope === id ? hardShadow(2) : 'none',
               fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase',
@@ -335,7 +337,7 @@ export default function Leaderboard({ session, userProfile = {}, gamification = 
         {/* Search */}
         <input
           value={search} onChange={e => setSearch(e.target.value)} placeholder="Find someone…"
-          style={{ width: '100%', height: 40, border: `2px solid ${NB.ink}`, padding: '0 14px', fontSize: 13, color: NB.ink, background: NB.white, outline: 'none', boxSizing: 'border-box', fontFamily: NB.fontDisplay, marginTop: 10 }}
+          style={{ width: '100%', height: 40, border: `2px solid ${NB.ink}`, borderRadius: 12, padding: '0 14px', fontSize: 13, color: NB.ink, background: NB.white, outline: 'none', boxSizing: 'border-box', fontFamily: NB.fontDisplay, marginTop: 10 }}
         />
       </div>
 
@@ -346,11 +348,11 @@ export default function Leaderboard({ session, userProfile = {}, gamification = 
         )}
 
         {!loading && scope === 'regional' && !country && (
-          <div style={{ border: `2.5px dashed ${NB.ink}`, background: NB.cream, padding: '28px 20px', textAlign: 'center' }}>
+          <div style={{ border: `2.5px dashed ${NB.ink}`, borderRadius: 16, background: NB.cream, padding: '28px 20px', textAlign: 'center' }}>
             <div style={{ fontSize: 32, marginBottom: 10 }}>🌍</div>
             <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 18, textTransform: 'uppercase', color: NB.ink, marginBottom: 6 }}>Pick your country</div>
             <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5, marginBottom: 16 }}>Set your country to see how you rank regionally.</div>
-            <button onClick={() => setCountrySheet(true)} style={{ height: 44, padding: '0 20px', border: `2px solid ${NB.ink}`, boxShadow: hardShadow(3), background: NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', cursor: 'pointer' }}>Choose country</button>
+            <button onClick={() => setCountrySheet(true)} style={{ height: 44, padding: '0 20px', border: `2px solid ${NB.ink}`, borderRadius: 12, boxShadow: hardShadow(3), background: NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', cursor: 'pointer' }}>Choose country</button>
           </div>
         )}
 

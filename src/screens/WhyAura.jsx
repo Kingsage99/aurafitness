@@ -16,7 +16,9 @@ const GOAL_COPY = {
   athletic_performance: { verb: 'perform at', detail: 'a performance surplus' },
 }
 
-export default function WhyAura({ userProfile = {}, onContinue }) {
+const DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+export default function WhyAura({ userProfile = {}, weeklyPlan = null, onContinue }) {
   const {
     physique = 'lean_toned',
     fitnessGoal = 'tone_recomp',
@@ -40,7 +42,7 @@ export default function WhyAura({ userProfile = {}, onContinue }) {
         {/* Avatar */}
         <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', marginBottom: 10 }}>
           <AvatarSilhouette height={200} color={NB.lavender} style={{ position: 'relative', filter: `drop-shadow(${hardShadow(3)})` }} />
-          <div style={{ position: 'absolute', top: 8, right: 0, background: NB.white, border: NB_BORDER, boxShadow: hardShadow(3), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ position: 'absolute', top: 8, right: 0, background: NB.white, border: NB_BORDER, borderRadius: 14, boxShadow: hardShadow(3), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 7 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
             <div>
               <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>Timeline</div>
@@ -64,37 +66,24 @@ export default function WhyAura({ userProfile = {}, onContinue }) {
           </div>
         )}
 
-        {/* Plan phases */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[
-            { num: 1, title: 'Foundation', sub: 'Build form, mobility & the habit · weeks 1–4', active: true, locked: false },
-            { num: 2, title: 'Build', sub: 'Glute & leg volume, progressive load · weeks 5–10', active: false, locked: true },
-            { num: 3, title: 'Sculpt', sub: 'Definition cuts & conditioning · weeks 11–16', active: false, locked: true },
-          ].map(phase => (
-            <div key={phase.num} style={{
-              display: 'flex', gap: 13, alignItems: 'center',
-              padding: 15, border: NB_BORDER,
-              background: phase.active ? NB.teal : NB.white,
-              boxShadow: phase.active ? hardShadow(4) : 'none',
-            }}>
-              <div style={{ width: 42, height: 42, border: NB_BORDER, background: phase.active ? NB.ink : NB.white, color: phase.active ? NB.white : NB.ink, fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {phase.num}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>{phase.title}</div>
-                <div style={{ fontSize: 12, color: '#444' }}>{phase.sub}</div>
-              </div>
-              {phase.active ? (
-                <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.ink, background: NB.white, border: `2px solid ${NB.ink}`, padding: '4px 8px', textTransform: 'uppercase' }}>Start</span>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" opacity="0.5">
-                  <rect x="5" y="11" width="14" height="9"/>
-                  <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
-                </svg>
-              )}
+        {/* Weekly schedule — shared for both guided and custom-built plans */}
+        {weeklyPlan && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Your weekly schedule</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {weeklyPlan.map(day => (
+                <div key={day.dayId} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '11px 15px', border: NB_BORDER, borderRadius: 12,
+                  background: day.isTrainingDay ? NB.teal : NB.white,
+                }}>
+                  <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: NB.ink, letterSpacing: 1, textTransform: 'uppercase' }}>{DAY_LABELS[day.dayIndex]}</span>
+                  <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>{day.isTrainingDay ? day.label : 'Rest day'}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '14px 22px 26px', flexShrink: 0 }}>
