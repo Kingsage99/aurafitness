@@ -462,7 +462,7 @@ function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEd
 // bottom of the scrolling viewport so it stays reachable no matter how far the meal is scrolled.
 function MealActionBar({ onAdjust, onLog, logged }) {
   return (
-    <div style={{ position: 'sticky', bottom: 0, display: 'flex', gap: 8, padding: '14px 0 4px', background: `linear-gradient(to top, ${NB.bg} 60%, transparent)` }}>
+    <div style={{ position: 'sticky', bottom: 0, display: 'flex', gap: 8, padding: '14px 0 4px', background: `linear-gradient(to top, ${NB.bg} 85%, transparent)` }}>
       <button onClick={onAdjust} style={{ flex: 1, height: 46, border: `2px solid ${NB.ink}`, borderRadius: 12, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer' }}>
         Adjust
       </button>

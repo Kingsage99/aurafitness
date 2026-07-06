@@ -18,6 +18,7 @@ import Meals from './screens/Meals'
 import Profile from './screens/Profile'
 import MedalsScreen from './screens/MedalsScreen'
 import QuestsScreen from './screens/QuestsScreen'
+import StoreScreen from './screens/StoreScreen'
 import Discovery from './screens/Discovery'
 import MealPost from './screens/MealPost'
 import Analytics from './screens/Analytics'
@@ -96,6 +97,10 @@ export default function App() {
   // Tracks whether data has been loaded from DB — prevents auto-saves on initial load
   const dataReady = useRef(false)
   const sessionRef = useRef(null)
+  // Supabase fires both getSession() and an onAuthStateChange 'SIGNED_IN' event on
+  // initial load — this guards loadProfile from running twice (which was double-firing
+  // the "missed workout yesterday" notification, among other one-time side effects).
+  const profileLoadTriggered = useRef(false)
 
   const pushNotification = (msg) => {
     const id = Date.now() + Math.random()
@@ -289,7 +294,10 @@ export default function App() {
       setSession(session)
       sessionRef.current = session
       if (session) {
-        loadProfile(session.user.id)
+        if (!profileLoadTriggered.current) {
+          profileLoadTriggered.current = true
+          loadProfile(session.user.id)
+        }
       } else {
         setProfileLoading(false)
       }
@@ -299,10 +307,13 @@ export default function App() {
       sessionRef.current = newSession
 
       if (event === 'SIGNED_IN') {
+        if (profileLoadTriggered.current) return // already handled by getSession() above
+        profileLoadTriggered.current = true
         dataReady.current = false
         setProfileLoading(true)
         loadProfile(newSession.user.id)
       } else if (event === 'SIGNED_OUT') {
+        profileLoadTriggered.current = false // allow a fresh load on the next sign-in
         dataReady.current = false
         setProfileLoading(false)
         setScreen('onboarding')
@@ -660,18 +671,7 @@ export default function App() {
           />
         )
       case 'store':
-        return (
-          <Profile
-            userProfile={userProfile}
-            weeklyPlan={weeklyPlan}
-            session={session}
-            gamification={gamification}
-            onShopPurchase={handleShopPurchase}
-            onNavigate={navigate}
-            onUpdateProfile={handleUpdateProfile}
-            initialTab="store"
-          />
-        )
+        return <StoreScreen gamification={gamification} onShopPurchase={handleShopPurchase} onNavigate={navigate} />
       case 'settings':
         return (
           <Settings

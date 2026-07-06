@@ -30,3 +30,12 @@ Thumbs.db
 .mcp.json
 
 .vercel
+
+# Playwright UX audit — real session tokens + generated artifacts, never commit
+e2e/.auth/
+e2e/screenshots/
+e2e/findings/
+e2e/AUDIT_REPORT.md
+
+# Claude runtime state
+.claude/scheduled_tasks.lock

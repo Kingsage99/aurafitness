@@ -29,6 +29,7 @@ export const DEFAULT_GAMIFICATION = {
   workoutDates: [],         // "YYYY-MM-DD" array of all workout days
   activeBanner: 'banner_default',
   activeTheme: 'theme_default',
+  activePet: 'pet_panda',   // equipped pet — see src/data/pets.js
   muscleRanks: {},          // { [muscleId]: { rank: 'bronze', rankPoints: 0 } }
 }
 
@@ -463,6 +464,8 @@ export function purchaseItem(g, itemId, costOverride) {
     updated = { ...updated, activeBanner: itemId }
   } else if (itemId.startsWith('theme_')) {
     updated = { ...updated, activeTheme: itemId }
+  } else if (itemId.startsWith('pet_')) {
+    updated = { ...updated, activePet: itemId }
   }
 
   return { g: updated, success: true, reason: '' }

@@ -1,6 +1,7 @@
 import React from 'react'
 import Model from 'react-body-highlighter'
 import { NB } from '../styles/neoBrutalism'
+import CharacterAvatar from './CharacterAvatar'
 
 // Maps internal muscle keys to react-body-highlighter names
 const MUSCLE_MAP = {
@@ -82,8 +83,8 @@ export function BodyOutline({ muscleColors = {}, data, height = 260, highlighted
 }
 
 // Photo-aware avatar — renders the user's uploaded photo when present,
-// falling back to the programmatic silhouette otherwise.
-export function Avatar({ url, height = 160, color = NB.ink, style = {} }) {
+// falling back to the default character (cube panda) otherwise.
+export function Avatar({ url, height = 160, style = {} }) {
   if (url) {
     return (
       <img
@@ -93,7 +94,7 @@ export function Avatar({ url, height = 160, color = NB.ink, style = {} }) {
       />
     )
   }
-  return <AvatarSilhouette height={height} color={color} style={style} />
+  return <CharacterAvatar size={height} style={style} />
 }
 
 export { MUSCLE_MAP }
