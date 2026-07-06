@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
+import { fetchWorkoutHistory } from '../lib/social'
+import { estimateStartingWeight } from '../utils/workoutBuilder'
 import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
 const SLOT_COLORS = {
@@ -14,17 +16,19 @@ function fmt(s) {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 }
 
-function buildInitSets(exercises) {
+function buildInitSets(exercises, userProfile, workoutHistory) {
   const init = {}
   ;(exercises || []).forEach((ex, i) => {
     const numSets   = ex.sets || 3
     const defaultR  = ex.reps || ex.repsRange?.min || 8
-    init[i] = Array.from({ length: numSets }, () => ({ weight: '', reps: defaultR, done: false }))
+    const suggested = estimateStartingWeight({ exerciseId: ex.id, userProfile, workoutHistory })
+    const weight    = suggested != null ? String(suggested) : ''
+    init[i] = Array.from({ length: numSets }, () => ({ weight, reps: defaultR, done: false }))
   })
   return init
 }
 
-export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavigate }) {
+export default function WorkoutActive({ activeWorkout, userProfile, session, onWorkoutComplete, onNavigate }) {
   const exercises = activeWorkout?.exercises ?? []
   const label     = activeWorkout?.label ?? 'Workout'
 
@@ -32,6 +36,19 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
   const [exIdx,       setExIdx]       = useState(0)
   const [sets,        setSets]        = useState(() => buildInitSets(exercises))
   const chipsRef = useRef(null)
+  const userEditedWeight = useRef(false)
+
+  useEffect(() => {
+    const userId = session?.user?.id
+    if (!userId) return
+    fetchWorkoutHistory(userId).then(history => {
+      // Skip if the user already started typing a weight while this was loading —
+      // a wholesale replace would clobber what they've entered.
+      if (userEditedWeight.current) return
+      setSets(buildInitSets(exercises, userProfile, history))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id])
 
   useEffect(() => {
     const id = setInterval(() => setElapsed(e => e + 1), 1000)
@@ -70,6 +87,7 @@ export default function WorkoutActive({ activeWorkout, onWorkoutComplete, onNavi
   }
 
   function updateSet(setIdx, field, value) {
+    if (field === 'weight') userEditedWeight.current = true
     setSets(prev => {
       const arr = [...(prev[exIdx] || [])]
       arr[setIdx] = { ...arr[setIdx], [field]: value }

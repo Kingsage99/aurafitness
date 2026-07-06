@@ -265,6 +265,37 @@ export function getPrimaryMuscles(exercises) {
   return out.slice(0, 5)
 }
 
+// Suggests a starting KG for one set of an exercise. Prefers the most recent
+// weight the user actually logged for it; falls back to a bodyweight/experience
+// formula for an exercise they've never done. Returns null for exercises that
+// are performable with no equipment at all (push-ups, planks, bodyweight
+// squats, ...) — these default to pure bodyweight, so no load is suggested
+// unless the user has actually logged one themselves (checked first, below).
+export function estimateStartingWeight({ exerciseId, userProfile = {}, workoutHistory = [] }) {
+  const meta = exercises.find(ex => ex.id === exerciseId)
+
+  // Tier 1: most recent completed weight for this exact exercise (history is newest-first).
+  // Checked before the bodyweight bailout below, since a logged weight means the
+  // user has actually been adding resistance to it themselves (e.g. a weighted push-up).
+  for (const session of workoutHistory) {
+    const match = (session.exercises || []).find(e => e.id === exerciseId)
+    const doneWeights = (match?.loggedSets || [])
+      .filter(s => s.done && parseFloat(s.weight) > 0)
+      .map(s => parseFloat(s.weight))
+    if (doneWeights.length > 0) return Math.max(...doneWeights)
+  }
+
+  if (meta && meta.equipment?.includes('none')) return null
+
+  // Tier 2: formula fallback — bodyweight % scaled by experience + compound/isolation tier
+  const bodyweight = userProfile.weightKg > 0 ? userProfile.weightKg : 65
+  const expMultiplier = { starter: 0.7, some: 1.0, active: 1.3 }[userProfile.experience] || 1.0
+  const isCompound = meta ? meta.slot === 'main' || meta.slot === 'secondary' : true
+  const baseFraction = isCompound ? 0.4 : 0.15
+  const raw = bodyweight * baseFraction * expMultiplier
+  return Math.max(2.5, Math.round(raw / 2.5) * 2.5)
+}
+
 function hasEquipment(exEquipment, userEquipment) {
   // 'none' exercises work for everyone
   if (exEquipment.includes('none')) return true;

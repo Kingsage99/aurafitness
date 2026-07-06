@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   DAY_IDS, buildWeeklyPlan, buildCustomWeeklyPlan, buildSingleWorkout,
-  getSwapOptions, getPrimaryMuscles, estimateDuration,
+  getSwapOptions, getPrimaryMuscles, estimateDuration, estimateStartingWeight,
 } from './workoutBuilder'
 import exercises from '../data/exercises.json'
 
@@ -118,6 +118,66 @@ describe('helpers', () => {
   it('estimateDuration returns 0 for empty and ≥15 otherwise', () => {
     expect(estimateDuration([])).toBe(0)
     expect(estimateDuration([{ sets: 3 }])).toBeGreaterThanOrEqual(15)
+  })
+})
+
+describe('estimateStartingWeight', () => {
+  const profile = { weightKg: 65, experience: 'some' }
+
+  it('returns null for a bodyweight-only exercise', () => {
+    expect(estimateStartingWeight({ exerciseId: 'hollow-hold', userProfile: profile })).toBeNull()
+  })
+
+  it('returns null for a bodyweight-friendly exercise too, e.g. push-ups', () => {
+    // push-up lists dumbbells/bands/gym alongside 'none' (a weighted variant exists),
+    // but with no logged history it should still default to no suggested load.
+    expect(estimateStartingWeight({ exerciseId: 'push-up', userProfile: profile })).toBeNull()
+  })
+
+  it('still surfaces a logged weight for a bodyweight-friendly exercise if the user has one', () => {
+    // e.g. the user has actually been doing weighted push-ups
+    const history = [{ exercises: [{ id: 'push-up', loggedSets: [{ weight: '10', reps: 8, done: true }] }] }]
+    const result = estimateStartingWeight({ exerciseId: 'push-up', userProfile: profile, workoutHistory: history })
+    expect(result).toBe(10)
+  })
+
+  it('prefers the most recent logged weight over the formula', () => {
+    const history = [
+      {
+        completed_at: '2026-07-01',
+        exercises: [{ id: 'barbell-squat', loggedSets: [{ weight: '40', reps: 8, done: true }, { weight: '42.5', reps: 6, done: true }] }],
+      },
+      {
+        completed_at: '2026-06-20',
+        exercises: [{ id: 'barbell-squat', loggedSets: [{ weight: '30', reps: 8, done: true }] }],
+      },
+    ]
+    const result = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: history })
+    expect(result).toBe(42.5)
+  })
+
+  it('ignores sets that were never completed', () => {
+    const history = [{ exercises: [{ id: 'barbell-squat', loggedSets: [{ weight: '40', reps: 8, done: false }] }] }]
+    const result = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: history })
+    expect(result).not.toBe(40)
+  })
+
+  it('falls back to a bodyweight/experience formula with no history', () => {
+    const result = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: [] })
+    expect(result).toBeGreaterThan(0)
+    expect(result % 2.5).toBe(0)
+  })
+
+  it('scales up with experience level', () => {
+    const starter = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: { ...profile, experience: 'starter' } })
+    const active = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: { ...profile, experience: 'active' } })
+    expect(active).toBeGreaterThan(starter)
+  })
+
+  it('suggests less weight for an isolation accessory move than a main compound lift', () => {
+    const compound = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: profile })
+    const isolation = estimateStartingWeight({ exerciseId: 'cable-kickback', userProfile: profile })
+    expect(isolation).toBeLessThan(compound)
   })
 })
 

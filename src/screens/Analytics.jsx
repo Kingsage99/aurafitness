@@ -3,16 +3,8 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
 import { fetchWorkoutHistory } from '../lib/social'
+import { getDailyTargets } from '../utils/nutrition'
 import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
-
-const DAILY_TARGETS = {
-  lean_toned:  { calories: 1750, protein: 130, carbs: 180, fat: 55 },
-  slim_thick:  { calories: 1900, protein: 150, carbs: 190, fat: 60 },
-  hourglass:   { calories: 1800, protein: 135, carbs: 185, fat: 58 },
-  athletic:    { calories: 2100, protein: 160, carbs: 220, fat: 65 },
-  soft_curvy:  { calories: 1700, protein: 120, carbs: 175, fat: 55 },
-  functional:  { calories: 2000, protein: 145, carbs: 210, fat: 62 },
-}
 
 const MUSCLE_TO_GROUP = {
   glutes: 'glutes', glute: 'glutes',
@@ -77,7 +69,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
     })
   }, [session])
 
-  const targets = DAILY_TARGETS[userProfile?.physique] || DAILY_TARGETS.lean_toned
+  const targets = getDailyTargets(userProfile)
   const g = gamification || {}
 
   const LEVEL_XP = [0, 100, 250, 500, 900, 1400, 2100, 3000, 4200, 5800, 8000]

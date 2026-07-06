@@ -564,7 +564,7 @@ export default function App() {
           />
         )
       case 'home':
-        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} missState={missState} onStartMakeup={handleStartMakeup} onSkipMakeup={handleSkipMakeup} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} missState={missState} session={session} onStartMakeup={handleStartMakeup} onSkipMakeup={handleSkipMakeup} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
 
       // ── Workout section ──────────────────────────────────────────────────────
       case 'workout':
@@ -585,6 +585,8 @@ export default function App() {
         return (
           <WorkoutActive
             activeWorkout={activeWorkout}
+            userProfile={userProfile}
+            session={session}
             onWorkoutComplete={handleWorkoutComplete}
             onNavigate={navigate}
           />
@@ -709,7 +711,7 @@ export default function App() {
           />
         )
       default:
-        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} session={session} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
     }
   }
 

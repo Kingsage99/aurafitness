@@ -1,12 +1,19 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { Avatar } from '../components/AvatarSilhouette'
 import { getDailyQuests, getMissFlags, xpProgress } from '../utils/gamification'
 import { getPrimaryMuscles } from '../utils/workoutBuilder'
+import { fetchFriendsFeed, timeAgo } from '../lib/social'
 import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
 
-export default function Home({ userProfile, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, todayWorkout = null, gamification = {}, missState = null, onStartMakeup, onSkipMakeup, onQuestComplete, onNavigate }) {
+function describeActivity(post) {
+  const c = post.content || {}
+  if (post.type === 'workout') return `just finished ${c.label || 'a workout'} 🔥`
+  return `logged ${c.name || 'a meal'}`
+}
+
+export default function Home({ userProfile, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, todayWorkout = null, gamification = {}, missState = null, session, onStartMakeup, onSkipMakeup, onQuestComplete, onNavigate }) {
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
   const gems = gamification.gems ?? 0
   const streak = gamification.workoutStreak ?? 0
@@ -19,6 +26,17 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
   const completedQuests = gamification.dailyQuests?.date === todayStr ? (gamification.dailyQuests.completed || []) : []
 
   const [dismissed, setDismissed] = useState({ workout: false, calorie: false })
+  const [squadActivity, setSquadActivity] = useState([])
+  const [squadLoading, setSquadLoading] = useState(true)
+
+  useEffect(() => {
+    const userId = session?.user?.id
+    if (!userId) { setSquadLoading(false); return }
+    fetchFriendsFeed(userId, 2).then(posts => {
+      setSquadActivity(posts)
+      setSquadLoading(false)
+    })
+  }, [session?.user?.id])
   const { showWorkoutMiss, showCalorieMiss, missedWorkoutEntry } = getMissFlags(missState, gamification, loggedMacros)
   const notificationsOn = userProfile?.notificationsEnabled !== false
 
@@ -353,23 +371,28 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
         <div style={{ border: NB_BORDER, borderRadius: 20, boxShadow: hardShadow(4), background: NB.white, padding: '14px 16px', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink }}>Squad activity</span>
-            <button onClick={() => onNavigate('squad')} style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', border: 'none', background: 'none', cursor: 'pointer' }}>See all</button>
+            <button onClick={() => onNavigate('discovery')} style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', border: 'none', background: 'none', cursor: 'pointer' }}>See all</button>
           </div>
-          {[
-            { name: 'Sofia', action: 'just finished a leg day 🔥', time: '2m ago' },
-            { name: 'Priya', action: 'hit a new PB — 60kg squat!', time: '1h ago' },
-          ].map((activity, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i === 0 ? 10 : 0 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 11, border: `2px solid ${NB.ink}`, background: i === 0 ? NB.teal : NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, color: NB.ink }}>{activity.name[0]}</span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{activity.name} </span>
-                <span style={{ fontSize: 13, color: '#444' }}>{activity.action}</span>
-              </div>
-              <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#666', flexShrink: 0 }}>{activity.time}</span>
+          {squadLoading ? (
+            <div style={{ fontSize: 13, color: '#777', padding: '4px 0' }}>Loading…</div>
+          ) : squadActivity.length === 0 ? (
+            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.5 }}>
+              No squad activity yet — add friends in Discover to see their workouts and meals here.
             </div>
-          ))}
+          ) : (
+            squadActivity.map((post, i) => (
+              <div key={post.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i === squadActivity.length - 1 ? 0 : 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 11, border: `2px solid ${NB.ink}`, background: post.type === 'workout' ? NB.magenta : NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, color: post.type === 'workout' ? NB.white : NB.ink }}>{(post.display_name || 'U')[0].toUpperCase()}</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{post.display_name || 'Aura user'} </span>
+                  <span style={{ fontSize: 13, color: '#444' }}>{describeActivity(post)}</span>
+                </div>
+                <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#666', flexShrink: 0 }}>{timeAgo(post.created_at)}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

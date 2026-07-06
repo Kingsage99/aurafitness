@@ -2,17 +2,8 @@ import React, { useState, useRef, useEffect } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { suggestMeal, adjustMeal, identifyEatenFood, lookupFood } from '../utils/claudeApi'
+import { getDailyTargets } from '../utils/nutrition'
 import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
-
-// ─── Daily targets ────────────────────────────────────────────────────────────
-const DAILY_TARGETS = {
-  lean_toned:  { calories: 1750, protein: 130, carbs: 180, fat: 55 },
-  slim_thick:  { calories: 1900, protein: 150, carbs: 190, fat: 60 },
-  hourglass:   { calories: 1800, protein: 135, carbs: 185, fat: 58 },
-  athletic:    { calories: 2100, protein: 160, carbs: 220, fat: 65 },
-  soft_curvy:  { calories: 1700, protein: 120, carbs: 175, fat: 55 },
-  functional:  { calories: 2000, protein: 145, carbs: 210, fat: 62 },
-}
 
 const CRAVING_TAGS = ['Pasta', 'Light & fresh', 'Sweet', 'Spicy', 'High-protein', 'Comfort food']
 
@@ -529,21 +520,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
 
   const safeLoggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, saturatedFat: 0, sodium: 0, cholesterol: 0, potassium: 0, ...loggedMacros }
 
-  const targets = (() => {
-    if (dailyCalorieTarget && dailyCalorieTarget > 0) {
-      const kcal = dailyCalorieTarget
-      const highProtein = ['lose_weight', 'tone_recomp'].includes(fitnessGoal)
-      const building = ['build_muscle', 'athletic_performance'].includes(fitnessGoal)
-      const [pp, cp, fp] = highProtein ? [0.35, 0.35, 0.30] : building ? [0.30, 0.45, 0.25] : [0.30, 0.40, 0.30]
-      return {
-        calories: kcal,
-        protein: Math.round((kcal * pp) / 4),
-        carbs: Math.round((kcal * cp) / 4),
-        fat: Math.round((kcal * fp) / 9),
-      }
-    }
-    return DAILY_TARGETS[physique] || DAILY_TARGETS.lean_toned
-  })()
+  const targets = getDailyTargets({ dailyCalorieTarget, fitnessGoal, physique })
 
   // ── Core state ──────────────────────────────────────────────────────────────
   const [view, setView] = useState('home')
@@ -746,8 +723,13 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
     if (!meal || loggedTypes.has(type)) return
     const m = meal.macros || {}
     if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => addMacros(prev, m))
-    if (onMealLogged) onMealLogged({ name: mealNames[type] || meal.name, macros: m, ingredients: meal.ingredients || [] }, { offerShare: false })
-    setLoggedTypes(prev => new Set([...prev, type]))
+    const nextLogged = new Set([...loggedTypes, type])
+    // Only offer to share once there's nothing left to log — either a single
+    // generated meal, or the last one in a full-day batch — so sharing doesn't
+    // interrupt logging the rest of the batch.
+    const offerShare = nextLogged.size >= generatedTypes.length
+    if (onMealLogged) onMealLogged({ name: mealNames[type] || meal.name, macros: m, ingredients: meal.ingredients || [] }, { offerShare })
+    setLoggedTypes(nextLogged)
   }
 
   // ── Already-ate handlers ─────────────────────────────────────────────────────
@@ -775,7 +757,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
     if (!eatenResult || eatenResult.error || eatenLogged) return
     const m = eatenResult.macros || {}
     if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => addMacros(prev, m))
-    if (onMealLogged) onMealLogged({ name: eatenResult.identifiedAs, macros: m }, { offerShare: false })
+    if (onMealLogged) onMealLogged({ name: eatenResult.identifiedAs, macros: m })
     setEatenLogged(true)
   }
 
