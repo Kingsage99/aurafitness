@@ -26,6 +26,8 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
   const g = gamification
   const [openSheet, setOpenSheet] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [petVideoFailed, setPetVideoFailed] = useState(false)
+  const [petAnimFailed, setPetAnimFailed] = useState(false)
   const avatarFileRef = useRef()
 
   const handleAvatarChange = async (e) => {
@@ -238,8 +240,29 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
 
           {/* Pet stage — the companion is the centerpiece */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 2 }}>
-            <div style={{ width: 230, height: 230, borderRadius: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'petBob 3s ease-in-out infinite', ...frameStyle, ...auraStyle }}>
-              <CharacterAvatar src={pet.image} size={230} style={{ width: '100%', height: '100%', filter: lives === 0 ? 'grayscale(1) opacity(.75)' : 'none' }} />
+            {/* willChange promotes the bob onto its own GPU layer so it stays
+                smooth while the pet video/animation repaints inside it */}
+            <div style={{ width: 230, height: 230, borderRadius: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'petBob 3s ease-in-out infinite', willChange: 'transform', ...frameStyle, ...auraStyle }}>
+              {pet.video && !petVideoFailed ? (
+                <video
+                  src={pet.video}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  onError={() => setPetVideoFailed(true)}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: lives === 0 ? 'grayscale(1) opacity(.75)' : 'none' }}
+                />
+              ) : pet.animation && !petAnimFailed ? (
+                <img
+                  src={pet.animation}
+                  alt="Your pet"
+                  onError={() => setPetAnimFailed(true)}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: lives === 0 ? 'grayscale(1) opacity(.75)' : 'none' }}
+                />
+              ) : (
+                <CharacterAvatar src={pet.image} size={230} style={{ width: '100%', height: '100%', filter: lives === 0 ? 'grayscale(1) opacity(.75)' : 'none' }} />
+              )}
             </div>
             {/* Ground shadow so the pet stands instead of floats — breathes with the bob.
                 The PNG has empty space below the panda's base, so the shadow tucks up under it */}

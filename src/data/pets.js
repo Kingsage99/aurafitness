@@ -2,7 +2,9 @@
 // here. A pet with image: null is a teaser slot: shown in the store as a
 // locked mystery card, not purchasable until its artwork lands.
 export const PETS = [
-  { id: 'pet_panda',   label: 'Cube Panda',   cost: 0,    image: '/characters/default-panda.png', desc: 'Your loyal starter companion' },
+  // video: tiny VP9-alpha webm for real browsers; animation: animated WebP
+  // fallback for webviews/older Safari that can't play transparent video
+  { id: 'pet_panda',   label: 'Cube Panda',   cost: 0,    image: '/characters/default-panda.png', video: '/characters/panda-idle.webm', animation: '/characters/panda-idle.webp', desc: 'Your loyal starter companion' },
   { id: 'pet_bunny',   label: 'Cube Bunny',   cost: 400,  image: null, desc: 'Hopping in soon' },
   { id: 'pet_kitten',  label: 'Cube Kitten',  cost: 400,  image: null, desc: 'Prowling in soon' },
   { id: 'pet_fox',     label: 'Cube Fox',     cost: 600,  image: null, desc: 'Sneaking in soon' },
