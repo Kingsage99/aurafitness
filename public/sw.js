@@ -1,6 +1,12 @@
 // Minimal service worker — only handles Web Push. No offline caching/Workbox,
 // since push is the only thing this app needs a service worker for today.
 
+// No-op fetch handler: doesn't intercept/cache anything (browser handles the
+// request normally), but a registered service worker with a fetch listener is
+// what makes Chrome treat this site as a real installable PWA instead of
+// falling back to a plain bookmark-style shortcut.
+self.addEventListener('fetch', () => {})
+
 self.addEventListener('push', (event) => {
   let data = {}
   try { data = event.data ? event.data.json() : {} } catch { /* non-JSON payload, ignore */ }
