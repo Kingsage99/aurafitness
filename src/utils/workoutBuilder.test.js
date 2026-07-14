@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   DAY_IDS, buildWeeklyPlan, buildCustomWeeklyPlan, buildSingleWorkout,
   getSwapOptions, getPrimaryMuscles, estimateDuration, estimateStartingWeight,
+  getSuggestionReason,
 } from './workoutBuilder'
 import exercises from '../data/exercises.json'
 
@@ -135,10 +136,13 @@ describe('estimateStartingWeight', () => {
   })
 
   it('still surfaces a logged weight for a bodyweight-friendly exercise if the user has one', () => {
-    // e.g. the user has actually been doing weighted push-ups
+    // e.g. the user has actually been doing weighted push-ups. Hitting the (default)
+    // 8-rep ceiling now suggests progression rather than a flat echo — see the
+    // 'progressive overload' describe block below for the exact rule.
     const history = [{ exercises: [{ id: 'push-up', loggedSets: [{ weight: '10', reps: 8, done: true }] }] }]
     const result = estimateStartingWeight({ exerciseId: 'push-up', userProfile: profile, workoutHistory: history })
-    expect(result).toBe(10)
+    expect(result).not.toBeNull()
+    expect(result).toBeGreaterThanOrEqual(10)
   })
 
   it('prefers the most recent logged weight over the formula', () => {
@@ -178,6 +182,74 @@ describe('estimateStartingWeight', () => {
     const compound = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: profile })
     const isolation = estimateStartingWeight({ exerciseId: 'cable-kickback', userProfile: profile })
     expect(isolation).toBeLessThan(compound)
+  })
+})
+
+describe('progressive overload', () => {
+  const profile = { weightKg: 65, experience: 'some' }
+  // barbell-squat is slot:'main' (compound → +5kg on progression)
+
+  it('suggests a weight increase after hitting the rep ceiling', () => {
+    const history = [{
+      exercises: [{ id: 'barbell-squat', repsMax: 8, loggedSets: [
+        { weight: '40', reps: 8, done: true },
+        { weight: '40', reps: 9, done: true },
+      ] }],
+    }]
+    const result = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: history })
+    expect(result).toBe(45) // +5kg compound increment
+    expect(getSuggestionReason({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: history })).toEqual({ reason: 'progression', delta: 5 })
+  })
+
+  it('repeats the same weight after missing the ceiling once, when the prior session had hit it', () => {
+    const history = [
+      { exercises: [{ id: 'barbell-squat', repsMax: 8, loggedSets: [{ weight: '40', reps: 6, done: true }] }] }, // missed
+      { exercises: [{ id: 'barbell-squat', repsMax: 8, loggedSets: [{ weight: '40', reps: 8, done: true }] }] }, // hit
+    ]
+    const result = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: history })
+    expect(result).toBe(40)
+    expect(getSuggestionReason({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: history })).toEqual({ reason: 'repeat', delta: 0 })
+  })
+
+  it('suggests a small deload after missing the ceiling twice in a row', () => {
+    const history = [
+      { exercises: [{ id: 'barbell-squat', repsMax: 8, loggedSets: [{ weight: '40', reps: 6, done: true }] }] }, // missed
+      { exercises: [{ id: 'barbell-squat', repsMax: 8, loggedSets: [{ weight: '40', reps: 5, done: true }] }] }, // missed again
+    ]
+    const result = estimateStartingWeight({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: history })
+    expect(result).toBe(35) // 40 * 0.9 = 36, rounded to nearest 2.5 → 35
+    expect(getSuggestionReason({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: history })).toEqual({ reason: 'deload', delta: -10 })
+  })
+
+  it('getSuggestionReason reports "formula" with no history at all', () => {
+    expect(getSuggestionReason({ exerciseId: 'barbell-squat', userProfile: profile, workoutHistory: [] }))
+      .toEqual({ reason: 'formula', delta: 0 })
+  })
+})
+
+describe('difficulty-based filtering', () => {
+  const sessionTypes = ['full_a', 'full_b', 'full_c', 'lower', 'lower_b', 'upper_a', 'upper_b']
+
+  it('excludes non-starter exercises for a starter, across every session type', () => {
+    sessionTypes.forEach(st => {
+      const workout = buildSingleWorkout({ ...baseProfile, experience: 'starter' }, st)
+      workout.exercises.forEach(ex => {
+        const source = exercises.find(e => e.id === ex.id)
+        expect(source.difficulty).toContain('starter')
+      })
+    })
+  })
+
+  it('does not restrict an active-experience user', () => {
+    // Union the picks across every session type — at least one should be an
+    // exercise that ISN'T starter-tagged (30/91 exercises lack that tag), proving
+    // 'active' draws from the full pool rather than only starter-friendly moves.
+    const chosenIds = new Set()
+    sessionTypes.forEach(st => {
+      buildSingleWorkout({ ...baseProfile, experience: 'active' }, st).exercises.forEach(ex => chosenIds.add(ex.id))
+    })
+    const hasNonStarterPick = [...chosenIds].some(id => !exercises.find(e => e.id === id).difficulty.includes('starter'))
+    expect(hasNonStarterPick).toBe(true)
   })
 })
 

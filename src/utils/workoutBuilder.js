@@ -123,6 +123,17 @@ export function buildCustomWeeklyPlan(customSchedule = {}) {
  * Build one workout session.
  * Returns { name, exercises[], totalSets, estimatedMinutes }
  */
+// Which difficulty tags are allowed at each experience tier. 'active' has no
+// restriction (the fully-open pool); 'starter'/'some' narrow it so beginners
+// aren't handed advanced-only compound lifts by the algorithmic builder.
+// (Manual "Build Your Own" workouts are unaffected — there the user is
+// consciously picking exercises themselves.)
+const DIFFICULTY_GATE = {
+  starter: ['starter'],
+  some: ['starter', 'intermediate'],
+  active: null, // no restriction
+};
+
 export function buildSingleWorkout(userProfile, sessionType = 'full_a') {
   const {
     physique = 'lean_toned',
@@ -137,12 +148,14 @@ export function buildSingleWorkout(userProfile, sessionType = 'full_a') {
   const repRange = REP_STYLE_CONFIG[trainingStyle] || REP_STYLE_CONFIG.strength;
   const focus = SESSION_FOCUS[sessionType] || SESSION_FOCUS.full_a;
   const slotsNeeded = SLOT_ORDER.slice(0, config.exerciseCount);
+  const allowedDifficulty = DIFFICULTY_GATE[experience] !== undefined ? DIFFICULTY_GATE[experience] : DIFFICULTY_GATE.some;
 
   // Filter to usable exercises
   const pool = exercises.filter(ex => {
     if (dislikedExercises.includes(ex.id)) return false;
     if (!hasEquipment(ex.equipment, equipment)) return false;
     if (hasInjuryConflict(ex.injuries_avoid, injuries)) return false;
+    if (allowedDifficulty && !ex.difficulty?.some(d => allowedDifficulty.includes(d))) return false;
     return true;
   });
 
@@ -171,7 +184,7 @@ export function buildSingleWorkout(userProfile, sessionType = 'full_a') {
     if (!pick) continue;
 
     pick.muscles.primary.forEach(m => usedMuscles.add(m));
-    chosen.push(formatExercise(pick, config.sets, repRange));
+    chosen.push(formatExercise(pick, config.sets, repRange, equipment));
   }
 
   const totalSets = chosen.reduce((sum, ex) => sum + ex.sets, 0);
@@ -235,7 +248,23 @@ function scoreExercise(ex, physique, focusMuscles) {
   return score;
 }
 
-function formatExercise(ex, sets, repRange) {
+// Exported so a swapped-in raw exercises.json entry can be reshaped into the
+// same runtime exercise object the workout already uses (WorkoutDetail's swap flow).
+// Exercises with multiple equipment-variant photos expose an `images` map
+// (e.g. { bands: '...', none: '...' }) instead of a single flat `image`.
+// Pick the variant matching the user's owned equipment, falling back to
+// 'none' (bodyweight) then whatever variant exists.
+export function resolveExerciseImage(ex, equipment = []) {
+  if (ex.images) {
+    for (const eq of equipment) {
+      if (ex.images[eq]) return ex.images[eq];
+    }
+    return ex.images.none || Object.values(ex.images)[0] || null;
+  }
+  return ex.image || null;
+}
+
+export function formatExercise(ex, sets, repRange, equipment = []) {
   const isTimeBased = ex.timeBased === true;
   return {
     id: ex.id,
@@ -248,6 +277,7 @@ function formatExercise(ex, sets, repRange) {
     duration: isTimeBased ? ex.repsRange.max : null,
     timeBased: isTimeBased,
     slot: ex.slot,
+    image: resolveExerciseImage(ex, equipment),
     cues: ex.cues || [],
     swappable_with: ex.swappable_with || [],
   };
@@ -265,27 +295,71 @@ export function getPrimaryMuscles(exercises) {
   return out.slice(0, 5)
 }
 
-// Suggests a starting KG for one set of an exercise. Prefers the most recent
-// weight the user actually logged for it; falls back to a bodyweight/experience
-// formula for an exercise they've never done. Returns null for exercises that
-// are performable with no equipment at all (push-ups, planks, bodyweight
-// squats, ...) — these default to pure bodyweight, so no load is suggested
-// unless the user has actually logged one themselves (checked first, below).
-export function estimateStartingWeight({ exerciseId, userProfile = {}, workoutHistory = [] }) {
-  const meta = exercises.find(ex => ex.id === exerciseId)
+// Did every completed, weighted set in a historical session's logged exercise
+// meet or exceed that session's target rep ceiling? (Ceiling is read from the
+// embedded historical exercise, not live exercises.json — target reps depend
+// on the training style that was active when the session was logged.)
+// Returns null when there are no completed weighted sets to judge.
+function hitRepCeiling(matchExercise) {
+  const doneSets = (matchExercise?.loggedSets || []).filter(s => s.done && parseFloat(s.weight) > 0)
+  if (doneSets.length === 0) return null
+  const ceiling = matchExercise.repsMax ?? matchExercise.reps ?? matchExercise.repsRange?.max ?? 8
+  return doneSets.every(s => (parseFloat(s.reps) || 0) >= ceiling)
+}
 
-  // Tier 1: most recent completed weight for this exact exercise (history is newest-first).
-  // Checked before the bodyweight bailout below, since a logged weight means the
-  // user has actually been adding resistance to it themselves (e.g. a weighted push-up).
+function topWeightForExercise(matchExercise) {
+  const doneWeights = (matchExercise?.loggedSets || [])
+    .filter(s => s.done && parseFloat(s.weight) > 0)
+    .map(s => parseFloat(s.weight))
+  return doneWeights.length ? Math.max(...doneWeights) : null
+}
+
+// Up to the two most recent sessions (newest-first) containing this exercise
+// with at least one completed weighted set — [mostRecent, secondMostRecent].
+function recentSessionsFor(exerciseId, workoutHistory) {
+  const found = []
   for (const session of workoutHistory) {
     const match = (session.exercises || []).find(e => e.id === exerciseId)
-    const doneWeights = (match?.loggedSets || [])
-      .filter(s => s.done && parseFloat(s.weight) > 0)
-      .map(s => parseFloat(s.weight))
-    if (doneWeights.length > 0) return Math.max(...doneWeights)
+    if (match && topWeightForExercise(match) != null) {
+      found.push(match)
+      if (found.length === 2) break
+    }
+  }
+  return found
+}
+
+// Single source of truth for both estimateStartingWeight and
+// getSuggestionReason below, so the two never drift out of sync.
+//
+// True progressive overload: if every completed set hit the top of the rep
+// range last time, suggest a small increase (+5kg compound / +2.5kg
+// accessory). If reps were missed, repeat the same weight — unless the
+// session before that *also* missed, in which case suggest a small deload
+// (-10%) instead of repeating a weight that isn't working. No history at all
+// falls back to a bodyweight/experience formula.
+function computeWeightSuggestion(exerciseId, userProfile, workoutHistory) {
+  const meta = exercises.find(ex => ex.id === exerciseId)
+  const [recent, prior] = recentSessionsFor(exerciseId, workoutHistory)
+
+  if (recent) {
+    const topWeight = topWeightForExercise(recent)
+    const isCompound = meta ? meta.slot === 'main' || meta.slot === 'secondary' : true
+    const recentHit = hitRepCeiling(recent)
+
+    if (recentHit) {
+      const delta = isCompound ? 5 : 2.5
+      return { weight: Math.round((topWeight + delta) / 2.5) * 2.5, reason: 'progression', delta }
+    }
+
+    const priorHit = prior ? hitRepCeiling(prior) : null
+    if (priorHit === false) {
+      return { weight: Math.max(2.5, Math.round((topWeight * 0.9) / 2.5) * 2.5), reason: 'deload', delta: -10 }
+    }
+
+    return { weight: topWeight, reason: 'repeat', delta: 0 }
   }
 
-  if (meta && meta.equipment?.includes('none')) return null
+  if (meta && meta.equipment?.includes('none')) return { weight: null, reason: 'none', delta: 0 }
 
   // Tier 2: formula fallback — bodyweight % scaled by experience + compound/isolation tier
   const bodyweight = userProfile.weightKg > 0 ? userProfile.weightKg : 65
@@ -293,7 +367,22 @@ export function estimateStartingWeight({ exerciseId, userProfile = {}, workoutHi
   const isCompound = meta ? meta.slot === 'main' || meta.slot === 'secondary' : true
   const baseFraction = isCompound ? 0.4 : 0.15
   const raw = bodyweight * baseFraction * expMultiplier
-  return Math.max(2.5, Math.round(raw / 2.5) * 2.5)
+  return { weight: Math.max(2.5, Math.round(raw / 2.5) * 2.5), reason: 'formula', delta: 0 }
+}
+
+// Suggests a starting KG for one set of an exercise. See computeWeightSuggestion
+// for the progression/deload rule. Returns null for exercises that are
+// performable with no equipment at all (push-ups, planks, bodyweight squats,
+// ...) unless the user has actually logged a weight for it themselves.
+export function estimateStartingWeight({ exerciseId, userProfile = {}, workoutHistory = [] }) {
+  return computeWeightSuggestion(exerciseId, userProfile, workoutHistory).weight
+}
+
+// Companion to estimateStartingWeight — explains *why* that number was
+// suggested, so the UI can show a "why" hint next to the pre-filled weight.
+export function getSuggestionReason({ exerciseId, userProfile = {}, workoutHistory = [] }) {
+  const { reason, delta } = computeWeightSuggestion(exerciseId, userProfile, workoutHistory)
+  return { reason, delta }
 }
 
 function hasEquipment(exEquipment, userEquipment) {

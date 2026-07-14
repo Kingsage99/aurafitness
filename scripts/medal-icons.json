@@ -1,0 +1,163 @@
+[
+  {
+    "id": "medals-section",
+    "name": "Medal",
+    "emoji": "🏅",
+    "description": "A round medal disc hanging from a short ribbon, a star embossed in the center of the disc. Thick black outline, flat gold fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "medal.svg",
+    "usedIn": [
+      "Profile — Medals tile",
+      "Analytics — achievements tile (badge count) and Personal Records row icon"
+    ]
+  },
+  {
+    "id": "badge-first-step",
+    "name": "Footprints",
+    "emoji": "👣",
+    "description": "Two small bare footprints side by side, one slightly ahead of the other. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-first-step.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-fuelled-up",
+    "name": "Fork & Plate",
+    "emoji": "🍽️",
+    "description": "A round plate viewed from above with a fork to its left and a knife to its right. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-fuelled-up.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-sweat-session",
+    "name": "Flexed Bicep",
+    "emoji": "💪",
+    "description": "A flexed arm: forearm bent upward ending in a fist, bicep bulging. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-sweat-session.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-week-warrior",
+    "name": "Crossed Swords",
+    "emoji": "⚔️",
+    "description": "Two swords crossed in an X, simple straight blades with small crossguards and handles. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-week-warrior.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-nutrition-nerd",
+    "name": "Salad Bowl",
+    "emoji": "🥗",
+    "description": "A round bowl viewed at a 3/4 angle, with a few simple rounded leaf/vegetable shapes piled on top. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-nutrition-nerd.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-committed",
+    "name": "Target / Dart",
+    "emoji": "🎯",
+    "description": "A dartboard bullseye: 2-3 concentric circles in alternating flat colors. Thick black outline. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-committed.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-cookbook-queen",
+    "name": "Open Book",
+    "emoji": "📖",
+    "description": "An open book viewed from the front, pages fanned slightly with a visible center spine. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-cookbook-queen.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-iron-will",
+    "name": "Mechanical Arm",
+    "emoji": "🦾",
+    "description": "A robotic forearm and fist flexed upward in the same pose as the flexed-bicep icon, but with visible panel-line/joint details suggesting metal plating. Thick black outline, flat metallic-grey fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-iron-will.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-ten-workouts",
+    "name": "100 Points",
+    "emoji": "💯",
+    "description": "The number '100' in bold rounded lettering with a double underline beneath it, tilted slightly. Thick black outline, flat red/pink fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-ten-workouts.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-macro-master",
+    "name": "Balance Scale",
+    "emoji": "⚖️",
+    "description": "A two-pan balance scale: a central vertical post with a horizontal crossbar, a shallow pan hanging from a short chain on each side. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-macro-master.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-month-strong",
+    "name": "Spiral Calendar",
+    "emoji": "🗓️",
+    "description": "A desk calendar rectangle with a coiled spiral-wire binding running along the top edge (distinct from the plain tab-top Calendar icon), a couple of date squares inside. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-month-strong.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-fifty-workouts",
+    "name": "Crown",
+    "emoji": "👑",
+    "description": "A simple 3-point royal crown viewed straight-on, with a small round jewel set in the center point. Thick black outline, flat gold fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-fifty-workouts.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-legend-streak",
+    "name": "Lightning Bolt",
+    "emoji": "⚡",
+    "description": "A single bold zigzag lightning-bolt shape. Thick black outline, flat yellow fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-legend-streak.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-perfect-week",
+    "name": "Trophy",
+    "emoji": "🏆",
+    "description": "A trophy cup: wide rounded bowl with two curved side handles, tapering into a short stem on a small rectangular base. Thick black outline, flat gold fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-perfect-week.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  },
+  {
+    "id": "badge-aura-queen",
+    "name": "Sparkles",
+    "emoji": "✨",
+    "description": "A small cluster of sparkle bursts: one large 4-point sparkle plus 2-3 smaller ones scattered around it. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "badge-aura-queen.svg",
+    "usedIn": [
+      "MedalsScreen — medal center art"
+    ]
+  }
+]

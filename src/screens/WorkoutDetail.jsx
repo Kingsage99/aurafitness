@@ -1,21 +1,12 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
+import BottomSheet from '../components/BottomSheet'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
 import ExerciseThumb from '../components/ExerciseThumb'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
-
-// Map exercise primary muscle name → MUSCLE_SVG_IDS key
-const MUSCLE_TO_GROUP = {
-  glutes: 'glutes', glute: 'glutes',
-  hamstrings: 'legs', quads: 'legs', legs: 'legs',
-  chest: 'chest', pecs: 'chest',
-  shoulders: 'shoulders', delts: 'shoulders',
-  back: 'back', lats: 'back', lat: 'back',
-  core: 'core', abs: 'core',
-  arms: 'arms', biceps: 'arms', triceps: 'arms',
-  calves: 'calves',
-}
+import { getSwapOptions, formatExercise, estimateDuration, resolveExerciseImage } from '../utils/workoutBuilder'
+import { MUSCLE_TO_GROUP } from '../utils/muscleIntensity'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 // Which SVG file + side shows this muscle group best
 const GROUP_CONFIG = {
@@ -43,11 +34,6 @@ function getMuscleUsage(exercises) {
     .sort((a, b) => b.count - a.count)
 }
 
-function estimateDuration(exercises) {
-  if (!exercises?.length) return 0
-  return Math.max(15, exercises.reduce((acc, ex) => acc + (ex.sets || 3) * 2, 0) + 5)
-}
-
 function MuscleCard({ group, pct }) {
   const config = GROUP_CONFIG[group]
   const colors = useMemo(() => {
@@ -60,7 +46,7 @@ function MuscleCard({ group, pct }) {
   if (!config) return null
 
   return (
-    <div style={{ flexShrink: 0, width: 82, border: NB_BORDER, borderRadius: 14, boxShadow: hardShadow(2), background: NB.white, overflow: 'hidden' }}>
+    <div style={{ flexShrink: 0, width: 82, ...nbCardStyle(NB_CARD_NEUTRAL, 2, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 14, overflow: 'hidden' }}>
       <div style={{ height: 86, background: NB.cream, overflow: 'hidden' }}>
         <MuscleSVG url={config.url} muscleColors={colors} />
       </div>
@@ -74,12 +60,36 @@ function MuscleCard({ group, pct }) {
   )
 }
 
-export default function WorkoutDetail({ activeWorkout, onNavigate }) {
+export default function WorkoutDetail({ activeWorkout, userProfile = {}, setActiveWorkout, onUpdateProfile, onNavigate }) {
   const exercises  = activeWorkout?.exercises ?? []
   const label      = activeWorkout?.label ?? 'Workout'
   const split      = activeWorkout?.split
   const duration   = estimateDuration(exercises)
   const usage      = useMemo(() => getMuscleUsage(exercises), [exercises])
+
+  const [swappingIdx, setSwappingIdx] = useState(null) // index of exercise being swapped, or null
+  const [cuesIdx, setCuesIdx] = useState(null) // index whose cues sheet is open, or null
+
+  const swapOptions = useMemo(() => {
+    if (swappingIdx == null) return []
+    const target = exercises[swappingIdx]
+    if (!target) return []
+    return getSwapOptions(target.id, userProfile, exercises.map(e => e.id))
+  }, [swappingIdx, exercises, userProfile])
+
+  function handleSwap(alt) {
+    const original = exercises[swappingIdx]
+    if (!original || !setActiveWorkout) { setSwappingIdx(null); return }
+    const repRange = { min: original.repsMin ?? original.repsRange?.min ?? 6, max: original.repsMax ?? original.repsRange?.max ?? 8 }
+    const replacement = formatExercise(alt, original.sets || 3, repRange, userProfile.equipment)
+    const nextExercises = exercises.map((ex, i) => i === swappingIdx ? replacement : ex)
+    setActiveWorkout({ ...activeWorkout, exercises: nextExercises })
+    if (onUpdateProfile) {
+      const disliked = userProfile.dislikedExercises || []
+      if (!disliked.includes(original.id)) onUpdateProfile({ dislikedExercises: [...disliked, original.id] })
+    }
+    setSwappingIdx(null)
+  }
 
   if (!activeWorkout) {
     return (
@@ -137,24 +147,31 @@ export default function WorkoutDetail({ activeWorkout, onNavigate }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8 }}>
             {exercises.map((ex, i) => {
               const sets    = ex.sets || 3
-              const repsStr = ex.reps
-                ? String(ex.reps)
-                : `${ex.repsRange?.min ?? 8}–${ex.repsRange?.max ?? 12}`
+              const repsStr = ex.timeBased
+                ? `${ex.duration ?? ex.repsRange?.max ?? 30}s hold`
+                : ex.reps
+                  ? `${ex.reps} reps`
+                  : `${ex.repsRange?.min ?? 8}–${ex.repsRange?.max ?? 12} reps`
 
               return (
-                <div key={ex.id || i} style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(2), padding: '12px 14px', background: NB.white, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div key={ex.id || i} style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 2, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <ExerciseThumb src={ex.image} slot={ex.slot} size={48} radius={12} />
+                    <ExerciseThumb src={resolveExerciseImage(ex, userProfile.equipment)} slot={ex.slot} size={48} radius={12} />
                     <span style={{ position: 'absolute', bottom: -5, right: -5, width: 18, height: 18, borderRadius: 6, border: `1.5px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: NB.fontDisplay, fontSize: 10, fontWeight: 900, color: NB.ink }}>{i + 1}</span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
-                    <div style={{ fontSize: 12, color: '#555' }}>{sets} sets × {repsStr} reps</div>
+                    <div style={{ fontSize: 12, color: '#555' }}>{sets} sets × {repsStr}</div>
                   </div>
                   {ex.cues?.length > 0 && (
-                    <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 9, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button onClick={() => setCuesIdx(i)} style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 9, border: `1.5px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                    </div>
+                    </button>
+                  )}
+                  {setActiveWorkout && (
+                    <button onClick={() => setSwappingIdx(i)} title="Swap exercise" style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 9, border: `1.5px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                    </button>
                   )}
                 </div>
               )
@@ -165,16 +182,49 @@ export default function WorkoutDetail({ activeWorkout, onNavigate }) {
 
       {/* Start Workout button */}
       <div style={{ padding: '10px 22px 12px', flexShrink: 0 }}>
-        <button
-          onClick={() => onNavigate('workoutActive')}
-          style={{ width: '100%', padding: '16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(4), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 16, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Start Workout
-        </button>
+        {exercises.length === 0 ? (
+          <div style={{ padding: '14px 16px', ...nbCardStyle(NB.cream, 3), border: `3px solid ${NB.white}`, borderRadius: 16, textAlign: 'center' }}>
+            <span style={{ fontSize: 13, color: '#555' }}>This workout has no exercises yet.</span>
+          </div>
+        ) : (
+          <button
+            onClick={() => onNavigate('workoutActive')}
+            style={{ width: '100%', padding: '16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(4), background: NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 16, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Start Workout
+          </button>
+        )}
       </div>
 
       <BottomNav active="workout" onNavigate={onNavigate} />
+
+      <BottomSheet open={cuesIdx != null} onClose={() => setCuesIdx(null)} title={cuesIdx != null ? exercises[cuesIdx]?.name : ''}>
+        {cuesIdx != null && (exercises[cuesIdx]?.cues || []).map((c, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10 }}>
+            <span style={{ fontWeight: 900, color: NB.ink }}>·</span>
+            <span style={{ fontSize: 14, color: NB.ink, lineHeight: 1.4 }}>{c}</span>
+          </div>
+        ))}
+      </BottomSheet>
+
+      <BottomSheet open={swappingIdx != null} onClose={() => setSwappingIdx(null)} title="Swap Exercise">
+        {swapOptions.length === 0 ? (
+          <p style={{ fontSize: 13, color: '#555' }}>No alternatives available for this exercise right now.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {swapOptions.map(alt => (
+              <button key={alt.id} onClick={() => handleSwap(alt)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: 'none', borderRadius: 14, background: NB.lavenderMist, cursor: 'pointer', textAlign: 'left' }}>
+                <ExerciseThumb src={resolveExerciseImage(alt, userProfile.equipment)} slot={alt.slot} size={40} radius={11} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: NB.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{alt.name}</div>
+                  <div style={{ fontSize: 11, color: '#555' }}>{alt.repsRange?.min ?? 8}–{alt.repsRange?.max ?? 12} reps · {alt.slot}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </BottomSheet>
     </>
   )
 }

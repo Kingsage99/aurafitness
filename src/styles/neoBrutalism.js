@@ -17,6 +17,7 @@ export const NB = {
   orange: '#F79AC6',      // v2 drops orange; nearest accent is Pink
   blue: '#B48CF2',        // v2 drops blue too; its own Nutrition mockup colors Protein as Purple
   lavender: '#E7DCFB',
+  lavenderMist: '#F3ECFC', // pale lavender tint — individual list-row cards (e.g. quest rows)
   red: '#E5484D',         // v2 "Error"
   pink: '#F79AC6',
   roseGold: '#E8A87C',    // unchanged — literal metal tone, see gamification RANKS
@@ -43,6 +44,41 @@ export function hardShadow(px = 6, color = NB.ink) {
   return `${px}px ${px}px 0 ${color}`
 }
 
+// Darken (negative percent) or lighten (positive) a hex color by a flat
+// percentage per channel — used to derive a card's border/shadow tone from
+// its own fill color, so a yellow card gets a darker-yellow border and an
+// even-darker-yellow shadow instead of a flat black outline.
+export function shade(hex, percent) {
+  const num = parseInt(hex.replace('#', ''), 16)
+  const amt = Math.round(2.55 * percent)
+  const clamp = v => Math.max(0, Math.min(255, v))
+  const r = clamp((num >> 16) + amt)
+  const g = clamp((num >> 8 & 0x00ff) + amt)
+  const b = clamp((num & 0x0000ff) + amt)
+  return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)
+}
+
+// Replaces flat "white card" backgrounds — same lavender used elsewhere in
+// the palette, so cards read as distinct panels without being stark white.
+export const NB_CARD_NEUTRAL = NB.lavender
+// NB.lavender's own next-darker step on the intensity ramp — used as its
+// paired shadow color instead of a generically-derived shade.
+export const NB_CARD_NEUTRAL_SHADOW = NB_INTENSITY_RAMP[2] // '#C9B4F5'
+
+// Shadow shade amount for cards with no explicit paired shadow color.
+const NB_CARD_SHADOW_SHADE = -38
+
+// Card style fragment — no border, just a hard offset shadow. Pass an
+// explicit shadowColor for fills that have a designed darker sibling (e.g.
+// NB.tealLight -> NB.teal); otherwise one is auto-derived from the fill.
+export function nbCardStyle(bg = NB_CARD_NEUTRAL, shadowPx = 6, shadowColor) {
+  return {
+    background: bg,
+    border: 'none',
+    boxShadow: hardShadow(shadowPx, shadowColor || shade(bg, NB_CARD_SHADOW_SHADE)),
+  }
+}
+
 // Flat app background (dot-grid texture removed per user preference)
 export const NB_DOT_GRID = {
   backgroundColor: NB.bg,
@@ -57,11 +93,7 @@ export const nbLabel = {
   textTransform: 'uppercase',
 }
 
-export const nbCard = {
-  border: NB_BORDER,
-  boxShadow: hardShadow(6),
-  background: NB.white,
-}
+export const nbCard = nbCardStyle(NB_CARD_NEUTRAL, 6, NB_CARD_NEUTRAL_SHADOW)
 
 export function nbButton(bg = NB.teal, size = 4) {
   return {

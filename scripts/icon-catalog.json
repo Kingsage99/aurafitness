@@ -1,0 +1,305 @@
+[
+  {
+    "id": "trophy",
+    "name": "Trophy",
+    "emoji": "🏆",
+    "description": "A trophy cup: wide rounded bowl with two curved side handles, tapering into a short stem on a small rectangular base. Thick black outline, flat gold fill, no gradients. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "trophy.svg",
+    "usedIn": [
+      "Analytics — achievements tile (badges earned) and Personal Records row icon",
+      "WorkoutComplete — 'New Personal Records' header, per-record badge, muscle 'ranked up' badge",
+      "RankPage — 'Top tier reached' icon"
+    ]
+  },
+  {
+    "id": "crown",
+    "name": "Crown",
+    "emoji": "👑",
+    "description": "A simple 3-point royal crown viewed straight-on, with a small round jewel set in the center point. Thick black outline, flat gold fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "crown.svg",
+    "usedIn": [
+      "Leaderboard — #1 podium overlay icon"
+    ]
+  },
+  {
+    "id": "lock",
+    "name": "Lock",
+    "emoji": "🔒",
+    "description": "A padlock: rounded rectangular body with a small keyhole cutout, curved shackle looping over the top. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "lock.svg",
+    "usedIn": [
+      "RankPage — 'Unlock body-part ranks' header icon",
+      "RankLadder — 'Unranked' row icon",
+      "Leaderboard — current user's row when unranked"
+    ]
+  },
+  {
+    "id": "globe",
+    "name": "Globe",
+    "emoji": "🌍",
+    "description": "A circle with a few simple curved lines crossing it like longitude/latitude on a beachball globe. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "globe.svg",
+    "usedIn": [
+      "Onboarding — country picker before a country is chosen",
+      "Leaderboard — 'Pick your country' empty state"
+    ]
+  },
+  {
+    "id": "star",
+    "name": "Star",
+    "emoji": "⭐",
+    "description": "A classic 5-point star. Thick black outline, flat yellow fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "star.svg",
+    "usedIn": [
+      "Settings — Aura Pro badge",
+      "Home — 'Daily Quests' section header",
+      "Store — 'Best Value' tag on the largest gem package"
+    ]
+  },
+  {
+    "id": "lightning-bolt",
+    "name": "Lightning Bolt",
+    "emoji": "⚡",
+    "description": "A single bold zigzag lightning-bolt shape. Thick black outline, flat yellow fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "lightning-bolt.svg",
+    "usedIn": [
+      "WorkoutComplete — 'XP Earned' reward card icon",
+      "Analytics — inline icon before 'Level {n}'"
+    ]
+  },
+  {
+    "id": "strength-arm",
+    "name": "Flexed Bicep",
+    "emoji": "💪",
+    "description": "A flexed arm: forearm bent upward ending in a fist, bicep bulging. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "strength-arm.svg",
+    "usedIn": [
+      "Profile — stats row ('WORKOUTS')",
+      "Home — daily quest icon (complete_workout)",
+      "WorkoutBuilder — empty state ('Select one or more muscle groups')",
+      "WorkoutPost — stat row (exercise count)",
+      "Analytics — StatCard ('Workouts')"
+    ]
+  },
+  {
+    "id": "weightlifter",
+    "name": "Weightlifter",
+    "emoji": "🏋️",
+    "description": "A barbell: a straight horizontal bar with a large round weight plate on each end. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "weightlifter.svg",
+    "usedIn": [
+      "Home — weekly challenge icon ('Complete 3 workouts')",
+      "Analytics — StatCard ('Total Volume')"
+    ]
+  },
+  {
+    "id": "target",
+    "name": "Target / Dart",
+    "emoji": "🎯",
+    "description": "A dartboard bullseye: 2-3 concentric circles in alternating flat colors. Thick black outline. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "target.svg",
+    "usedIn": [
+      "Profile — Quests tile",
+      "Home — daily quest icon (hit_calories)"
+    ]
+  },
+  {
+    "id": "salad",
+    "name": "Salad Bowl",
+    "emoji": "🥗",
+    "description": "A round bowl viewed at a 3/4 angle, with a few simple rounded leaf/vegetable shapes piled on top. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "salad.svg",
+    "usedIn": [
+      "Profile — Nutrition tile",
+      "Home — daily quest icon (log_lunch)",
+      "MealPost — 'Add a photo of your meal' placeholder icon",
+      "Analytics — achievements tile (calorie streak)"
+    ]
+  },
+  {
+    "id": "meal-plate",
+    "name": "Fork & Plate",
+    "emoji": "🍽️",
+    "description": "A round plate viewed from above with a fork laid to its left and a knife to its right. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "meal-plate.svg",
+    "usedIn": [
+      "Home — daily quest icon (log_dinner)"
+    ]
+  },
+  {
+    "id": "bento-box",
+    "name": "Bento Box",
+    "emoji": "🍱",
+    "description": "A rectangular box viewed from above, divided into 2-3 compartments by simple straight lines. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "bento-box.svg",
+    "usedIn": [
+      "Home — daily quest icon (log_3_meals)"
+    ]
+  },
+  {
+    "id": "pancakes",
+    "name": "Pancakes",
+    "emoji": "🥞",
+    "description": "A short stack of 3 round pancakes, a small pat of butter on top and a drizzle of syrup running down the side. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "pancakes.svg",
+    "usedIn": [
+      "Home — daily quest icon (log_breakfast)"
+    ]
+  },
+  {
+    "id": "hundred-points",
+    "name": "100 Points",
+    "emoji": "💯",
+    "description": "The number '100' in bold rounded lettering with a double underline beneath it, tilted slightly. Thick black outline, flat red/pink fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "hundred-points.svg",
+    "usedIn": [
+      "Home — daily quest icon (hit_protein)"
+    ]
+  },
+  {
+    "id": "calendar",
+    "name": "Calendar",
+    "emoji": "📅",
+    "description": "A flat wall-calendar rectangle with two small tabs/rings at the top and a simple grid of a few date squares inside. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "calendar.svg",
+    "usedIn": [
+      "Profile — Calendar tile",
+      "WorkoutRoutine — empty state ('Tap any day to assign a workout')"
+    ]
+  },
+  {
+    "id": "bar-chart",
+    "name": "Bar Chart",
+    "emoji": "📊",
+    "description": "Three vertical bars of increasing height side by side, sitting on a baseline. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "bar-chart.svg",
+    "usedIn": [
+      "Profile — Overview tile"
+    ]
+  },
+  {
+    "id": "trending-chart",
+    "name": "Trending-Up Chart",
+    "emoji": "📈",
+    "description": "An upward zigzag line with a small arrowhead at its top-right end. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "trending-chart.svg",
+    "usedIn": [
+      "Profile — Analytics tile"
+    ]
+  },
+  {
+    "id": "shopping-bags",
+    "name": "Shopping Bags",
+    "emoji": "🛍️",
+    "description": "Two overlapping shopping bags, each with a simple curved handle. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "shopping-bags.svg",
+    "usedIn": [
+      "Profile — Store tile",
+      "Profile — Inventory empty state ('Visit the Store to unlock more cosmetics!')"
+    ]
+  },
+  {
+    "id": "backpack",
+    "name": "Backpack",
+    "emoji": "🎒",
+    "description": "A front-facing backpack: rounded rectangular body, two shoulder straps, one front pocket, a top flap. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "backpack.svg",
+    "usedIn": [
+      "Profile — Inventory tile"
+    ]
+  },
+  {
+    "id": "question-mark",
+    "name": "Question Mark",
+    "emoji": "❓",
+    "description": "A single bold question mark. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "question-mark.svg",
+    "usedIn": [
+      "Store — pet teaser 'mystery' placeholder icon"
+    ]
+  },
+  {
+    "id": "tools",
+    "name": "Tools / Wrench",
+    "emoji": "🛠️",
+    "description": "A wrench and a screwdriver crossed in an X shape. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "tools.svg",
+    "usedIn": [
+      "Home — 'build your own workout' empty-state icon",
+      "Workout Hub — same empty-state icon"
+    ]
+  },
+  {
+    "id": "spa",
+    "name": "Spa / Relaxation",
+    "emoji": "💆",
+    "description": "A simplified head-and-shoulders silhouette, eyes closed with a calm expression, one hand resting on each temple (head-massage pose). Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "spa.svg",
+    "usedIn": [
+      "Home — 'Rest day today' empty-state icon",
+      "Workout Hub — same empty-state icon"
+    ]
+  },
+  {
+    "id": "camera",
+    "name": "Camera",
+    "emoji": "📸",
+    "description": "A front-facing camera body: rounded rectangle with a large circular lens centered on it and a small square flash in the top corner. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "camera.svg",
+    "usedIn": [
+      "WorkoutPost — 'Add photo or video' placeholder icon"
+    ]
+  },
+  {
+    "id": "stopwatch",
+    "name": "Stopwatch",
+    "emoji": "⏱️",
+    "description": "A round stopwatch face with a small button knob on top and a short tick mark at 12 o'clock. Thick black outline, flat fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "stopwatch.svg",
+    "usedIn": [
+      "WorkoutPost — stat row (elapsed time)",
+      "Analytics — StatCard ('Avg Duration')"
+    ]
+  },
+  {
+    "id": "check-done",
+    "name": "Checkmark / Done",
+    "emoji": "✅",
+    "description": "A bold checkmark inside a rounded square badge. Thick black outline, flat green fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "check-done.svg",
+    "usedIn": [
+      "Analytics — StatCard ('Sets Done')"
+    ]
+  },
+  {
+    "id": "purple-heart",
+    "name": "Purple Heart",
+    "emoji": "💜",
+    "description": "A classic rounded heart shape. Thick black outline, flat purple fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "purple-heart.svg",
+    "usedIn": [
+      "Store — 'Neon' border swatch icon"
+    ]
+  },
+  {
+    "id": "cherry-blossom",
+    "name": "Cherry Blossom",
+    "emoji": "🌸",
+    "description": "A 5-petal flower viewed from the front, small round center. Thick black outline, flat pink fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "cherry-blossom.svg",
+    "usedIn": [
+      "Store — 'Rose Gold' border swatch icon",
+      "Home — Store-preview icon strip"
+    ]
+  },
+  {
+    "id": "white-square",
+    "name": "White Square",
+    "emoji": "⬜",
+    "description": "A plain rounded square with no decoration inside it. Thick black outline, flat white/neutral fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "white-square.svg",
+    "usedIn": [
+      "Store — 'Default' border swatch icon"
+    ]
+  }
+]

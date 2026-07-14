@@ -1,0 +1,13 @@
+[
+  {
+    "id": "sparkles-gold-tier",
+    "name": "Sparkles",
+    "emoji": "✨",
+    "description": "A small cluster of sparkle bursts: one large 4-point sparkle plus 2-3 smaller ones scattered around it. Thick black outline, flat gold/yellow fill. Match the faceted style of the existing custom gem icon where possible. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "sparkles.svg",
+    "usedIn": [
+      "Store — 'Gold' border swatch icon",
+      "Store — 'Gold' frame shop item icon"
+    ]
+  }
+]

@@ -1,7 +1,8 @@
 import React from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { getDailyQuests, WEEKLY_CHALLENGES, getWeeklyChallengeState } from '../utils/gamification'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { renderIcon, GemIcon } from '../components/Icons'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 export default function QuestsScreen({ gamification = {}, onQuestComplete, onClaimChallenge, onNavigate }) {
   const todayStr = new Date().toISOString().slice(0, 10)
@@ -46,14 +47,14 @@ export default function QuestsScreen({ gamification = {}, onQuestComplete, onCla
             return (
               <div
                 key={quest.id}
-                style={{ border: `2.5px solid ${NB.ink}`, borderRadius: 16, background: done ? NB.green : NB.white, boxShadow: hardShadow(3), padding: '18px 18px' }}
+                style={{ ...nbCardStyle(done ? NB.green : NB_CARD_NEUTRAL, 3, done ? undefined : NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '18px 18px' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 14, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>{quest.icon}</div>
+                  <div style={{ width: 52, height: 52, borderRadius: 14, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>{renderIcon(quest.icon, 28)}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink, textDecoration: done ? 'line-through' : 'none', marginBottom: 4 }}>{quest.label}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ width: 10, height: 10, background: NB.blue, border: `1.5px solid ${NB.ink}`, transform: 'rotate(45deg)' }} />
+                      <GemIcon size={12} />
                       <span style={{ fontSize: 12, fontWeight: 700, color: NB.ink }}>+{quest.reward} gems</span>
                     </div>
                   </div>
@@ -86,13 +87,13 @@ export default function QuestsScreen({ gamification = {}, onQuestComplete, onCla
               const done = progress >= ch.target
               const pct = Math.min(100, Math.round((progress / ch.target) * 100))
               return (
-                <div key={ch.id} style={{ border: `2.5px solid ${NB.ink}`, borderRadius: 16, background: claimed ? NB.green : NB.white, boxShadow: hardShadow(3), padding: '16px 18px' }}>
+                <div key={ch.id} style={{ ...nbCardStyle(claimed ? NB.green : NB_CARD_NEUTRAL, 3, claimed ? undefined : NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
-                    <div style={{ width: 46, height: 46, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{ch.icon}</div>
+                    <div style={{ width: 46, height: 46, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{renderIcon(ch.icon, 24)}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink, textDecoration: claimed ? 'line-through' : 'none' }}>{ch.label}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                        <span style={{ width: 10, height: 10, background: NB.blue, border: `1.5px solid ${NB.ink}`, transform: 'rotate(45deg)' }} />
+                        <GemIcon size={12} />
                         <span style={{ fontSize: 12, fontWeight: 700, color: NB.ink }}>+{ch.reward} gems</span>
                       </div>
                     </div>

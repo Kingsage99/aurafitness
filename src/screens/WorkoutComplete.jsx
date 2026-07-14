@@ -1,42 +1,13 @@
 import React, { useMemo, useState } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
-import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
+import MuscleSVG from '../components/MuscleSVG'
 import { getMuscleRankInfo, MUSCLE_RANK_MIN_WORKOUTS } from '../utils/gamification'
 import { MUSCLE_LABELS } from '../utils/muscleLabels'
+import { buildMuscleIntensityColors } from '../utils/muscleIntensity'
 import RankLadder from '../components/RankLadder'
-import { NB, NB_BORDER, hardShadow, NB_INTENSITY_RAMP } from '../styles/neoBrutalism'
-
-// Map exercise primary muscle → MUSCLE_SVG_IDS key
-const MUSCLE_TO_GROUP = {
-  glutes: 'glutes', glute: 'glutes',
-  hamstrings: 'legs', quads: 'legs', legs: 'legs',
-  chest: 'chest', pecs: 'chest',
-  shoulders: 'shoulders', delts: 'shoulders',
-  back: 'back', lats: 'back', lat: 'back',
-  core: 'core', abs: 'core',
-  arms: 'arms', biceps: 'arms', triceps: 'arms',
-  calves: 'calves',
-}
-
-const INTENSITY_COLORS = [NB_INTENSITY_RAMP[1], NB_INTENSITY_RAMP[3], NB_INTENSITY_RAMP[4]]
-
-function buildColors(exercises, side) {
-  const counts = {}
-  ;(exercises || []).forEach(ex => {
-    ;(ex.muscles?.primary || []).forEach(m => {
-      const group = MUSCLE_TO_GROUP[m.toLowerCase()]
-      if (!group) return
-      MUSCLE_SVG_IDS[group]?.[side]?.forEach(id => {
-        counts[id] = (counts[id] || 0) + 1
-      })
-    })
-  })
-  const colors = {}
-  Object.entries(counts).forEach(([id, n]) => {
-    colors[id] = INTENSITY_COLORS[Math.min(n - 1, 2)]
-  })
-  return colors
-}
+import { renderIcon, TrophyIcon } from '../components/Icons'
+import { toDisplayWeight, weightUnitLabel } from '../utils/units'
+import { NB, NB_BORDER, hardShadow, NB_INTENSITY_RAMP, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 function fmt(s) {
   const m = Math.floor(s / 60)
@@ -45,7 +16,8 @@ function fmt(s) {
   return `${m}m ${sec > 0 ? sec + 's' : ''}`.trim()
 }
 
-export default function WorkoutComplete({ sessionData, gamification, onNavigate }) {
+export default function WorkoutComplete({ sessionData, gamification, userProfile, onNavigate }) {
+  const units = userProfile?.units
   const exercises = sessionData?.exercises ?? []
   const label     = sessionData?.workoutLabel ?? 'Workout'
   const elapsed   = sessionData?.elapsed ?? 0
@@ -53,14 +25,21 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
   const gems      = sessionData?.gemsEarned ?? 30
   const streak    = sessionData?.streak ?? gamification?.workoutStreak ?? 1
 
-  const frontColors = useMemo(() => buildColors(exercises, 'front'), [exercises])
-  const backColors  = useMemo(() => buildColors(exercises, 'back'),  [exercises])
+  const frontColors = useMemo(() => buildMuscleIntensityColors(exercises, 'front'), [exercises])
+  const backColors  = useMemo(() => buildMuscleIntensityColors(exercises, 'back'),  [exercises])
 
   const hasColors = Object.keys(frontColors).length + Object.keys(backColors).length > 0
 
   const [ladderMuscle, setLadderMuscle] = useState(null)
   const muscleGateOpen = (gamification?.totalWorkouts || 0) >= MUSCLE_RANK_MIN_WORKOUTS
   const gainedMuscles  = Object.keys(sessionData?.muscleGains || {})
+
+  // New personal records from this session — { exerciseId: weight } set live
+  // in WorkoutActive as sets are logged; recapped here.
+  const newPRs = sessionData?.newPRs || {}
+  const prEntries = Object.entries(newPRs).map(([id, weight]) => ({
+    id, weight, name: exercises.find(e => e.id === id)?.name || id,
+  }))
 
   return (
     <>
@@ -79,6 +58,24 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
           </div>
         </div>
 
+        {/* New Personal Records */}
+        {prEntries.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <TrophyIcon size={13} /> New Personal Records
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {prEntries.map(pr => (
+                <div key={pr.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: 'none', borderRadius: 14, background: NB.yellow }}>
+                  <TrophyIcon size={18} />
+                  <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, flex: 1 }}>{pr.name}</span>
+                  <span style={{ fontFamily: NB.fontMono, fontSize: 13, fontWeight: 800, color: NB.ink }}>{toDisplayWeight(pr.weight, units)}{weightUnitLabel(units)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Rewards row */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
           <RewardCard icon="⚡" value={`+${xp}`} label="XP Earned" bg={NB.lavender} />
@@ -87,7 +84,7 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
         </div>
 
         {/* XP Progress bar */}
-        <div style={{ border: NB_BORDER, borderRadius: 18, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, marginBottom: 20 }}>
+        <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '14px 16px', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Level {gamification?.level ?? 1}</span>
             <span style={{ fontFamily: NB.fontMono, fontSize: 12, color: '#555' }}>{gamification?.xp ?? 0} XP</span>
@@ -103,7 +100,7 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
             <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
               Muscles Worked
             </div>
-            <div style={{ border: NB_BORDER, borderRadius: 18, background: NB.cream, overflow: 'hidden', padding: '10px 10px 6px', display: 'flex', gap: 6 }}>
+            <div style={{ ...nbCardStyle(NB.cream, 3), border: `3px solid ${NB.white}`, borderRadius: 18, overflow: 'hidden', padding: '10px 10px 6px', display: 'flex', gap: 6 }}>
               <div style={{ flex: 1, aspectRatio: '0.6/1' }}>
                 <MuscleSVG key="front-done" url="/muscle_map_front.svg" muscleColors={frontColors} />
               </div>
@@ -135,12 +132,13 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
                 const rankedUp = (sessionData.muscleRankUps || []).some(r => r.muscleId === muscleId)
                 return (
                   <button key={muscleId} onClick={() => setLadderMuscle(muscleId)} style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: `2.5px solid ${NB.ink}`, borderRadius: 14,
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', border: 'none', borderRadius: 14,
                     background: info.tier.bg, cursor: 'pointer', textAlign: 'left',
                   }}>
+                    <img src={info.tier.image} alt="" style={{ width: 26, height: 26, objectFit: 'contain', flexShrink: 0 }} />
                     <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: info.tier.color, flex: 1 }}>{MUSCLE_LABELS[muscleId] || muscleId}</span>
-                    {rankedUp && <span style={{ fontSize: 11 }}>🏆</span>}
-                    <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: info.tier.color, background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 7, padding: '2px 8px' }}>{info.tier.label}</span>
+                    {rankedUp && <TrophyIcon size={13} />}
+                    <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: info.tier.color, background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 7, padding: '2px 8px' }}>{info.tier.label}{info.subLevelLabel ? ` ${info.subLevelLabel}` : ''}</span>
                     <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: info.tier.color, fontWeight: 700 }}>+{gained}</span>
                   </button>
                 )
@@ -150,7 +148,7 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
         )}
 
         {/* Stats summary */}
-        <div style={{ border: NB_BORDER, borderRadius: 18, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, marginBottom: 24, display: 'flex', gap: 0 }}>
+        <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '14px 16px', marginBottom: 24, display: 'flex', gap: 0 }}>
           <StatItem value={exercises.length} label="Exercises" />
           <Divider />
           <StatItem value={sessionData?.setsCompleted ?? 0} label="Sets Done" />
@@ -193,8 +191,8 @@ export default function WorkoutComplete({ sessionData, gamification, onNavigate 
 
 function RewardCard({ icon, value, label, bg }) {
   return (
-    <div style={{ flex: 1, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '14px 10px', background: bg, textAlign: 'center' }}>
-      <div style={{ fontSize: 22, marginBottom: 4 }}>{icon}</div>
+    <div style={{ flex: 1, ...nbCardStyle(bg, 3), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '14px 10px', textAlign: 'center' }}>
+      <div style={{ marginBottom: 4, display: 'flex', justifyContent: 'center' }}>{renderIcon(icon, 24)}</div>
       <div style={{ fontFamily: NB.fontDisplay, fontSize: 22, color: NB.ink, fontWeight: 900, lineHeight: 1, marginBottom: 4 }}>{value}</div>
       <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: NB.ink }}>{label}</div>
     </div>

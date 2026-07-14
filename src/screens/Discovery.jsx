@@ -8,7 +8,7 @@ import {
   sendFriendRequest, respondToRequest, searchUserByUsername, timeAgo,
 } from '../lib/social'
 import { getMissFlags } from '../utils/gamification'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 const CUSTOM_EMOJI_GRID = [
   '💪','🔥','⚡','🙌','❤️','🌟','😍','🤩','🎯','💯',
@@ -243,7 +243,7 @@ function DiscoveryLock({ showWorkoutMiss, showCalorieMiss, missedWorkoutEntry, o
       <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink, marginBottom: 10 }}>Discover is locked</div>
 
       {showWorkoutMiss && (
-        <div style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.orange, padding: '16px', marginBottom: 14, width: '100%' }}>
+        <div style={{ ...nbCardStyle(NB.orange, 3), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px', marginBottom: 14, width: '100%' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink, marginBottom: 10 }}>You missed {missedWorkoutEntry?.label || 'a workout'} yesterday.</div>
           <button
             onClick={() => onStartMakeup?.()}
@@ -255,7 +255,7 @@ function DiscoveryLock({ showWorkoutMiss, showCalorieMiss, missedWorkoutEntry, o
       )}
 
       {showCalorieMiss && (
-        <div style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.yellow, padding: '16px', width: '100%' }}>
+        <div style={{ ...nbCardStyle(NB.yellow, 3), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px', width: '100%' }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink, marginBottom: 10 }}>You missed your calorie goal yesterday.</div>
           <button
             onClick={() => onNavigate('meals')}
@@ -294,7 +294,7 @@ function PostCard({ post, postReactions, onOpenReactionSheet }) {
           <span style={{ fontSize: 16, fontWeight: 800, color: NB.ink }}>{(post.display_name || 'U')[0].toUpperCase()}</span>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{post.display_name || 'Aura user'}</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{post.display_name || 'MissVfit user'}</div>
           <div style={{ fontSize: 11, color: '#555' }}>{timeAgo(post.created_at)}</div>
         </div>
         <span style={{ background: isWorkout ? NB.magenta : NB.green, border: `1.5px solid ${NB.ink}`, borderRadius: 7, padding: '3px 10px', fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: isWorkout ? NB.white : NB.ink }}>
@@ -345,7 +345,7 @@ function PostCard({ post, postReactions, onOpenReactionSheet }) {
       <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollPaddingLeft: '16px', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', gap: 10 }}>
 
         {/* Card 1: Media */}
-        <div style={{ flex: '0 0 calc(100% - 56px)', scrollSnapAlign: 'start', overflow: 'hidden', position: 'relative', background: NB.lavender, flexShrink: 0, border: `2.5px solid ${NB.ink}`, borderRadius: 18, boxShadow: hardShadow(4), marginLeft: 16 }}>
+        <div style={{ flex: '0 0 calc(100% - 56px)', scrollSnapAlign: 'start', overflow: 'hidden', position: 'relative', flexShrink: 0, ...nbCardStyle(NB.lavender, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, marginLeft: 16 }}>
           {post.media_url ? (
             post.media_type === 'video'
               ? <video src={post.media_url} autoPlay muted loop playsInline style={{ width: '100%', height: 'auto', display: 'block', minHeight: 160 }} />
@@ -373,7 +373,7 @@ function PostCard({ post, postReactions, onOpenReactionSheet }) {
         </div>
 
         {/* Card 2: Muscle map or nutrition */}
-        <div style={{ flex: '0 0 calc(100% - 56px)', scrollSnapAlign: 'start', overflow: 'hidden', background: isWorkout ? NB.cream : NB.cream, flexShrink: 0, border: `2.5px solid ${NB.ink}`, borderRadius: 18, boxShadow: hardShadow(4), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16, marginRight: 16 }}>
+        <div style={{ flex: '0 0 calc(100% - 56px)', scrollSnapAlign: 'start', overflow: 'hidden', flexShrink: 0, ...nbCardStyle(NB.cream, 4), border: `3px solid ${NB.white}`, borderRadius: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16, marginRight: 16 }}>
           {isWorkout ? (
             <>
               <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14 }}>Muscles Worked</div>
@@ -495,7 +495,7 @@ function ReactionSheet({ post, postReactions, onReact, onClose }) {
 
         {/* Custom emoji picker */}
         {showPicker && (
-          <div style={{ background: NB.cream, border: NB_BORDER, borderRadius: 16, padding: 14, marginBottom: 20 }}>
+          <div style={{ ...nbCardStyle(NB.cream, 2), border: `3px solid ${NB.white}`, borderRadius: 16, padding: 14, marginBottom: 20 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: NB.ink, marginBottom: 10 }}>Choose or type your reaction</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <input value={customEmoji} onChange={e => setCustomEmoji(e.target.value)} placeholder="Type any emoji…" maxLength={4} style={{ flex: 1, height: 42, border: `2px solid ${NB.ink}`, borderRadius: 10, padding: '0 12px', fontSize: 20, background: NB.white, outline: 'none', fontFamily: NB.fontDisplay, boxSizing: 'border-box' }} />
@@ -548,7 +548,7 @@ function SkeletonFeed() {
               <div style={{ height: 11, background: NB.cream, width: '25%' }} />
             </div>
           </div>
-          <div style={{ height: 300, background: NB.cream, border: NB_BORDER, borderRadius: 18 }} />
+          <div style={{ height: 300, background: NB.cream, border: 'none', borderRadius: 18 }} />
         </div>
       ))}
     </div>

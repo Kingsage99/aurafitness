@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { Avatar } from '../components/AvatarSilhouette'
+import { STORE_BORDERS } from './StoreScreen'
+import { HeartIcon, FireIcon, GemIcon, StarIcon, ToolsIcon, SpaIcon, renderIcon } from '../components/Icons'
 import { getDailyQuests, getMissFlags, xpProgress } from '../utils/gamification'
 import { getPrimaryMuscles } from '../utils/workoutBuilder'
 import { fetchFriendsFeed, timeAgo } from '../lib/social'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 function describeActivity(post) {
   const c = post.content || {}
@@ -13,8 +15,12 @@ function describeActivity(post) {
   return `logged ${c.name || 'a meal'}`
 }
 
-export default function Home({ userProfile, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, todayWorkout = null, gamification = {}, missState = null, session, onStartMakeup, onSkipMakeup, onQuestComplete, onNavigate }) {
+export default function Home({ userProfile, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, todayWorkout = null, gamification = {}, missState = null, session, onStartMakeup, onSkipMakeup, onSkipCalorieMiss, onQuestComplete, onNavigate }) {
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  // Image-based ring frame — same equipped cosmetic as Profile.jsx, shown
+  // anywhere else the real avatar photo appears.
+  const equippedBorder = gamification.frame ? STORE_BORDERS.find(b => b.id === `frame_${gamification.frame}`) : null
+  const borderImage = equippedBorder?.image || null
   const gems = gamification.gems ?? 0
   const streak = gamification.workoutStreak ?? 0
   const lives = gamification.lives ?? 3
@@ -55,11 +61,27 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
             onClick={() => onNavigate('profile')}
             style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', minWidth: 0 }}
           >
-            <div style={{ width: 44, height: 44, borderRadius: '50%', border: NB_BORDER, background: NB.lavender, overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Avatar url={userProfile?.avatarUrl} height={44} color={NB.ink} />
+            <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', border: NB_BORDER, background: NB.lavender, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Avatar url={userProfile?.avatarUrl} height={44} color={NB.ink} />
+              </div>
+              {borderImage && (
+                <img
+                  src={borderImage}
+                  alt=""
+                  style={{
+                    position: 'absolute',
+                    top: equippedBorder.frameOffset.top,
+                    left: equippedBorder.frameOffset.left,
+                    width: equippedBorder.frameOffset.size,
+                    height: equippedBorder.frameOffset.size,
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: NB.fontDisplay, fontSize: 18, fontWeight: 900, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.name || 'Aura'}</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontSize: 18, fontWeight: 900, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.name || 'MissVfit'}</div>
               {(() => {
                 const xp = xpProgress(gamification.xp || 0)
                 const xpPct = Math.round((xp.current / Math.max(xp.needed, 1)) * 100)
@@ -77,15 +99,11 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Lives */}
             <div style={{ display: 'flex', gap: 3 }}>
-              {[1,2,3].map(i => (
-                <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i <= lives ? NB.red : '#ddd'}>
-                  <path d="M12 21.593c-.5-.388-10-6.77-10-12.093 0-3.314 2.686-6 6-6 1.878 0 3.561.888 4.666 2.276C13.771 4.388 15.453 3.5 17.333 3.5 20.648 3.5 23 6.186 23 9.5c0 5.323-9.5 11.705-10 12.093z"/>
-                </svg>
-              ))}
+              {[1,2,3].map(i => <HeartIcon key={i} size={14} filled={i <= lives} />)}
             </div>
             {/* Gems */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 14, background: NB.white, border: NB_BORDER, boxShadow: hardShadow(2), padding: '6px 10px' }}>
-              <span style={{ width: 12, height: 12, background: NB.blue, border: `1.5px solid ${NB.ink}`, transform: 'rotate(45deg)' }} />
+              <GemIcon size={13} />
               <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, color: NB.ink }}>{gems}</span>
             </div>
           </div>
@@ -94,58 +112,13 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
           </button>
         </div>
 
-        {notificationsOn && showWorkoutMiss && !dismissed.workout && (
-          <div style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.orange, padding: '14px 16px', marginBottom: 12 }}>
-            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>😔 Missed {missedWorkoutEntry?.label || 'a workout'} yesterday</div>
-            <div style={{ fontSize: 12, color: NB.ink, marginBottom: 10 }}>Want to catch up now, or skip it and move on?</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => onStartMakeup?.()}
-                style={{ flex: 1, height: 38, border: NB_BORDER, borderRadius: 10, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer' }}
-              >
-                Do it now
-              </button>
-              <button
-                onClick={() => { setDismissed(d => ({ ...d, workout: true })); onSkipMakeup?.() }}
-                style={{ height: 38, padding: '0 14px', border: 'none', background: 'none', color: NB.ink, fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
-              >
-                Skip it
-              </button>
-            </div>
-          </div>
-        )}
-
-        {notificationsOn && showCalorieMiss && !dismissed.calorie && (
-          <div style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.yellow, padding: '14px 16px', marginBottom: 12 }}>
-            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>🍽 Missed your calorie goal yesterday</div>
-            <div style={{ fontSize: 12, color: NB.ink, marginBottom: 10 }}>Log a meal today to get back on track.</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => onNavigate('meals')}
-                style={{ flex: 1, height: 38, border: NB_BORDER, borderRadius: 10, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer' }}
-              >
-                Log a meal
-              </button>
-              <button
-                onClick={() => setDismissed(d => ({ ...d, calorie: true }))}
-                style={{ height: 38, padding: '0 14px', border: 'none', background: 'none', color: NB.ink, fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
-              >
-                Skip it
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>Foundation · Day 4</div>
-
         {/* Today's Workout Card */}
         {todayWorkout ? (
           <div style={{
-            border: NB_BORDER, borderRadius: 22, padding: 20, marginBottom: 16,
-            background: NB.magenta, boxShadow: hardShadow(7),
+            ...nbCardStyle(NB.magenta, 7), border: `3px solid ${NB.white}`, borderRadius: 22, padding: 20, marginBottom: 16,
             position: 'relative', overflow: 'hidden',
           }}>
-            <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.white, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>Today's Workout</div>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.white, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>Foundation · Day 4 · Today's Workout</div>
             <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 24, textTransform: 'uppercase', color: NB.white, lineHeight: 1.1, marginBottom: 8 }}>{todayWorkout.name || "Today's Workout"}</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
               {getPrimaryMuscles(todayWorkout.exercises).map(m => (
@@ -180,11 +153,10 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
           </div>
         ) : userProfile?.planningMode === 'custom' ? (
           <div style={{
-            border: NB_BORDER, borderRadius: 22, padding: 20, marginBottom: 16,
-            background: NB.lavender, boxShadow: hardShadow(5),
+            ...nbCardStyle(NB.lavender, 5, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 22, padding: 20, marginBottom: 16,
             textAlign: 'center',
           }}>
-            <div style={{ fontSize: 30, marginBottom: 6 }}>🛠️</div>
+            <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center' }}><ToolsIcon size={30} /></div>
             <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 18, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>Build your first workout</div>
             <div style={{ fontSize: 13, color: '#555', marginBottom: 14 }}>You chose to build your own — create a workout to see it here.</div>
             <button
@@ -202,21 +174,20 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
           </div>
         ) : (
           <div style={{
-            border: NB_BORDER, borderRadius: 22, padding: 20, marginBottom: 16,
-            background: NB.cream, boxShadow: hardShadow(5),
+            ...nbCardStyle(NB.cream, 5), border: `3px solid ${NB.white}`, borderRadius: 22, padding: 20, marginBottom: 16,
             textAlign: 'center',
           }}>
-            <div style={{ fontSize: 30, marginBottom: 6 }}>💆</div>
+            <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center' }}><SpaIcon size={30} /></div>
             <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 18, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>Rest day today</div>
             <div style={{ fontSize: 13, color: '#555' }}>No workout scheduled — recover up and come back stronger.</div>
           </div>
         )}
 
         {/* Weekly Streak */}
-        <div style={{ border: NB_BORDER, borderRadius: 20, boxShadow: hardShadow(4), background: NB.white, padding: '14px 16px', marginBottom: 16 }}>
+        <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '14px 16px', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 18 }}>🔥</span>
+              <FireIcon size={18} />
               <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink }}>{streak > 0 ? `${streak} day streak` : 'Start your streak!'}</span>
             </div>
             <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>this week</span>
@@ -235,98 +206,95 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
           </div>
         </div>
 
-        {/* Quick access grid — fixed height row so Build a meal doesn't stretch */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
-          {/* Build a meal */}
-          <button
-            onClick={() => onNavigate('meals')}
-            style={{
-              width: '46%', flexShrink: 0, border: NB_BORDER, borderRadius: 20,
-              background: NB.teal, padding: 17, display: 'flex', flexDirection: 'column',
-              boxShadow: hardShadow(5), textAlign: 'left', cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 42, height: 42, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 3v7a2 2 0 0 0 4 0V3M6 12v9M16 3c-1.5 0-2.5 2-2.5 5s1 4 2.5 4 2.5-1 2.5-4-1-5-2.5-5zM16 12v9"/></svg>
+        {/* Missed-workout / missed-calorie block the rest of the app until the
+            user acts or explicitly skips — shown one at a time as a modal,
+            not an inline dismissible banner. */}
+        {notificationsOn && showWorkoutMiss && !dismissed.workout && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(26,26,26,0.55)', padding: 28 }}>
+            <div style={{ ...nbCardStyle(NB.orange, 6), border: `3px solid ${NB.white}`, borderRadius: 24, padding: '30px 24px 24px', width: '100%', maxWidth: 290, textAlign: 'center' }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>😔</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 17, textTransform: 'uppercase', color: NB.ink, marginBottom: 8, lineHeight: 1.25 }}>Missed {missedWorkoutEntry?.label || 'a workout'} yesterday</div>
+              <div style={{ fontSize: 13, color: NB.ink, marginBottom: 22, lineHeight: 1.4 }}>Want to catch up now, or skip it and move on?</div>
+              <button
+                onClick={() => onStartMakeup?.()}
+                style={{ width: '100%', height: 46, border: NB_BORDER, borderRadius: 12, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer', marginBottom: 12 }}
+              >
+                Do it now
+              </button>
+              <button
+                onClick={() => { setDismissed(d => ({ ...d, workout: true })); onSkipMakeup?.() }}
+                style={{ background: 'none', border: 'none', color: NB.ink, fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
+              >
+                Skip it
+              </button>
             </div>
-            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.05, marginTop: 18 }}>Build<br/>a meal</div>
-            <div style={{ fontSize: 11, color: NB.ink, marginTop: 6, lineHeight: 1.35 }}>Tell us your craving — we hit your kcal target.</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 14 }}>
-              <span style={{ flex: 1, height: 36, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', paddingLeft: 10, fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700 }}>{Math.max(0, Math.round((userProfile?.dailyCalorieTarget || 1750) - loggedMacros.calories))} kcal left</span>
+          </div>
+        )}
+
+        {notificationsOn && !(showWorkoutMiss && !dismissed.workout) && showCalorieMiss && !dismissed.calorie && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(26,26,26,0.55)', padding: 28 }}>
+            <div style={{ ...nbCardStyle(NB.yellow, 6), border: `3px solid ${NB.white}`, borderRadius: 24, padding: '30px 24px 24px', width: '100%', maxWidth: 290, textAlign: 'center' }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🍽</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 17, textTransform: 'uppercase', color: NB.ink, marginBottom: 8, lineHeight: 1.25 }}>Missed your calorie goal yesterday</div>
+              <div style={{ fontSize: 13, color: NB.ink, marginBottom: 22, lineHeight: 1.4 }}>Log a meal today to get back on track.</div>
+              <button
+                onClick={() => onNavigate('meals')}
+                style={{ width: '100%', height: 46, border: NB_BORDER, borderRadius: 12, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer', marginBottom: 12 }}
+              >
+                Log a meal
+              </button>
+              <button
+                onClick={() => { setDismissed(d => ({ ...d, calorie: true })); onSkipCalorieMiss?.() }}
+                style={{ background: 'none', border: 'none', color: NB.ink, fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}
+              >
+                Skip it
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Build a meal — single full-width card (macro ring + kcal remaining) */}
+        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 10 }}>Build a meal</div>
+        {(() => {
+          const target = userProfile?.dailyCalorieTarget || 1750
+          const consumed = Math.round(loggedMacros.calories)
+          const pct = Math.min(consumed / target, 1)
+          const circ = 138
+          const offset = circ - circ * pct
+          return (
+            <button
+              onClick={() => onNavigate('meals')}
+              style={{ ...nbCardStyle(NB.tealLight, 5, NB.teal), border: `3px solid ${NB.white}`, borderRadius: 20, padding: 14, display: 'flex', alignItems: 'center', gap: 14, width: '100%', marginBottom: 16, cursor: 'pointer', textAlign: 'left' }}
+            >
+              <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+                <svg width="52" height="52" viewBox="0 0 54 54">
+                  <circle cx="27" cy="27" r="22" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="8"/>
+                  <circle cx="27" cy="27" r="22" fill="none" stroke={NB.ink} strokeWidth="8" strokeDasharray={circ} strokeDashoffset={offset} transform="rotate(-90 27 27)"/>
+                </svg>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, color: NB.ink, lineHeight: 1 }}>{consumed}</span>
+                </div>
+              </div>
+              <span style={{ flex: 1, fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700 }}>
+                {Math.max(0, Math.round(target - loggedMacros.calories))} kcal left · P {Math.round(loggedMacros.protein)} C {Math.round(loggedMacros.carbs)} F {Math.round(loggedMacros.fat)}
+              </span>
               <span style={{ width: 36, height: 36, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
               </span>
-            </div>
-          </button>
-
-          {/* Right column: Nutrition + Store */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {/* Nutrition card */}
-            {(() => {
-              const target = userProfile?.dailyCalorieTarget || 1750
-              const consumed = Math.round(loggedMacros.calories)
-              const pct = Math.min(consumed / target, 1)
-              const circ = 138
-              const offset = circ - circ * pct
-              return (
-                <button onClick={() => onNavigate('meals')} style={{ border: NB_BORDER, borderRadius: 20, boxShadow: hardShadow(3), background: NB.white, padding: 14, display: 'flex', flexDirection: 'column', cursor: 'pointer', textAlign: 'left' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Nutrition</span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
-                      <svg width="52" height="52" viewBox="0 0 54 54">
-                        <circle cx="27" cy="27" r="22" fill="none" stroke="#eee" strokeWidth="8"/>
-                        <circle cx="27" cy="27" r="22" fill="none" stroke={NB.teal} strokeWidth="8" strokeDasharray={circ} strokeDashoffset={offset} transform="rotate(-90 27 27)"/>
-                      </svg>
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontFamily: NB.fontDisplay, fontSize: 11, fontWeight: 800, color: NB.ink, lineHeight: 1 }}>{consumed}</span>
-                      </div>
-                    </div>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {[[NB.blue,'P',Math.round(loggedMacros.protein)+'g'],[NB.yellow,'C',Math.round(loggedMacros.carbs)+'g'],[NB.pink,'F',Math.round(loggedMacros.fat)+'g']].map(([color, name, val]) => (
-                        <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: 3, border: `1.5px solid ${NB.ink}`, background: color }}></span>
-                          <span style={{ fontFamily: NB.fontMono, fontSize: 10, color: '#555', fontWeight: 700, flex: 1 }}>{name}</span>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink }}>{val}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </button>
-              )
-            })()}
-
-            {/* Store card */}
-            <button
-              onClick={() => onNavigate('store')}
-              style={{ border: NB_BORDER, borderRadius: 20, boxShadow: hardShadow(3), background: NB.lavender, padding: '14px 14px', display: 'flex', flexDirection: 'column', gap: 8, cursor: 'pointer', textAlign: 'left' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Store</span>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-              </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {['💎','🔥','🌸'].map((icon, i) => (
-                  <div key={i} style={{ width: 30, height: 30, borderRadius: 9, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{icon}</div>
-                ))}
-              </div>
-              <div style={{ fontFamily: NB.fontMono, fontSize: 10, color: '#555', fontWeight: 700, lineHeight: 1.3 }}>Borders, banners &amp; more</div>
             </button>
-          </div>
-        </div>
+          )
+        })()}
 
-        {/* Daily Quests — horizontal swipe carousel */}
+        {/* Daily Quests — stacked checklist */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 14 }}>⭐</span>
+              <StarIcon size={14} />
               <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: NB.ink }}>Daily Quests</span>
             </div>
             <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700 }}>{completedQuests.length}/3 done</span>
           </div>
-          <div style={{ display: 'flex', gap: 10, overflowX: 'scroll', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', paddingBottom: 6, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div style={{ ...nbCardStyle(NB.lavender, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {dailyQuests.map(quest => {
               const isDone = completedQuests.includes(quest.id)
               return (
@@ -334,41 +302,41 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
                   key={quest.id}
                   onClick={() => !isDone && onQuestComplete && onQuestComplete(quest.id)}
                   style={{
-                    minWidth: '78%', flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                    border: `2.5px solid ${NB.ink}`, borderRadius: 18, padding: '16px 18px',
-                    background: isDone ? NB.green : NB.white,
-                    boxShadow: hardShadow(3),
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    cursor: isDone ? 'default' : 'pointer', textAlign: 'left',
+                    background: NB.lavenderMist, border: 'none', borderRadius: 14, padding: '12px 14px',
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    cursor: isDone ? 'default' : 'pointer', textAlign: 'left', width: '100%',
                   }}
                 >
-                  <div style={{ width: 48, height: 48, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>
-                    {quest.icon}
+                  <div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${NB.ink}`, background: isDone ? NB.ink : NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {isDone && (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+                    )}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: NB.ink, textDecoration: isDone ? 'line-through' : 'none', lineHeight: 1.3 }}>{quest.label}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5 }}>
-                      {isDone
-                        ? <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: NB.ink, textTransform: 'uppercase' }}>Completed ✓</span>
-                        : <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink, background: NB.yellow, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '3px 9px' }}>+{quest.reward}</span>
-                      }
-                    </div>
-                  </div>
-                  {isDone
-                    ? <div style={{ width: 34, height: 34, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
-                      </div>
-                    : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="9,18 15,12 9,6"/></svg>
-                  }
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: NB.ink, textDecoration: isDone ? 'line-through' : 'none' }}>{quest.label}</span>
+                  <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink, background: NB.yellow, borderRadius: 8, padding: '3px 9px', flexShrink: 0 }}>+{quest.reward}</span>
                 </button>
               )
             })}
           </div>
         </div>
 
+        {/* Store */}
+        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 10 }}>Store</div>
+        <button
+          onClick={() => onNavigate('store')}
+          style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '14px 14px', display: 'flex', alignItems: 'center', gap: 12, width: '100%', marginBottom: 16, cursor: 'pointer', textAlign: 'left' }}
+        >
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            {['💎','🔥','🌸'].map((icon, i) => (
+              <div key={i} style={{ width: 30, height: 30, borderRadius: 9, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{renderIcon(icon, 16)}</div>
+            ))}
+          </div>
+          <span style={{ flex: 1, fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700 }}>Borders, banners &amp; more</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+
         {/* Squad Activity */}
-        <div style={{ border: NB_BORDER, borderRadius: 20, boxShadow: hardShadow(4), background: NB.white, padding: '14px 16px', marginBottom: 16 }}>
+        <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '14px 16px', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink }}>Squad activity</span>
             <button onClick={() => onNavigate('discovery')} style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', border: 'none', background: 'none', cursor: 'pointer' }}>See all</button>
@@ -386,7 +354,7 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
                   <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, color: post.type === 'workout' ? NB.white : NB.ink }}>{(post.display_name || 'U')[0].toUpperCase()}</span>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{post.display_name || 'Aura user'} </span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{post.display_name || 'MissVfit user'} </span>
                   <span style={{ fontSize: 13, color: '#444' }}>{describeActivity(post)}</span>
                 </div>
                 <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#666', flexShrink: 0 }}>{timeAgo(post.created_at)}</span>

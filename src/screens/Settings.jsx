@@ -1,7 +1,11 @@
 import React, { useState } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { supabase } from '../lib/supabase'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { subscribeToPush, unsubscribeFromPush, isPushSupported } from '../utils/pushNotifications'
+import { savePushSubscription, deletePushSubscription } from '../lib/social'
+import { startCheckout, openBillingPortal, STRIPE_PRICES } from '../lib/stripe'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { StarIcon } from '../components/Icons'
 
 const TRAINING_STYLES = [
   { id: 'strength',    label: 'Strength',    sub: '6–8 reps' },
@@ -17,13 +21,15 @@ function SectionLabel({ children }) {
   )
 }
 
-function Toggle({ on, onChange }) {
+function Toggle({ on, onChange, disabled = false }) {
   return (
     <button
-      onClick={() => onChange(!on)}
+      onClick={() => !disabled && onChange(!on)}
+      disabled={disabled}
       style={{
         width: 50, height: 28, borderRadius: 14, border: NB_BORDER,
-        background: on ? NB.teal : NB.white, position: 'relative', cursor: 'pointer', flexShrink: 0,
+        background: on ? NB.teal : NB.white, position: 'relative', cursor: disabled ? 'default' : 'pointer', flexShrink: 0,
+        opacity: disabled ? 0.6 : 1,
       }}
     >
       <div style={{
@@ -34,9 +40,60 @@ function Toggle({ on, onChange }) {
   )
 }
 
-export default function Settings({ userProfile, onNavigate, onUpdateProfile, onResetOnboarding }) {
+export default function Settings({ userProfile, session, subscription, isProUser, onNavigate, onUpdateProfile, onResetOnboarding }) {
   const [signingOut, setSigningOut] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushError, setPushError] = useState('')
+  const [billingBusy, setBillingBusy] = useState(false)
+  const [billingError, setBillingError] = useState('')
+
+  const handleUpgrade = async (priceId) => {
+    setBillingError('')
+    if (!priceId) { setBillingError('MissVfit Pro isn\'t set up yet — check back soon.'); return }
+    setBillingBusy(true)
+    try {
+      await startCheckout(priceId)
+    } catch (err) {
+      setBillingError(err.message || 'Could not start checkout')
+      setBillingBusy(false)
+    }
+  }
+
+  const handleManageBilling = async () => {
+    setBillingError('')
+    setBillingBusy(true)
+    try {
+      await openBillingPortal()
+    } catch (err) {
+      setBillingError(err.message || 'Could not open billing portal')
+      setBillingBusy(false)
+    }
+  }
+
+  // Turning this on now also requests real OS-level push permission and
+  // stores a subscription; turning it off removes it. Falls back to the
+  // in-app-only banner behavior (unchanged) on unsupported browsers.
+  const handleNotificationsToggle = async (val) => {
+    setPushError('')
+    onUpdateProfile?.({ notificationsEnabled: val })
+    const userId = session?.user?.id
+    if (!userId || !isPushSupported()) return
+
+    setPushBusy(true)
+    try {
+      if (val) {
+        const subscription = await subscribeToPush()
+        if (subscription) await savePushSubscription(userId, subscription)
+        else setPushError('Notifications permission was denied or unavailable.')
+      } else {
+        const endpoint = await unsubscribeFromPush()
+        if (endpoint) await deletePushSubscription(userId, endpoint)
+      }
+    } finally {
+      setPushBusy(false)
+    }
+  }
 
   const handleSignOut = async () => {
     setSigningOut(true)
@@ -61,6 +118,57 @@ export default function Settings({ userProfile, onNavigate, onUpdateProfile, onR
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 20px' }}>
+
+        {/* MissVfit Pro */}
+        <div style={{ marginBottom: 24 }}>
+          <SectionLabel>MissVfit Pro</SectionLabel>
+          {isProUser ? (
+            <div style={{ ...nbCardStyle(NB.teal, 3), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '14px 16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>
+                    {subscription?.status === 'trialing' ? 'MissVfit Pro — free trial' : 'MissVfit Pro'}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#333', marginTop: 2 }}>
+                    {subscription?.proUntil
+                      ? `${subscription.status === 'trialing' ? 'Trial ends' : 'Renews'} ${new Date(subscription.proUntil).toLocaleDateString()}`
+                      : 'Unlimited AI nutrition coaching unlocked'}
+                  </div>
+                </div>
+                <StarIcon size={20} />
+              </div>
+              <button
+                onClick={handleManageBilling}
+                disabled={billingBusy}
+                style={{ marginTop: 12, height: 40, width: '100%', border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: billingBusy ? 'default' : 'pointer' }}
+              >
+                {billingBusy ? '…' : 'Manage subscription'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '14px 16px' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink, marginBottom: 2 }}>Unlock unlimited AI nutrition coaching</div>
+              <div style={{ fontSize: 11, color: '#555', marginBottom: 12 }}>Meal suggestions, food lookup, and the AI coach — free for 7 days, then from $8.33/mo.</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => handleUpgrade(STRIPE_PRICES.monthly)}
+                  disabled={billingBusy}
+                  style={{ flex: 1, height: 42, border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.teal, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: billingBusy ? 'default' : 'pointer' }}
+                >
+                  $14.99/mo
+                </button>
+                <button
+                  onClick={() => handleUpgrade(STRIPE_PRICES.annual)}
+                  disabled={billingBusy}
+                  style={{ flex: 1, height: 42, border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: billingBusy ? 'default' : 'pointer' }}
+                >
+                  $99.99/yr
+                </button>
+              </div>
+            </div>
+          )}
+          {billingError && <div style={{ fontSize: 11, color: NB.red, marginTop: 6, paddingLeft: 4 }}>{billingError}</div>}
+        </div>
 
         {/* Training Style */}
         <div style={{ marginBottom: 24 }}>
@@ -115,16 +223,24 @@ export default function Settings({ userProfile, onNavigate, onUpdateProfile, onR
         {/* Notifications */}
         <div style={{ marginBottom: 24 }}>
           <SectionLabel>Notifications</SectionLabel>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: NB_BORDER, borderRadius: 14, padding: '14px 16px', background: NB.white }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '14px 16px' }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>Missed-day reminders</div>
-              <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>Show a banner when you miss a workout or calorie goal</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>Reminders & push notifications</div>
+              <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
+                {isPushSupported()
+                  ? 'Get notified about missed workouts, calorie goals, and your pet — even when the app is closed'
+                  : 'Show a banner when you miss a workout or calorie goal'}
+              </div>
             </div>
             <Toggle
               on={userProfile?.notificationsEnabled !== false}
-              onChange={(val) => onUpdateProfile?.({ notificationsEnabled: val })}
+              onChange={handleNotificationsToggle}
+              disabled={pushBusy}
             />
           </div>
+          {pushError && (
+            <div style={{ fontSize: 11, color: NB.red, marginTop: 6, paddingLeft: 4 }}>{pushError}</div>
+          )}
         </div>
 
         {/* Account */}

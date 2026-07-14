@@ -3,24 +3,8 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
 import { fetchWorkoutHistory } from '../lib/social'
-import { NB, NB_BORDER, hardShadow, NB_INTENSITY_RAMP } from '../styles/neoBrutalism'
-
-const GROUP_LABELS = {
-  glutes: 'Glutes', legs: 'Legs', back: 'Back', core: 'Core',
-  arms: 'Arms', shoulders: 'Shoulders', chest: 'Chest', calves: 'Calves',
-}
-
-// Same normalisation Analytics uses — exercise primary muscles → display groups
-const MUSCLE_TO_GROUP = {
-  glutes: 'glutes', glute: 'glutes',
-  hamstrings: 'legs', quads: 'legs', legs: 'legs',
-  chest: 'chest', pecs: 'chest',
-  shoulders: 'shoulders', delts: 'shoulders',
-  back: 'back', lats: 'back', lat: 'back', lower_back: 'back',
-  core: 'core', abs: 'core',
-  arms: 'arms', biceps: 'arms', triceps: 'arms',
-  calves: 'calves',
-}
+import { GROUP_LABELS, groupOf } from '../utils/muscleGroups'
+import { NB, NB_INTENSITY_RAMP, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 const VOLUME_COLORS = [null, NB_INTENSITY_RAMP[1], NB_INTENSITY_RAMP[2], NB_INTENSITY_RAMP[3], NB_INTENSITY_RAMP[4]]
 
@@ -49,7 +33,7 @@ function buildVolumes(history, period) {
     if (new Date(session.completed_at).getTime() < cutoff) return
     ;(session.exercises || []).forEach(ex => {
       ;(ex.muscles?.primary || []).forEach(m => {
-        const g = MUSCLE_TO_GROUP[m?.toLowerCase()]
+        const g = groupOf(m)
         if (g) counts[g] = (counts[g] || 0) + 1
       })
     })
@@ -152,7 +136,7 @@ export default function MuscleMap({ session, onNavigate }) {
         </div>
 
         {/* SVG body diagram */}
-        <div style={{ width: '100%', aspectRatio: '9/16', overflow: 'hidden', background: NB.cream, marginBottom: 14, border: NB_BORDER, borderRadius: 18, position: 'relative' }}>
+        <div style={{ width: '100%', aspectRatio: '9/16', overflow: 'hidden', marginBottom: 14, ...nbCardStyle(NB.cream, 4), border: `3px solid ${NB.white}`, borderRadius: 18, position: 'relative' }}>
           {view === 'front'
             ? <MuscleSVG key={`front-${period}`} url="/muscle_map_front.svg" muscleColors={frontColors} />
             : <MuscleSVG key={`back-${period}`}  url="/muscle_map_back.svg"  muscleColors={backColors} />
@@ -197,7 +181,7 @@ export default function MuscleMap({ session, onNavigate }) {
 
         {/* Detail card */}
         {selectedGroup && (
-          <div style={{ border: `2.5px solid ${NB.ink}`, borderRadius: 16, background: NB.white, boxShadow: hardShadow(3), padding: '16px', marginBottom: 16 }}>
+          <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px', marginBottom: 16 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: NB.ink, marginBottom: 8 }}>{selectedGroup.label} — this {period}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ flex: 1, height: 10, borderRadius: 5, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
@@ -223,7 +207,7 @@ export default function MuscleMap({ session, onNavigate }) {
         )}
 
         {/* Recovery tip */}
-        <div style={{ background: NB.yellow, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, marginBottom: 16 }}>
+        <div style={{ ...nbCardStyle(NB.yellow, 3), border: `3px solid ${NB.white}`, padding: '14px 16px', borderRadius: 16, marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
             <span style={{ fontSize: 12, fontWeight: 800, color: NB.ink, textTransform: 'uppercase' }}>Recovery tip</span>

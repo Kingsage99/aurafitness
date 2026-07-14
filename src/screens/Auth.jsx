@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { StatusBar } from '../components/PhoneFrame'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, nbCardStyle } from '../styles/neoBrutalism'
 
 export default function Auth() {
   const [mode, setMode] = useState(null) // null | 'login' | 'signup'
@@ -105,7 +105,7 @@ export default function Auth() {
           </div>
 
           {error && (
-            <div style={{ marginTop: 14, padding: '10px 14px', border: NB_BORDER, borderRadius: 12, background: NB.red }}>
+            <div style={{ marginTop: 14, padding: '10px 14px', ...nbCardStyle(NB.red, 3), border: `3px solid ${NB.white}`, borderRadius: 12 }}>
               <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
             </div>
           )}
@@ -137,10 +137,10 @@ export default function Auth() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ width: 80, height: 80, borderRadius: 20, border: NB_BORDER, boxShadow: hardShadow(6), background: NB.magenta, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l2.2 5.5L20 9l-4.5 3.8L17 19l-5-3-5 3 1.5-6.2L4 9l5.8-.5z"/></svg>
+          <div style={{ width: 80, height: 80, borderRadius: 20, border: NB_BORDER, boxShadow: hardShadow(6), overflow: 'hidden', margin: '0 auto 18px' }}>
+            <img src="/cute_logo.png" alt="MissVfit" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
-          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 40, textTransform: 'uppercase', letterSpacing: -1, color: NB.ink, marginBottom: 8 }}>Aura</div>
+          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 40, textTransform: 'uppercase', letterSpacing: -1, color: NB.ink, marginBottom: 8 }}>MissVfit</div>
           <div style={{ fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#555' }}>Your women's strength companion</div>
         </div>
 
@@ -176,7 +176,7 @@ export default function Auth() {
         </div>
 
         {error && (
-          <div style={{ marginTop: 16, padding: '10px 14px', border: NB_BORDER, borderRadius: 12, background: NB.red }}>
+          <div style={{ marginTop: 16, padding: '10px 14px', ...nbCardStyle(NB.red, 3), border: `3px solid ${NB.white}`, borderRadius: 12 }}>
             <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
           </div>
         )}

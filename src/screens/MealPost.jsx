@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { createPost, uploadPostMedia } from '../lib/social'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { SaladIcon } from '../components/Icons'
 
 export default function MealPost({ mealData, userProfile, session, onNavigate }) {
   const name        = mealData?.name || 'Meal'
@@ -40,7 +41,7 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
     }
     await createPost(
       session.user.id,
-      userProfile?.name || userProfile?.username || 'Aura user',
+      userProfile?.name || userProfile?.username || 'MissVfit user',
       'meal',
       { name, macros, ingredients: ingredients.slice(0, 10) },
       { caption: caption.trim(), mediaUrl, mediaType }
@@ -74,7 +75,7 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
         <input ref={fileRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handlePickMedia} />
         <div
           onClick={() => fileRef.current?.click()}
-          style={{ overflow: 'hidden', marginBottom: 18, cursor: 'pointer', border: mediaPreview ? NB_BORDER : `2.5px dashed ${NB.ink}`, borderRadius: 18, background: mediaPreview ? 'transparent' : NB.green, minHeight: mediaPreview ? 0 : 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ overflow: 'hidden', marginBottom: 18, cursor: 'pointer', borderRadius: 18, minHeight: mediaPreview ? 0 : 120, display: 'flex', alignItems: 'center', justifyContent: 'center', ...(mediaPreview ? { border: 'none' } : { ...nbCardStyle(NB.green, 3), border: `3px solid ${NB.white}` }) }}
         >
           {mediaPreview ? (
             mediaIsVideo
@@ -82,7 +83,7 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
               : <img src={mediaPreview} alt="preview" style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }} />
           ) : (
             <div style={{ textAlign: 'center', padding: 24 }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>🥗</div>
+              <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><SaladIcon size={28} /></div>
               <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Add a photo of your meal</div>
               <div style={{ fontSize: 12, color: NB.ink, marginTop: 4 }}>Tap to choose from your gallery</div>
             </div>
@@ -95,7 +96,7 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
         )}
 
         {/* Meal summary */}
-        <div style={{ border: NB_BORDER, borderRadius: 18, boxShadow: hardShadow(3), background: NB.white, padding: '14px 16px', marginBottom: 18 }}>
+        <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '14px 16px', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ fontFamily: NB.fontDisplay, fontSize: 17, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>{name}</div>
             <span style={{ background: NB.green, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '3px 10px', fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink }}>MEAL</span>
@@ -124,7 +125,7 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
         </div>
 
         {error && (
-          <div style={{ padding: '10px 14px', border: NB_BORDER, borderRadius: 12, background: NB.red, marginBottom: 16 }}>
+          <div style={{ padding: '10px 14px', ...nbCardStyle(NB.red, 2), border: `3px solid ${NB.white}`, borderRadius: 12, marginBottom: 16 }}>
             <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
           </div>
         )}

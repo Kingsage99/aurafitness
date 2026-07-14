@@ -2,1191 +2,4673 @@
   {
     "id": "barbell-squat",
     "name": "Barbell Squat",
-    "muscles": { "primary": ["quads"], "secondary": ["glutes"], "other": ["hamstrings", "core", "upper_back"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "hamstrings",
+        "core",
+        "upper_back"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees", "lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 8, "lean_toned": 7, "athletic": 10, "soft_curvy": 3, "functional": 9 },
-    "swappable_with": ["goblet-squat", "leg-press", "bodyweight-squat"],
-    "cues": ["Chest up, brace your core", "Push knees out over toes", "Drive through heels on the way up"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees",
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 8,
+      "lean_toned": 7,
+      "athletic": 10,
+      "soft_curvy": 3,
+      "functional": 9
+    },
+    "swappable_with": [
+      "goblet-squat",
+      "leg-press",
+      "bodyweight-squat"
+    ],
+    "cues": [
+      "Chest up, brace your core",
+      "Push knees out over toes",
+      "Drive through heels on the way up"
+    ],
+    "image": "/exercises/barbell-squat.png"
   },
   {
     "id": "goblet-squat",
     "name": "Goblet Squat",
-    "muscles": { "primary": ["quads"], "secondary": ["glutes"], "other": ["core", "upper_back"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "core",
+        "upper_back"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 7, "lean_toned": 8, "athletic": 6, "soft_curvy": 7, "functional": 8 },
-    "swappable_with": ["bodyweight-squat", "leg-press", "barbell-squat"],
-    "cues": ["Hold dumbbell at chest height", "Elbows inside knees at the bottom", "Keep heels flat"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 7,
+      "lean_toned": 8,
+      "athletic": 6,
+      "soft_curvy": 7,
+      "functional": 8
+    },
+    "swappable_with": [
+      "bodyweight-squat",
+      "leg-press",
+      "barbell-squat"
+    ],
+    "cues": [
+      "Hold dumbbell at chest height",
+      "Elbows inside knees at the bottom",
+      "Keep heels flat"
+    ],
+    "image": "/exercises/goblet-squat.png"
   },
   {
     "id": "bodyweight-squat",
     "name": "Bodyweight Squat",
-    "muscles": { "primary": ["quads"], "secondary": ["glutes"], "other": ["core", "hamstrings"] },
-    "equipment": ["none", "dumbbells", "bands", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "core",
+        "hamstrings"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 4, "slim_thick": 4, "lean_toned": 6, "athletic": 3, "soft_curvy": 8, "functional": 6 },
-    "swappable_with": ["goblet-squat", "sumo-squat", "leg-press"],
-    "cues": ["Arms out in front for balance", "Lower until thighs are parallel", "Squeeze glutes at the top"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 4,
+      "slim_thick": 4,
+      "lean_toned": 6,
+      "athletic": 3,
+      "soft_curvy": 8,
+      "functional": 6
+    },
+    "swappable_with": [
+      "goblet-squat",
+      "sumo-squat",
+      "leg-press"
+    ],
+    "cues": [
+      "Arms out in front for balance",
+      "Lower until thighs are parallel",
+      "Squeeze glutes at the top"
+    ],
+    "images": {
+      "bands": "/exercises/bodyweight-squat--bands.png",
+      "none": "/exercises/bodyweight-squat--none.png"
+    }
   },
   {
     "id": "sumo-squat",
     "name": "Sumo Squat",
-    "muscles": { "primary": ["glutes", "inner_thighs"], "secondary": ["quads"], "other": ["core"] },
-    "equipment": ["none", "dumbbells", "bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "glutes",
+        "inner_thighs"
+      ],
+      "secondary": [
+        "quads"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["hips", "knees"],
-    "physique_weight": { "hourglass": 9, "slim_thick": 9, "lean_toned": 6, "athletic": 6, "soft_curvy": 8, "functional": 5 },
-    "swappable_with": ["goblet-squat", "bodyweight-squat", "leg-press"],
-    "cues": ["Wide stance, toes pointing out", "Keep chest tall", "Push knees wide as you lower"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "hips",
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 9,
+      "lean_toned": 6,
+      "athletic": 6,
+      "soft_curvy": 8,
+      "functional": 5
+    },
+    "swappable_with": [
+      "goblet-squat",
+      "bodyweight-squat",
+      "leg-press"
+    ],
+    "cues": [
+      "Wide stance, toes pointing out",
+      "Keep chest tall",
+      "Push knees wide as you lower"
+    ],
+    "images": {
+      "bands": "/exercises/sumo-squat--bands.png",
+      "dumbbells": "/exercises/sumo-squat--dumbbells.png",
+      "none": "/exercises/sumo-squat--none.png"
+    }
   },
   {
     "id": "leg-press",
     "name": "Leg Press",
-    "muscles": { "primary": ["quads"], "secondary": ["glutes"], "other": ["hamstrings", "calves"] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "hamstrings",
+        "calves"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate",
+      "advanced"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 8, "lean_toned": 6, "athletic": 8, "soft_curvy": 5, "functional": 5 },
-    "swappable_with": ["barbell-squat", "goblet-squat", "bulgarian-split-squat"],
-    "cues": ["Feet hip-width, mid-platform", "Don't lock knees at the top", "Lower slowly — 3 seconds down"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 8,
+      "lean_toned": 6,
+      "athletic": 8,
+      "soft_curvy": 5,
+      "functional": 5
+    },
+    "swappable_with": [
+      "barbell-squat",
+      "goblet-squat",
+      "bulgarian-split-squat"
+    ],
+    "cues": [
+      "Feet hip-width, mid-platform",
+      "Don't lock knees at the top",
+      "Lower slowly — 3 seconds down"
+    ],
+    "image": "/exercises/leg-press.png"
   },
   {
     "id": "barbell-hip-thrust",
     "name": "Barbell Hip Thrust",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings"], "other": ["core", "lower_back"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "other": [
+        "core",
+        "lower_back"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["hips"],
-    "physique_weight": { "hourglass": 10, "slim_thick": 10, "lean_toned": 6, "athletic": 8, "soft_curvy": 5, "functional": 7 },
-    "swappable_with": ["dumbbell-hip-thrust", "glute-bridge", "banded-hip-thrust"],
-    "cues": ["Upper back on bench, feet flat", "Drive through heels", "Squeeze hard at the top — hold 1 second"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "hips"
+    ],
+    "physique_weight": {
+      "hourglass": 10,
+      "slim_thick": 10,
+      "lean_toned": 6,
+      "athletic": 8,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "dumbbell-hip-thrust",
+      "glute-bridge",
+      "banded-hip-thrust"
+    ],
+    "cues": [
+      "Upper back on bench, feet flat",
+      "Drive through heels",
+      "Squeeze hard at the top — hold 1 second"
+    ],
+    "image": "/exercises/barbell-hip-thrust.png"
   },
   {
     "id": "dumbbell-hip-thrust",
     "name": "Dumbbell Hip Thrust",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings"], "other": ["core"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["intermediate"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["hips"],
-    "physique_weight": { "hourglass": 9, "slim_thick": 9, "lean_toned": 6, "athletic": 7, "soft_curvy": 5, "functional": 6 },
-    "swappable_with": ["barbell-hip-thrust", "glute-bridge", "banded-hip-thrust"],
-    "cues": ["Dumbbell on hip crease", "Upper back on bench or sofa edge", "Full squeeze at top"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "hips"
+    ],
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 9,
+      "lean_toned": 6,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "barbell-hip-thrust",
+      "glute-bridge",
+      "banded-hip-thrust"
+    ],
+    "cues": [
+      "Dumbbell on hip crease",
+      "Upper back on bench or sofa edge",
+      "Full squeeze at top"
+    ],
+    "image": "/exercises/dumbbell-hip-thrust.png"
   },
   {
     "id": "banded-hip-thrust",
     "name": "Banded Hip Thrust",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings"], "other": ["core"] },
-    "equipment": ["bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["hips"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 8, "lean_toned": 5, "athletic": 5, "soft_curvy": 6, "functional": 5 },
-    "swappable_with": ["glute-bridge", "dumbbell-hip-thrust", "barbell-hip-thrust"],
-    "cues": ["Band just above knees", "Push knees apart throughout", "Squeeze at top for 2 seconds"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "hips"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 8,
+      "lean_toned": 5,
+      "athletic": 5,
+      "soft_curvy": 6,
+      "functional": 5
+    },
+    "swappable_with": [
+      "glute-bridge",
+      "dumbbell-hip-thrust",
+      "barbell-hip-thrust"
+    ],
+    "cues": [
+      "Band just above knees",
+      "Push knees apart throughout",
+      "Squeeze at top for 2 seconds"
+    ]
   },
   {
     "id": "glute-bridge",
     "name": "Glute Bridge",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings"], "other": ["core"] },
-    "equipment": ["none", "bands", "dumbbells", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "none",
+      "bands",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 7, "slim_thick": 7, "lean_toned": 5, "athletic": 4, "soft_curvy": 9, "functional": 6 },
-    "swappable_with": ["banded-hip-thrust", "dumbbell-hip-thrust", "barbell-hip-thrust"],
-    "cues": ["Feet hip-width, flat on floor", "Drive hips up to a straight line", "Don't arch your lower back"]
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 7,
+      "lean_toned": 5,
+      "athletic": 4,
+      "soft_curvy": 9,
+      "functional": 6
+    },
+    "swappable_with": [
+      "banded-hip-thrust",
+      "dumbbell-hip-thrust",
+      "barbell-hip-thrust"
+    ],
+    "cues": [
+      "Feet hip-width, flat on floor",
+      "Drive hips up to a straight line",
+      "Don't arch your lower back"
+    ],
+    "images": {
+      "bands": "/exercises/glute-bridge--bands.png",
+      "none": "/exercises/glute-bridge--none.png"
+    }
   },
   {
     "id": "romanian-deadlift",
     "name": "Romanian Deadlift",
-    "muscles": { "primary": ["hamstrings"], "secondary": ["glutes"], "other": ["lower_back", "calves"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "lower_back",
+        "calves"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 9, "lean_toned": 8, "athletic": 9, "soft_curvy": 4, "functional": 8 },
-    "swappable_with": ["deadlift", "good-morning", "leg-curl"],
-    "cues": ["Soft bend in knees throughout", "Hinge at hips — bar stays close to legs", "Feel the stretch in hamstrings before driving up"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 9,
+      "lean_toned": 8,
+      "athletic": 9,
+      "soft_curvy": 4,
+      "functional": 8
+    },
+    "swappable_with": [
+      "deadlift",
+      "good-morning",
+      "leg-curl",
+      "banded-good-morning"
+    ],
+    "cues": [
+      "Soft bend in knees throughout",
+      "Hinge at hips — bar stays close to legs",
+      "Feel the stretch in hamstrings before driving up"
+    ],
+    "image": "/exercises/romanian-deadlift.png"
   },
   {
     "id": "deadlift",
     "name": "Conventional Deadlift",
-    "muscles": { "primary": ["hamstrings"], "secondary": ["glutes"], "other": ["lower_back", "traps", "core"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "lower_back",
+        "traps",
+        "core"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 8, "lean_toned": 7, "athletic": 10, "soft_curvy": 3, "functional": 10 },
-    "swappable_with": ["romanian-deadlift", "sumo-deadlift", "leg-curl"],
-    "cues": ["Hips down, chest up before pulling", "Bar stays over mid-foot", "Lock hips and knees at the same time"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 8,
+      "lean_toned": 7,
+      "athletic": 10,
+      "soft_curvy": 3,
+      "functional": 10
+    },
+    "swappable_with": [
+      "romanian-deadlift",
+      "sumo-deadlift",
+      "leg-curl"
+    ],
+    "cues": [
+      "Hips down, chest up before pulling",
+      "Bar stays over mid-foot",
+      "Lock hips and knees at the same time"
+    ],
+    "image": "/exercises/deadlift.png"
   },
   {
     "id": "sumo-deadlift",
     "name": "Sumo Deadlift",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings", "inner_thighs"], "other": ["lower_back", "core"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "inner_thighs"
+      ],
+      "other": [
+        "lower_back",
+        "core"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back", "hips"],
-    "physique_weight": { "hourglass": 9, "slim_thick": 10, "lean_toned": 6, "athletic": 8, "soft_curvy": 4, "functional": 7 },
-    "swappable_with": ["deadlift", "romanian-deadlift", "barbell-hip-thrust"],
-    "cues": ["Wide stance, toes out", "Grip inside your legs", "Push the floor apart as you drive up"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back",
+      "hips"
+    ],
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 10,
+      "lean_toned": 6,
+      "athletic": 8,
+      "soft_curvy": 4,
+      "functional": 7
+    },
+    "swappable_with": [
+      "deadlift",
+      "romanian-deadlift",
+      "barbell-hip-thrust"
+    ],
+    "cues": [
+      "Wide stance, toes out",
+      "Grip inside your legs",
+      "Push the floor apart as you drive up"
+    ],
+    "image": "/exercises/sumo-deadlift.png"
   },
   {
     "id": "bulgarian-split-squat",
     "name": "Bulgarian Split Squat",
-    "muscles": { "primary": ["quads"], "secondary": ["glutes"], "other": ["hamstrings", "core"] },
-    "equipment": ["none", "dumbbells", "gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "hamstrings",
+        "core"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 9, "lean_toned": 8, "athletic": 9, "soft_curvy": 4, "functional": 8 },
-    "swappable_with": ["walking-lunge", "reverse-lunge", "leg-press"],
-    "cues": ["Rear foot on bench, laces down", "Front foot far enough forward that knee stays behind toes", "Lower straight down — don't lean forward"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 9,
+      "lean_toned": 8,
+      "athletic": 9,
+      "soft_curvy": 4,
+      "functional": 8
+    },
+    "swappable_with": [
+      "walking-lunge",
+      "reverse-lunge",
+      "leg-press"
+    ],
+    "cues": [
+      "Rear foot on bench, laces down",
+      "Front foot far enough forward that knee stays behind toes",
+      "Lower straight down — don't lean forward"
+    ],
+    "images": {
+      "dumbbells": "/exercises/bulgarian-split-squat--dumbbells.png",
+      "none": "/exercises/bulgarian-split-squat--none.png"
+    }
   },
   {
     "id": "walking-lunge",
     "name": "Walking Lunge",
-    "muscles": { "primary": ["quads"], "secondary": ["glutes"], "other": ["hamstrings", "calves"] },
-    "equipment": ["none", "dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "hamstrings",
+        "calves"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 7, "lean_toned": 8, "athletic": 7, "soft_curvy": 6, "functional": 8 },
-    "swappable_with": ["reverse-lunge", "bulgarian-split-squat", "leg-press"],
-    "cues": ["Big step forward", "Back knee lightly taps the floor", "Push through front heel to stand"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 7,
+      "lean_toned": 8,
+      "athletic": 7,
+      "soft_curvy": 6,
+      "functional": 8
+    },
+    "swappable_with": [
+      "reverse-lunge",
+      "bulgarian-split-squat",
+      "leg-press"
+    ],
+    "cues": [
+      "Big step forward",
+      "Back knee lightly taps the floor",
+      "Push through front heel to stand"
+    ]
   },
   {
     "id": "reverse-lunge",
     "name": "Reverse Lunge",
-    "muscles": { "primary": ["quads"], "secondary": ["glutes"], "other": ["hamstrings", "core"] },
-    "equipment": ["none", "dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "hamstrings",
+        "core"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 7, "lean_toned": 8, "athletic": 6, "soft_curvy": 7, "functional": 7 },
-    "swappable_with": ["walking-lunge", "bulgarian-split-squat", "goblet-squat"],
-    "cues": ["Step back — not forward", "Keep front shin vertical", "Easier on knees than forward lunge"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 7,
+      "lean_toned": 8,
+      "athletic": 6,
+      "soft_curvy": 7,
+      "functional": 7
+    },
+    "swappable_with": [
+      "walking-lunge",
+      "bulgarian-split-squat",
+      "goblet-squat"
+    ],
+    "cues": [
+      "Step back — not forward",
+      "Keep front shin vertical",
+      "Easier on knees than forward lunge"
+    ]
   },
   {
     "id": "cable-kickback",
     "name": "Cable Kickback",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings"], "other": ["core"] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 10, "slim_thick": 10, "lean_toned": 6, "athletic": 5, "soft_curvy": 7, "functional": 4 },
-    "swappable_with": ["donkey-kick", "banded-kickback", "glute-bridge"],
-    "cues": ["Slight forward lean at the hips", "Squeeze glute fully at the top", "Don't swing — slow and controlled"]
+    "physique_weight": {
+      "hourglass": 10,
+      "slim_thick": 10,
+      "lean_toned": 6,
+      "athletic": 5,
+      "soft_curvy": 7,
+      "functional": 4
+    },
+    "swappable_with": [
+      "donkey-kick",
+      "banded-kickback",
+      "glute-bridge"
+    ],
+    "cues": [
+      "Slight forward lean at the hips",
+      "Squeeze glute fully at the top",
+      "Don't swing — slow and controlled"
+    ]
   },
   {
     "id": "donkey-kick",
     "name": "Donkey Kick",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings"], "other": ["core"] },
-    "equipment": ["none", "bands", "dumbbells", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "none",
+      "bands",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 8, "lean_toned": 5, "athletic": 4, "soft_curvy": 9, "functional": 4 },
-    "swappable_with": ["cable-kickback", "banded-kickback", "glute-bridge"],
-    "cues": ["On hands and knees — wrists under shoulders", "Keep knee bent 90°", "Drive heel toward ceiling — don't arch lower back"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 8,
+      "lean_toned": 5,
+      "athletic": 4,
+      "soft_curvy": 9,
+      "functional": 4
+    },
+    "swappable_with": [
+      "cable-kickback",
+      "banded-kickback",
+      "glute-bridge"
+    ],
+    "cues": [
+      "On hands and knees — wrists under shoulders",
+      "Keep knee bent 90°",
+      "Drive heel toward ceiling — don't arch lower back"
+    ],
+    "images": {
+      "bands": "/exercises/donkey-kick--bands.png",
+      "dumbbells": "/exercises/donkey-kick--dumbbells.png",
+      "none": "/exercises/donkey-kick--none.png"
+    }
   },
   {
     "id": "banded-kickback",
     "name": "Banded Kickback",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings"], "other": ["core"] },
-    "equipment": ["bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 9, "slim_thick": 9, "lean_toned": 5, "athletic": 4, "soft_curvy": 8, "functional": 4 },
-    "swappable_with": ["donkey-kick", "cable-kickback", "glute-bridge"],
-    "cues": ["Band around ankles", "Standing or on all fours", "Squeeze at the top"]
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 9,
+      "lean_toned": 5,
+      "athletic": 4,
+      "soft_curvy": 8,
+      "functional": 4
+    },
+    "swappable_with": [
+      "donkey-kick",
+      "cable-kickback",
+      "glute-bridge"
+    ],
+    "cues": [
+      "Band around ankles",
+      "Standing or on all fours",
+      "Squeeze at the top"
+    ],
+    "image": "/exercises/banded-kickback.png"
   },
   {
     "id": "banded-clamshell",
     "name": "Banded Clamshell",
-    "muscles": { "primary": ["glute_medius"], "secondary": ["hip_abductors"], "other": ["core"] },
-    "equipment": ["bands", "none", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "glute_medius"
+      ],
+      "secondary": [
+        "hip_abductors"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "bands",
+      "none",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["hips"],
-    "physique_weight": { "hourglass": 10, "slim_thick": 9, "lean_toned": 5, "athletic": 4, "soft_curvy": 8, "functional": 5 },
-    "swappable_with": ["banded-lateral-walk", "side-lying-hip-raise"],
-    "cues": ["Lie on side, hips stacked", "Keep feet together, rotate top knee up", "Don't let hips roll back"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "hips"
+    ],
+    "physique_weight": {
+      "hourglass": 10,
+      "slim_thick": 9,
+      "lean_toned": 5,
+      "athletic": 4,
+      "soft_curvy": 8,
+      "functional": 5
+    },
+    "swappable_with": [
+      "banded-lateral-walk",
+      "side-lying-hip-raise"
+    ],
+    "cues": [
+      "Lie on side, hips stacked",
+      "Keep feet together, rotate top knee up",
+      "Don't let hips roll back"
+    ],
+    "images": {
+      "bands": "/exercises/banded-clamshell--bands.png",
+      "none": "/exercises/banded-clamshell--none.png"
+    }
   },
   {
     "id": "banded-lateral-walk",
     "name": "Banded Lateral Walk",
-    "muscles": { "primary": ["glute_medius"], "secondary": ["quads"], "other": ["core"] },
-    "equipment": ["bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "glute_medius"
+      ],
+      "secondary": [
+        "quads"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 9, "slim_thick": 8, "lean_toned": 5, "athletic": 5, "soft_curvy": 7, "functional": 6 },
-    "swappable_with": ["banded-clamshell", "abductor-machine"],
-    "cues": ["Band above or below knees", "Slight squat position", "Keep tension in band the whole time — don't let feet meet"]
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 8,
+      "lean_toned": 5,
+      "athletic": 5,
+      "soft_curvy": 7,
+      "functional": 6
+    },
+    "swappable_with": [
+      "banded-clamshell",
+      "abductor-machine"
+    ],
+    "cues": [
+      "Band above or below knees",
+      "Slight squat position",
+      "Keep tension in band the whole time — don't let feet meet"
+    ],
+    "image": "/exercises/banded-lateral-walk.png"
   },
   {
     "id": "abductor-machine",
     "name": "Hip Abductor Machine",
-    "muscles": { "primary": ["glute_medius"], "secondary": ["hip_abductors"], "other": [] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "glute_medius"
+      ],
+      "secondary": [
+        "hip_abductors"
+      ],
+      "other": []
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate",
+      "advanced"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["hips"],
-    "physique_weight": { "hourglass": 10, "slim_thick": 9, "lean_toned": 5, "athletic": 5, "soft_curvy": 7, "functional": 4 },
-    "swappable_with": ["banded-lateral-walk", "banded-clamshell"],
-    "cues": ["Sit tall, don't lean", "Full range of motion — don't rush", "Squeeze outer hips at the widest point"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "hips"
+    ],
+    "physique_weight": {
+      "hourglass": 10,
+      "slim_thick": 9,
+      "lean_toned": 5,
+      "athletic": 5,
+      "soft_curvy": 7,
+      "functional": 4
+    },
+    "swappable_with": [
+      "banded-lateral-walk",
+      "banded-clamshell"
+    ],
+    "cues": [
+      "Sit tall, don't lean",
+      "Full range of motion — don't rush",
+      "Squeeze outer hips at the widest point"
+    ]
   },
   {
     "id": "leg-curl",
     "name": "Leg Curl Machine",
-    "muscles": { "primary": ["hamstrings"], "secondary": ["calves"], "other": ["glutes"] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "calves"
+      ],
+      "other": [
+        "glutes"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate",
+      "advanced"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 7, "lean_toned": 6, "athletic": 8, "soft_curvy": 5, "functional": 5 },
-    "swappable_with": ["romanian-deadlift", "nordic-hamstring-curl"],
-    "cues": ["Lie face down, pad just above heels", "Curl slow — 2 seconds up, 3 seconds down", "Don't lift your hips"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 7,
+      "lean_toned": 6,
+      "athletic": 8,
+      "soft_curvy": 5,
+      "functional": 5
+    },
+    "swappable_with": [
+      "romanian-deadlift",
+      "nordic-hamstring-curl"
+    ],
+    "cues": [
+      "Lie face down, pad just above heels",
+      "Curl slow — 2 seconds up, 3 seconds down",
+      "Don't lift your hips"
+    ]
   },
   {
     "id": "calf-raises",
     "name": "Calf Raises",
-    "muscles": { "primary": ["calves"], "secondary": [], "other": ["tibialis"] },
-    "equipment": ["none", "dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "calves"
+      ],
+      "secondary": [],
+      "other": [
+        "tibialis"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate",
+      "advanced"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 6, "max": 8 },
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 5, "slim_thick": 6, "lean_toned": 6, "athletic": 7, "soft_curvy": 5, "functional": 6 },
-    "swappable_with": ["seated-calf-raise"],
-    "cues": ["Full range — all the way up and all the way down", "Pause at the top", "Can do on a step for more range"]
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 6,
+      "lean_toned": 6,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "seated-calf-raise"
+    ],
+    "cues": [
+      "Full range — all the way up and all the way down",
+      "Pause at the top",
+      "Can do on a step for more range"
+    ],
+    "images": {
+      "dumbbells": "/exercises/calf-raises--dumbbells.png",
+      "none": "/exercises/calf-raises--none.png"
+    }
   },
   {
     "id": "push-up",
     "name": "Push-Up",
-    "muscles": { "primary": ["chest"], "secondary": ["triceps"], "other": ["shoulders", "core"] },
-    "equipment": ["none", "dumbbells", "bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": [
+        "shoulders",
+        "core"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders", "wrists"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 5, "lean_toned": 8, "athletic": 7, "soft_curvy": 6, "functional": 8 },
-    "swappable_with": ["dumbbell-bench-press", "incline-push-up", "knee-push-up"],
-    "cues": ["Hands slightly wider than shoulders", "Body is a straight line from head to heels", "Lower chest to just above floor"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders",
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 5,
+      "lean_toned": 8,
+      "athletic": 7,
+      "soft_curvy": 6,
+      "functional": 8
+    },
+    "swappable_with": [
+      "dumbbell-bench-press",
+      "incline-push-up",
+      "knee-push-up"
+    ],
+    "cues": [
+      "Hands slightly wider than shoulders",
+      "Body is a straight line from head to heels",
+      "Lower chest to just above floor"
+    ]
   },
   {
     "id": "knee-push-up",
     "name": "Knee Push-Up",
-    "muscles": { "primary": ["chest"], "secondary": ["triceps"], "other": ["shoulders"] },
-    "equipment": ["none", "dumbbells", "bands", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 4, "slim_thick": 4, "lean_toned": 6, "athletic": 3, "soft_curvy": 8, "functional": 5 },
-    "swappable_with": ["push-up", "incline-push-up", "dumbbell-bench-press"],
-    "cues": ["Knees on floor, cross ankles", "Same form as full push-up — straight line from knees to head", "Progress to full push-up over time"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 4,
+      "slim_thick": 4,
+      "lean_toned": 6,
+      "athletic": 3,
+      "soft_curvy": 8,
+      "functional": 5
+    },
+    "swappable_with": [
+      "push-up",
+      "incline-push-up",
+      "dumbbell-bench-press"
+    ],
+    "cues": [
+      "Knees on floor, cross ankles",
+      "Same form as full push-up — straight line from knees to head",
+      "Progress to full push-up over time"
+    ]
   },
   {
     "id": "dumbbell-bench-press",
     "name": "Dumbbell Bench Press",
-    "muscles": { "primary": ["chest"], "secondary": ["triceps"], "other": ["shoulders"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders", "wrists"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 7, "athletic": 9, "soft_curvy": 4, "functional": 7 },
-    "swappable_with": ["push-up", "barbell-bench-press"],
-    "cues": ["Dumbbells at chest level, elbows at 45°", "Press up and slightly inward", "Control the descent — 3 seconds down"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders",
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 9,
+      "soft_curvy": 4,
+      "functional": 7
+    },
+    "swappable_with": [
+      "push-up",
+      "barbell-bench-press"
+    ],
+    "cues": [
+      "Dumbbells at chest level, elbows at 45°",
+      "Press up and slightly inward",
+      "Control the descent — 3 seconds down"
+    ],
+    "image": "/exercises/dumbbell-bench-press.png"
   },
   {
     "id": "overhead-press",
     "name": "Overhead Press",
-    "muscles": { "primary": ["shoulders"], "secondary": ["triceps"], "other": ["upper_back", "core"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "shoulders"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": [
+        "upper_back",
+        "core"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 9, "slim_thick": 5, "lean_toned": 7, "athletic": 9, "soft_curvy": 4, "functional": 8 },
-    "swappable_with": ["lateral-raise", "arnold-press", "seated-dumbbell-press"],
-    "cues": ["Start at shoulder height", "Press straight up — don't flare elbows out", "Brace core to avoid arching back"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 9,
+      "soft_curvy": 4,
+      "functional": 8
+    },
+    "swappable_with": [
+      "lateral-raise",
+      "arnold-press",
+      "seated-dumbbell-press",
+      "banded-overhead-press",
+      "pike-push-up"
+    ],
+    "cues": [
+      "Start at shoulder height",
+      "Press straight up — don't flare elbows out",
+      "Brace core to avoid arching back"
+    ],
+    "image": "/exercises/overhead-press.png"
   },
   {
     "id": "lateral-raise",
     "name": "Lateral Raise",
-    "muscles": { "primary": ["side_delts"], "secondary": [], "other": ["traps"] },
-    "equipment": ["dumbbells", "bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "side_delts"
+      ],
+      "secondary": [],
+      "other": [
+        "traps"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 10, "slim_thick": 5, "lean_toned": 7, "athletic": 8, "soft_curvy": 5, "functional": 6 },
-    "swappable_with": ["overhead-press", "upright-row"],
-    "cues": ["Slight bend in elbow", "Raise to shoulder height — no higher", "Pinky slightly higher than thumb at the top"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 10,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 8,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "overhead-press",
+      "upright-row"
+    ],
+    "cues": [
+      "Slight bend in elbow",
+      "Raise to shoulder height — no higher",
+      "Pinky slightly higher than thumb at the top"
+    ],
+    "images": {
+      "bands": "/exercises/lateral-raise--bands.png",
+      "dumbbells": "/exercises/lateral-raise--dumbbells.png"
+    }
   },
   {
     "id": "bent-over-row",
     "name": "Bent-Over Row",
-    "muscles": { "primary": ["upper_back"], "secondary": ["biceps"], "other": ["rear_delts", "core"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "upper_back"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "rear_delts",
+        "core"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 5, "lean_toned": 8, "athletic": 9, "soft_curvy": 4, "functional": 9 },
-    "swappable_with": ["dumbbell-row", "lat-pulldown", "seated-cable-row"],
-    "cues": ["Hinge 45° at hips — neutral spine", "Pull elbows back past your body", "Squeeze shoulder blades together at the top"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 5,
+      "lean_toned": 8,
+      "athletic": 9,
+      "soft_curvy": 4,
+      "functional": 9
+    },
+    "swappable_with": [
+      "dumbbell-row",
+      "lat-pulldown",
+      "seated-cable-row",
+      "inverted-row"
+    ],
+    "cues": [
+      "Hinge 45° at hips — neutral spine",
+      "Pull elbows back past your body",
+      "Squeeze shoulder blades together at the top"
+    ]
   },
   {
     "id": "dumbbell-row",
     "name": "Single-Arm Dumbbell Row",
-    "muscles": { "primary": ["lats"], "secondary": ["biceps"], "other": ["rear_delts"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "rear_delts"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 5, "lean_toned": 8, "athletic": 8, "soft_curvy": 5, "functional": 8 },
-    "swappable_with": ["bent-over-row", "lat-pulldown", "resistance-band-row"],
-    "cues": ["Knee and hand on bench for support", "Pull elbow straight up — not out", "Full stretch at the bottom"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 8,
+      "athletic": 8,
+      "soft_curvy": 5,
+      "functional": 8
+    },
+    "swappable_with": [
+      "bent-over-row",
+      "lat-pulldown",
+      "resistance-band-row",
+      "inverted-row"
+    ],
+    "cues": [
+      "Knee and hand on bench for support",
+      "Pull elbow straight up — not out",
+      "Full stretch at the bottom"
+    ]
   },
   {
     "id": "resistance-band-row",
     "name": "Resistance Band Row",
-    "muscles": { "primary": ["upper_back"], "secondary": ["biceps"], "other": ["rear_delts"] },
-    "equipment": ["bands", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "upper_back"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "rear_delts"
+      ]
+    },
+    "equipment": [
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 6, "slim_thick": 4, "lean_toned": 7, "athletic": 5, "soft_curvy": 7, "functional": 7 },
-    "swappable_with": ["dumbbell-row", "lat-pulldown", "bent-over-row"],
-    "cues": ["Anchor band at chest height or lower", "Pull elbows back past ribs", "Keep shoulders down — don't shrug"]
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 5,
+      "soft_curvy": 7,
+      "functional": 7
+    },
+    "swappable_with": [
+      "dumbbell-row",
+      "lat-pulldown",
+      "bent-over-row",
+      "band-lat-pulldown"
+    ],
+    "cues": [
+      "Anchor band at chest height or lower",
+      "Pull elbows back past ribs",
+      "Keep shoulders down — don't shrug"
+    ]
   },
   {
     "id": "lat-pulldown",
     "name": "Lat Pulldown",
-    "muscles": { "primary": ["lats"], "secondary": ["biceps"], "other": ["rear_delts"] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "rear_delts"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate",
+      "advanced"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 5, "lean_toned": 7, "athletic": 8, "soft_curvy": 5, "functional": 7 },
-    "swappable_with": ["dumbbell-row", "bent-over-row", "resistance-band-row"],
-    "cues": ["Wide grip, lean back slightly", "Pull bar to upper chest", "Feel lats stretching at the top"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 8,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "dumbbell-row",
+      "bent-over-row",
+      "resistance-band-row",
+      "dumbbell-pullover",
+      "band-lat-pulldown"
+    ],
+    "cues": [
+      "Wide grip, lean back slightly",
+      "Pull bar to upper chest",
+      "Feel lats stretching at the top"
+    ]
   },
   {
     "id": "seated-cable-row",
     "name": "Seated Cable Row",
-    "muscles": { "primary": ["upper_back"], "secondary": ["biceps"], "other": ["rear_delts", "core"] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "upper_back"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "rear_delts",
+        "core"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 5, "lean_toned": 7, "athletic": 8, "soft_curvy": 5, "functional": 7 },
-    "swappable_with": ["bent-over-row", "dumbbell-row", "resistance-band-row"],
-    "cues": ["Sit tall — don't round your back", "Pull handle to lower chest", "Squeeze shoulder blades for 1 second"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 8,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "bent-over-row",
+      "dumbbell-row",
+      "resistance-band-row",
+      "inverted-row",
+      "dumbbell-pullover"
+    ],
+    "cues": [
+      "Sit tall — don't round your back",
+      "Pull handle to lower chest",
+      "Squeeze shoulder blades for 1 second"
+    ]
+  },
+  {
+    "id": "inverted-row",
+    "name": "Inverted Row",
+    "muscles": {
+      "primary": [
+        "upper_back"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "rear_delts",
+        "core"
+      ]
+    },
+    "equipment": [
+      "none"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
+    "slot": "main",
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 8,
+      "athletic": 8,
+      "soft_curvy": 4,
+      "functional": 9
+    },
+    "swappable_with": [
+      "bent-over-row",
+      "dumbbell-row",
+      "seated-cable-row"
+    ],
+    "cues": [
+      "Bar or table edge at hip height, feet out in front",
+      "Body straight — a plank on an angle",
+      "Pull your chest to the bar, squeeze shoulder blades together"
+    ]
+  },
+  {
+    "id": "dumbbell-pullover",
+    "name": "Dumbbell Pullover",
+    "muscles": {
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "chest",
+        "triceps"
+      ],
+      "other": [
+        "rear_delts"
+      ]
+    },
+    "equipment": [
+      "dumbbells"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
+    "slot": "secondary",
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "lat-pulldown",
+      "seated-cable-row"
+    ],
+    "cues": [
+      "Lie perpendicular on a bench, hips low",
+      "Lower the dumbbell behind your head with straight arms",
+      "Pull back over your chest, feeling your lats stretch"
+    ]
+  },
+  {
+    "id": "band-lat-pulldown",
+    "name": "Band Lat Pulldown",
+    "muscles": {
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "rear_delts"
+      ]
+    },
+    "equipment": [
+      "bands"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
+    "slot": "secondary",
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "lat-pulldown",
+      "dumbbell-pullover",
+      "resistance-band-row"
+    ],
+    "cues": [
+      "Anchor the band overhead, kneel or sit facing it",
+      "Pull elbows down and back to your ribs",
+      "Lean back slightly, lead with your chest"
+    ]
   },
   {
     "id": "bicep-curl",
     "name": "Bicep Curl",
-    "muscles": { "primary": ["biceps"], "secondary": [], "other": ["forearms"] },
-    "equipment": ["dumbbells", "bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [],
+      "other": [
+        "forearms"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 7, "athletic": 7, "soft_curvy": 6, "functional": 5 },
-    "swappable_with": ["hammer-curl", "resistance-band-curl"],
-    "cues": ["Keep elbows pinned to sides", "Full range — all the way down", "Supinate (rotate) at the top"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 6,
+      "functional": 5
+    },
+    "swappable_with": [
+      "hammer-curl",
+      "resistance-band-curl"
+    ],
+    "cues": [
+      "Keep elbows pinned to sides",
+      "Full range — all the way down",
+      "Supinate (rotate) at the top"
+    ]
   },
   {
     "id": "tricep-dip",
     "name": "Tricep Dip",
-    "muscles": { "primary": ["triceps"], "secondary": ["chest"], "other": ["shoulders"] },
-    "equipment": ["none", "gym"],
-    "difficulty": ["intermediate"],
+    "muscles": {
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [
+        "chest"
+      ],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "none",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders", "wrists"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 7, "athletic": 7, "soft_curvy": 5, "functional": 6 },
-    "swappable_with": ["tricep-extension", "overhead-tricep"],
-    "cues": ["Hands on bench behind you", "Keep elbows pointing back — not flaring", "Lower until 90° at elbow"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders",
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "tricep-extension",
+      "overhead-tricep"
+    ],
+    "cues": [
+      "Hands on bench behind you",
+      "Keep elbows pointing back — not flaring",
+      "Lower until 90° at elbow"
+    ]
   },
   {
     "id": "tricep-extension",
     "name": "Dumbbell Tricep Extension",
-    "muscles": { "primary": ["triceps"], "secondary": [], "other": ["shoulders"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 7, "athletic": 7, "soft_curvy": 5, "functional": 5 },
-    "swappable_with": ["tricep-dip", "overhead-tricep"],
-    "cues": ["Hold one dumbbell overhead with both hands", "Only move at the elbow", "Lower behind head — feel the stretch"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 5
+    },
+    "swappable_with": [
+      "tricep-dip",
+      "overhead-tricep"
+    ],
+    "cues": [
+      "Hold one dumbbell overhead with both hands",
+      "Only move at the elbow",
+      "Lower behind head — feel the stretch"
+    ]
   },
   {
     "id": "plank",
     "name": "Plank",
-    "muscles": { "primary": ["core"], "secondary": ["shoulders"], "other": ["glutes", "quads"] },
-    "equipment": ["none", "dumbbells", "bands", "gym"],
-    "difficulty": ["starter", "intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "shoulders"
+      ],
+      "other": [
+        "glutes",
+        "quads"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate",
+      "advanced"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 20, "max": 60 },
+    "repsRange": {
+      "min": 20,
+      "max": 60
+    },
     "timeBased": true,
-    "injuries_avoid": ["wrists", "shoulders"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 7, "lean_toned": 9, "athletic": 8, "soft_curvy": 7, "functional": 9 },
-    "swappable_with": ["dead-bug", "pallof-press", "hollow-hold"],
-    "cues": ["Forearms or hands on floor", "Body is a straight plank — no sagging hips", "Breathe — brace like someone is about to punch you"]
+    "injuries_avoid": [
+      "wrists",
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 7,
+      "lean_toned": 9,
+      "athletic": 8,
+      "soft_curvy": 7,
+      "functional": 9
+    },
+    "swappable_with": [
+      "dead-bug",
+      "pallof-press",
+      "hollow-hold"
+    ],
+    "cues": [
+      "Forearms or hands on floor",
+      "Body is a straight plank — no sagging hips",
+      "Breathe — brace like someone is about to punch you"
+    ]
   },
   {
     "id": "dead-bug",
     "name": "Dead Bug",
-    "muscles": { "primary": ["core"], "secondary": [], "other": ["hip_flexors"] },
-    "equipment": ["none", "dumbbells", "bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [],
+      "other": [
+        "hip_flexors"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 6, "lean_toned": 8, "athletic": 7, "soft_curvy": 8, "functional": 9 },
-    "swappable_with": ["plank", "pallof-press", "hollow-hold"],
-    "cues": ["Lower back pressed to floor throughout", "Opposite arm and leg extend at the same time", "Breathe out as you extend"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 6,
+      "lean_toned": 8,
+      "athletic": 7,
+      "soft_curvy": 8,
+      "functional": 9
+    },
+    "swappable_with": [
+      "plank",
+      "pallof-press",
+      "hollow-hold"
+    ],
+    "cues": [
+      "Lower back pressed to floor throughout",
+      "Opposite arm and leg extend at the same time",
+      "Breathe out as you extend"
+    ]
   },
   {
     "id": "pallof-press",
     "name": "Pallof Press",
-    "muscles": { "primary": ["core"], "secondary": [], "other": ["shoulders"] },
-    "equipment": ["bands", "gym"],
-    "difficulty": ["intermediate"],
+    "muscles": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 7, "lean_toned": 7, "athletic": 7, "soft_curvy": 6, "functional": 8 },
-    "swappable_with": ["plank", "dead-bug"],
-    "cues": ["Cable or band at chest height to your side", "Press straight out — resist rotation", "The further from anchor, the harder"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 7,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 6,
+      "functional": 8
+    },
+    "swappable_with": [
+      "plank",
+      "dead-bug"
+    ],
+    "cues": [
+      "Cable or band at chest height to your side",
+      "Press straight out — resist rotation",
+      "The further from anchor, the harder"
+    ]
   },
   {
     "id": "mountain-climber",
     "name": "Mountain Climber",
-    "muscles": { "primary": ["core"], "secondary": ["shoulders"], "other": ["quads", "hip_flexors"] },
-    "equipment": ["none", "dumbbells", "bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "shoulders"
+      ],
+      "other": [
+        "quads",
+        "hip_flexors"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists", "shoulders"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 6, "lean_toned": 8, "athletic": 7, "soft_curvy": 5, "functional": 9 },
-    "swappable_with": ["plank", "dead-bug"],
-    "cues": ["Start in push-up position", "Drive knees to chest alternately — fast or slow", "Keep hips level — don't bounce"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists",
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 6,
+      "lean_toned": 8,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 9
+    },
+    "swappable_with": [
+      "plank",
+      "dead-bug"
+    ],
+    "cues": [
+      "Start in push-up position",
+      "Drive knees to chest alternately — fast or slow",
+      "Keep hips level — don't bounce"
+    ]
   },
   {
     "id": "kettlebell-swing",
     "name": "Kettlebell Swing",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings"], "other": ["core", "shoulders"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "other": [
+        "core",
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 8, "lean_toned": 7, "athletic": 8, "soft_curvy": 4, "functional": 10 },
-    "swappable_with": ["glute-bridge", "romanian-deadlift"],
-    "cues": ["Hinge — not squat", "Drive hips forward explosively", "Arms are just along for the ride"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 8,
+      "lean_toned": 7,
+      "athletic": 8,
+      "soft_curvy": 4,
+      "functional": 10
+    },
+    "swappable_with": [
+      "glute-bridge",
+      "romanian-deadlift"
+    ],
+    "cues": [
+      "Hinge — not squat",
+      "Drive hips forward explosively",
+      "Arms are just along for the ride"
+    ]
   },
   {
     "id": "farmers-carry",
     "name": "Farmer's Carry",
-    "muscles": { "primary": ["core"], "secondary": ["traps"], "other": ["grip", "legs"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "traps"
+      ],
+      "other": [
+        "grip",
+        "legs"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 20, "max": 40 },
+    "repsRange": {
+      "min": 20,
+      "max": 40
+    },
     "timeBased": true,
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 5, "lean_toned": 6, "athletic": 7, "soft_curvy": 4, "functional": 10 },
-    "swappable_with": ["plank", "dead-bug"],
-    "cues": ["Heavy dumbbells at your sides", "Walk tall — shoulders back, core tight", "Small controlled steps"]
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 5,
+      "lean_toned": 6,
+      "athletic": 7,
+      "soft_curvy": 4,
+      "functional": 10
+    },
+    "swappable_with": [
+      "plank",
+      "dead-bug"
+    ],
+    "cues": [
+      "Heavy dumbbells at your sides",
+      "Walk tall — shoulders back, core tight",
+      "Small controlled steps"
+    ]
   },
   {
     "id": "glute-bridge-pulse",
     "name": "Glute Bridge Pulse",
-    "muscles": { "primary": ["glutes"], "secondary": ["hamstrings"], "other": ["core"] },
-    "equipment": ["none", "bands", "dumbbells", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "none",
+      "bands",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 20, "max": 30 },
+    "repsRange": {
+      "min": 20,
+      "max": 30
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 8, "slim_thick": 9, "lean_toned": 5, "athletic": 4, "soft_curvy": 9, "functional": 5 },
-    "swappable_with": ["glute-bridge", "banded-hip-thrust"],
-    "cues": ["Hold hips at top and pulse in small movements", "Keep glutes contracted the entire time", "Great burnout finisher"]
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 9,
+      "lean_toned": 5,
+      "athletic": 4,
+      "soft_curvy": 9,
+      "functional": 5
+    },
+    "swappable_with": [
+      "glute-bridge",
+      "banded-hip-thrust"
+    ],
+    "cues": [
+      "Hold hips at top and pulse in small movements",
+      "Keep glutes contracted the entire time",
+      "Great burnout finisher"
+    ]
   },
   {
     "id": "side-lying-hip-raise",
     "name": "Side-Lying Hip Raise",
-    "muscles": { "primary": ["glute_medius"], "secondary": ["core"], "other": [] },
-    "equipment": ["none", "bands", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "glute_medius"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "other": []
+    },
+    "equipment": [
+      "none",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["hips"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 7, "lean_toned": 5, "athletic": 4, "soft_curvy": 8, "functional": 5 },
-    "swappable_with": ["banded-clamshell", "banded-lateral-walk"],
-    "cues": ["Lie on side, body straight", "Raise top leg to 45°", "Keep hips stacked — don't roll back"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "hips"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 7,
+      "lean_toned": 5,
+      "athletic": 4,
+      "soft_curvy": 8,
+      "functional": 5
+    },
+    "swappable_with": [
+      "banded-clamshell",
+      "banded-lateral-walk"
+    ],
+    "cues": [
+      "Lie on side, body straight",
+      "Raise top leg to 45°",
+      "Keep hips stacked — don't roll back"
+    ]
   },
   {
     "id": "rear-delt-fly",
     "name": "Rear Delt Fly",
-    "muscles": { "primary": ["rear_delts"], "secondary": ["upper_back"], "other": ["traps"] },
-    "equipment": ["dumbbells", "bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "rear_delts"
+      ],
+      "secondary": [
+        "upper_back"
+      ],
+      "other": [
+        "traps"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 9, "slim_thick": 5, "lean_toned": 7, "athletic": 8, "soft_curvy": 5, "functional": 6 },
-    "swappable_with": ["lateral-raise", "bent-over-row"],
-    "cues": ["Hinge forward or lie face-down on incline bench", "Arms wide — like a hug in reverse", "Squeeze shoulder blades at the top"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 8,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "lateral-raise",
+      "bent-over-row"
+    ],
+    "cues": [
+      "Hinge forward or lie face-down on incline bench",
+      "Arms wide — like a hug in reverse",
+      "Squeeze shoulder blades at the top"
+    ]
   },
   {
     "id": "face-pull",
     "name": "Face Pull",
-    "muscles": { "primary": ["rear_delts"], "secondary": ["upper_back"], "other": ["rotator_cuff"] },
-    "equipment": ["bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "rear_delts"
+      ],
+      "secondary": [
+        "upper_back"
+      ],
+      "other": [
+        "rotator_cuff"
+      ]
+    },
+    "equipment": [
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 4, "lean_toned": 6, "athletic": 8, "soft_curvy": 4, "functional": 7 },
-    "swappable_with": ["rear-delt-fly", "resistance-band-row"],
-    "cues": ["Cable or band at face height", "Pull to ears — elbows out and up", "External rotate at the end — hands behind head"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 4,
+      "lean_toned": 6,
+      "athletic": 8,
+      "soft_curvy": 4,
+      "functional": 7
+    },
+    "swappable_with": [
+      "rear-delt-fly",
+      "resistance-band-row"
+    ],
+    "cues": [
+      "Cable or band at face height",
+      "Pull to ears — elbows out and up",
+      "External rotate at the end — hands behind head"
+    ]
   },
   {
     "id": "incline-push-up",
     "name": "Incline Push-Up",
-    "muscles": { "primary": ["chest"], "secondary": ["triceps"], "other": ["shoulders"] },
-    "equipment": ["none", "dumbbells", "bands", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 7, "athletic": 5, "soft_curvy": 8, "functional": 6 },
-    "swappable_with": ["push-up", "knee-push-up", "dumbbell-bench-press"],
-    "cues": ["Hands on a bench or step, body straight", "Easier than a floor push-up — great starting point", "Lower chest to the edge of the surface"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 5,
+      "soft_curvy": 8,
+      "functional": 6
+    },
+    "swappable_with": [
+      "push-up",
+      "knee-push-up",
+      "dumbbell-bench-press"
+    ],
+    "cues": [
+      "Hands on a bench or step, body straight",
+      "Easier than a floor push-up — great starting point",
+      "Lower chest to the edge of the surface"
+    ]
   },
   {
     "id": "barbell-bench-press",
     "name": "Barbell Bench Press",
-    "muscles": { "primary": ["chest"], "secondary": ["triceps"], "other": ["shoulders"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders", "wrists"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 7, "athletic": 10, "soft_curvy": 3, "functional": 8 },
-    "swappable_with": ["dumbbell-bench-press", "push-up"],
-    "cues": ["Grip just wider than shoulders", "Bar to mid-chest, elbows at 45°", "Drive feet into the floor as you press"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders",
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 10,
+      "soft_curvy": 3,
+      "functional": 8
+    },
+    "swappable_with": [
+      "dumbbell-bench-press",
+      "push-up"
+    ],
+    "cues": [
+      "Grip just wider than shoulders",
+      "Bar to mid-chest, elbows at 45°",
+      "Drive feet into the floor as you press"
+    ]
   },
   {
     "id": "chest-fly",
     "name": "Dumbbell Chest Fly",
-    "muscles": { "primary": ["chest"], "secondary": [], "other": ["shoulders"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "chest"
+      ],
+      "secondary": [],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 4, "lean_toned": 8, "athletic": 6, "soft_curvy": 5, "functional": 4 },
-    "swappable_with": ["cable-crossover", "dumbbell-bench-press"],
-    "cues": ["Slight bend in elbows throughout", "Lower until you feel a stretch across the chest", "Squeeze at the top like hugging a tree"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 4,
+      "lean_toned": 8,
+      "athletic": 6,
+      "soft_curvy": 5,
+      "functional": 4
+    },
+    "swappable_with": [
+      "cable-crossover",
+      "dumbbell-bench-press"
+    ],
+    "cues": [
+      "Slight bend in elbows throughout",
+      "Lower until you feel a stretch across the chest",
+      "Squeeze at the top like hugging a tree"
+    ]
   },
   {
     "id": "cable-crossover",
     "name": "Cable Crossover",
-    "muscles": { "primary": ["chest"], "secondary": [], "other": ["shoulders"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "chest"
+      ],
+      "secondary": [],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 4, "lean_toned": 8, "athletic": 7, "soft_curvy": 4, "functional": 4 },
-    "swappable_with": ["chest-fly", "dumbbell-bench-press"],
-    "cues": ["Cables set above shoulder height", "Step forward for tension, slight forward lean", "Bring hands together in front of hips"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 4,
+      "lean_toned": 8,
+      "athletic": 7,
+      "soft_curvy": 4,
+      "functional": 4
+    },
+    "swappable_with": [
+      "chest-fly",
+      "dumbbell-bench-press"
+    ],
+    "cues": [
+      "Cables set above shoulder height",
+      "Step forward for tension, slight forward lean",
+      "Bring hands together in front of hips"
+    ]
   },
   {
     "id": "pull-up",
     "name": "Pull-Up",
-    "muscles": { "primary": ["lats"], "secondary": ["biceps"], "other": ["upper_back", "core"] },
-    "equipment": ["gym"],
-    "difficulty": ["advanced"],
+    "muscles": {
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "upper_back",
+        "core"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 5, "lean_toned": 8, "athletic": 10, "soft_curvy": 3, "functional": 9 },
-    "swappable_with": ["assisted-pull-up", "lat-pulldown"],
-    "cues": ["Hands just wider than shoulders", "Pull chest toward the bar", "Control the descent — don't just drop"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 8,
+      "athletic": 10,
+      "soft_curvy": 3,
+      "functional": 9
+    },
+    "swappable_with": [
+      "assisted-pull-up",
+      "lat-pulldown"
+    ],
+    "cues": [
+      "Hands just wider than shoulders",
+      "Pull chest toward the bar",
+      "Control the descent — don't just drop"
+    ]
   },
   {
     "id": "assisted-pull-up",
     "name": "Assisted Pull-Up",
-    "muscles": { "primary": ["lats"], "secondary": ["biceps"], "other": ["upper_back"] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "upper_back"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 5, "lean_toned": 7, "athletic": 7, "soft_curvy": 5, "functional": 7 },
-    "swappable_with": ["pull-up", "lat-pulldown"],
-    "cues": ["Set assistance so the last rep is challenging", "Same form as a full pull-up", "Build toward less assistance over time"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "pull-up",
+      "lat-pulldown"
+    ],
+    "cues": [
+      "Set assistance so the last rep is challenging",
+      "Same form as a full pull-up",
+      "Build toward less assistance over time"
+    ]
   },
   {
     "id": "chest-supported-row",
     "name": "Chest-Supported Row",
-    "muscles": { "primary": ["upper_back"], "secondary": ["biceps"], "other": ["rear_delts"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "upper_back"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "rear_delts"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 5, "lean_toned": 8, "athletic": 8, "soft_curvy": 6, "functional": 7 },
-    "swappable_with": ["bent-over-row", "seated-cable-row"],
-    "cues": ["Chest pressed into an incline bench", "Pull elbows back, squeeze shoulder blades", "No momentum — strict form"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 8,
+      "athletic": 8,
+      "soft_curvy": 6,
+      "functional": 7
+    },
+    "swappable_with": [
+      "bent-over-row",
+      "seated-cable-row"
+    ],
+    "cues": [
+      "Chest pressed into an incline bench",
+      "Pull elbows back, squeeze shoulder blades",
+      "No momentum — strict form"
+    ]
   },
   {
     "id": "straight-arm-pulldown",
     "name": "Straight-Arm Pulldown",
-    "muscles": { "primary": ["lats"], "secondary": [], "other": ["core"] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "lats"
+      ],
+      "secondary": [],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 5, "lean_toned": 7, "athletic": 7, "soft_curvy": 5, "functional": 6 },
-    "swappable_with": ["lat-pulldown", "dumbbell-row"],
-    "cues": ["Arms almost straight the whole time", "Pull bar down toward thighs", "Feel it in your lats, not your arms"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "lat-pulldown",
+      "dumbbell-row"
+    ],
+    "cues": [
+      "Arms almost straight the whole time",
+      "Pull bar down toward thighs",
+      "Feel it in your lats, not your arms"
+    ]
   },
   {
     "id": "renegade-row",
     "name": "Renegade Row",
-    "muscles": { "primary": ["upper_back"], "secondary": ["core"], "other": ["biceps", "shoulders"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "upper_back"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "other": [
+        "biceps",
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists", "shoulders"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 5, "lean_toned": 8, "athletic": 8, "soft_curvy": 4, "functional": 9 },
-    "swappable_with": ["dumbbell-row", "bent-over-row"],
-    "cues": ["Plank position, hands on dumbbells", "Row one dumbbell up while balancing on the other", "Keep hips square — don't rotate"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists",
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 5,
+      "lean_toned": 8,
+      "athletic": 8,
+      "soft_curvy": 4,
+      "functional": 9
+    },
+    "swappable_with": [
+      "dumbbell-row",
+      "bent-over-row"
+    ],
+    "cues": [
+      "Plank position, hands on dumbbells",
+      "Row one dumbbell up while balancing on the other",
+      "Keep hips square — don't rotate"
+    ]
   },
   {
     "id": "arnold-press",
     "name": "Arnold Press",
-    "muscles": { "primary": ["shoulders"], "secondary": ["triceps"], "other": ["upper_back"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "shoulders"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": [
+        "upper_back"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 5, "lean_toned": 7, "athletic": 8, "soft_curvy": 4, "functional": 7 },
-    "swappable_with": ["overhead-press", "seated-dumbbell-press"],
-    "cues": ["Start with palms facing you at shoulder height", "Rotate palms forward as you press up", "Reverse the rotation on the way down"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 8,
+      "soft_curvy": 4,
+      "functional": 7
+    },
+    "swappable_with": [
+      "overhead-press",
+      "seated-dumbbell-press",
+      "banded-overhead-press"
+    ],
+    "cues": [
+      "Start with palms facing you at shoulder height",
+      "Rotate palms forward as you press up",
+      "Reverse the rotation on the way down"
+    ]
   },
   {
     "id": "seated-dumbbell-press",
     "name": "Seated Dumbbell Press",
-    "muscles": { "primary": ["shoulders"], "secondary": ["triceps"], "other": [] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "shoulders"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": []
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 5, "lean_toned": 7, "athletic": 7, "soft_curvy": 5, "functional": 6 },
-    "swappable_with": ["overhead-press", "arnold-press"],
-    "cues": ["Back supported against the bench", "Press straight up without arching your back", "Bring dumbbells to ear height at the bottom"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "overhead-press",
+      "arnold-press",
+      "banded-overhead-press",
+      "pike-push-up"
+    ],
+    "cues": [
+      "Back supported against the bench",
+      "Press straight up without arching your back",
+      "Bring dumbbells to ear height at the bottom"
+    ]
+  },
+  {
+    "id": "banded-overhead-press",
+    "name": "Banded Overhead Press",
+    "muscles": {
+      "primary": [
+        "shoulders"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": [
+        "upper_back",
+        "core"
+      ]
+    },
+    "equipment": [
+      "bands"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
+    "slot": "main",
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "overhead-press",
+      "arnold-press",
+      "seated-dumbbell-press"
+    ],
+    "cues": [
+      "Stand on the band, feet shoulder-width",
+      "Press straight up without arching your back",
+      "Control the band on the way down"
+    ]
+  },
+  {
+    "id": "pike-push-up",
+    "name": "Pike Push-Up",
+    "muscles": {
+      "primary": [
+        "shoulders"
+      ],
+      "secondary": [
+        "triceps"
+      ],
+      "other": [
+        "upper_back",
+        "core"
+      ]
+    },
+    "equipment": [
+      "none"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
+    "slot": "main",
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders",
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 4,
+      "lean_toned": 8,
+      "athletic": 8,
+      "soft_curvy": 3,
+      "functional": 8
+    },
+    "swappable_with": [
+      "overhead-press",
+      "banded-overhead-press",
+      "seated-dumbbell-press"
+    ],
+    "cues": [
+      "Hips high, forming an inverted V",
+      "Lower your head toward the floor between your hands",
+      "Press back up through your shoulders"
+    ]
   },
   {
     "id": "upright-row",
     "name": "Upright Row",
-    "muscles": { "primary": ["side_delts"], "secondary": ["upper_back"], "other": ["biceps"] },
-    "equipment": ["dumbbells", "bands", "gym"],
-    "difficulty": ["intermediate"],
+    "muscles": {
+      "primary": [
+        "side_delts"
+      ],
+      "secondary": [
+        "upper_back"
+      ],
+      "other": [
+        "biceps"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 9, "slim_thick": 5, "lean_toned": 6, "athletic": 7, "soft_curvy": 4, "functional": 5 },
-    "swappable_with": ["lateral-raise", "cable-lateral-raise"],
-    "cues": ["Pull elbows up and out, leading with elbows", "Bar or dumbbells stay close to the body", "Stop at chest height — don't shrug"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 5,
+      "lean_toned": 6,
+      "athletic": 7,
+      "soft_curvy": 4,
+      "functional": 5
+    },
+    "swappable_with": [
+      "lateral-raise",
+      "cable-lateral-raise"
+    ],
+    "cues": [
+      "Pull elbows up and out, leading with elbows",
+      "Bar or dumbbells stay close to the body",
+      "Stop at chest height — don't shrug"
+    ]
   },
   {
     "id": "cable-lateral-raise",
     "name": "Cable Lateral Raise",
-    "muscles": { "primary": ["side_delts"], "secondary": [], "other": [] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "side_delts"
+      ],
+      "secondary": [],
+      "other": []
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 10, "slim_thick": 5, "lean_toned": 7, "athletic": 7, "soft_curvy": 5, "functional": 5 },
-    "swappable_with": ["lateral-raise", "upright-row"],
-    "cues": ["Cable set low, to your side", "Raise arm out to shoulder height", "Constant tension — the cable keeps it on throughout"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 10,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 5
+    },
+    "swappable_with": [
+      "lateral-raise",
+      "upright-row"
+    ],
+    "cues": [
+      "Cable set low, to your side",
+      "Raise arm out to shoulder height",
+      "Constant tension — the cable keeps it on throughout"
+    ]
   },
   {
     "id": "front-raise",
     "name": "Front Raise",
-    "muscles": { "primary": ["front_deltoids"], "secondary": [], "other": ["upper_back"] },
-    "equipment": ["dumbbells", "bands", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "front_deltoids"
+      ],
+      "secondary": [],
+      "other": [
+        "upper_back"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "bands",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 5, "lean_toned": 7, "athletic": 6, "soft_curvy": 5, "functional": 5 },
-    "swappable_with": ["lateral-raise", "overhead-press"],
-    "cues": ["Slight bend in elbows", "Raise to shoulder height, no higher", "Don't swing — control the whole rep"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 6,
+      "soft_curvy": 5,
+      "functional": 5
+    },
+    "swappable_with": [
+      "lateral-raise",
+      "overhead-press"
+    ],
+    "cues": [
+      "Slight bend in elbows",
+      "Raise to shoulder height, no higher",
+      "Don't swing — control the whole rep"
+    ]
   },
   {
     "id": "hammer-curl",
     "name": "Hammer Curl",
-    "muscles": { "primary": ["biceps"], "secondary": [], "other": ["forearm"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [],
+      "other": [
+        "forearm"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 7, "athletic": 6, "soft_curvy": 6, "functional": 6 },
-    "swappable_with": ["bicep-curl", "resistance-band-curl"],
-    "cues": ["Palms face each other the whole rep", "Elbows pinned to your sides", "Squeeze at the top"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 6,
+      "soft_curvy": 6,
+      "functional": 6
+    },
+    "swappable_with": [
+      "bicep-curl",
+      "resistance-band-curl"
+    ],
+    "cues": [
+      "Palms face each other the whole rep",
+      "Elbows pinned to your sides",
+      "Squeeze at the top"
+    ]
   },
   {
     "id": "resistance-band-curl",
     "name": "Resistance Band Curl",
-    "muscles": { "primary": ["biceps"], "secondary": [], "other": ["forearm"] },
-    "equipment": ["bands"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [],
+      "other": [
+        "forearm"
+      ]
+    },
+    "equipment": [
+      "bands"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 4, "slim_thick": 4, "lean_toned": 6, "athletic": 4, "soft_curvy": 6, "functional": 5 },
-    "swappable_with": ["bicep-curl", "hammer-curl"],
-    "cues": ["Stand on the band, feet hip-width", "Curl up without swinging your elbows forward", "Slow the lowering phase for extra burn"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 4,
+      "slim_thick": 4,
+      "lean_toned": 6,
+      "athletic": 4,
+      "soft_curvy": 6,
+      "functional": 5
+    },
+    "swappable_with": [
+      "bicep-curl",
+      "hammer-curl"
+    ],
+    "cues": [
+      "Stand on the band, feet hip-width",
+      "Curl up without swinging your elbows forward",
+      "Slow the lowering phase for extra burn"
+    ]
   },
   {
     "id": "concentration-curl",
     "name": "Concentration Curl",
-    "muscles": { "primary": ["biceps"], "secondary": [], "other": [] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "biceps"
+      ],
+      "secondary": [],
+      "other": []
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 4, "slim_thick": 4, "lean_toned": 6, "athletic": 5, "soft_curvy": 5, "functional": 4 },
-    "swappable_with": ["bicep-curl", "hammer-curl"],
-    "cues": ["Seated, elbow braced against inner thigh", "Isolate the bicep — no swinging", "Full stretch at the bottom"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 4,
+      "slim_thick": 4,
+      "lean_toned": 6,
+      "athletic": 5,
+      "soft_curvy": 5,
+      "functional": 4
+    },
+    "swappable_with": [
+      "bicep-curl",
+      "hammer-curl"
+    ],
+    "cues": [
+      "Seated, elbow braced against inner thigh",
+      "Isolate the bicep — no swinging",
+      "Full stretch at the bottom"
+    ]
   },
   {
     "id": "overhead-tricep",
     "name": "Cable Overhead Tricep Extension",
-    "muscles": { "primary": ["triceps"], "secondary": [], "other": ["shoulders"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate"],
+    "muscles": {
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 7, "athletic": 7, "soft_curvy": 4, "functional": 5 },
-    "swappable_with": ["tricep-extension", "tricep-pushdown"],
-    "cues": ["Face away from a low cable with rope attachment", "Extend arms forward overhead", "Keep elbows fixed — only forearms move"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 4,
+      "functional": 5
+    },
+    "swappable_with": [
+      "tricep-extension",
+      "tricep-pushdown"
+    ],
+    "cues": [
+      "Face away from a low cable with rope attachment",
+      "Extend arms forward overhead",
+      "Keep elbows fixed — only forearms move"
+    ]
   },
   {
     "id": "tricep-pushdown",
     "name": "Tricep Pushdown",
-    "muscles": { "primary": ["triceps"], "secondary": [], "other": [] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [],
+      "other": []
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 7, "athletic": 7, "soft_curvy": 5, "functional": 5 },
-    "swappable_with": ["overhead-tricep", "tricep-dip"],
-    "cues": ["Elbows pinned to your sides", "Push the bar down until arms are straight", "Control it back up — don't let it snap"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 5
+    },
+    "swappable_with": [
+      "overhead-tricep",
+      "tricep-dip"
+    ],
+    "cues": [
+      "Elbows pinned to your sides",
+      "Push the bar down until arms are straight",
+      "Control it back up — don't let it snap"
+    ]
   },
   {
     "id": "close-grip-push-up",
     "name": "Close-Grip Push-Up",
-    "muscles": { "primary": ["triceps"], "secondary": ["chest"], "other": ["shoulders"] },
-    "equipment": ["none", "gym"],
-    "difficulty": ["intermediate"],
+    "muscles": {
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [
+        "chest"
+      ],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "none",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["wrists", "shoulders"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 4, "lean_toned": 8, "athletic": 7, "soft_curvy": 5, "functional": 7 },
-    "swappable_with": ["tricep-dip", "tricep-pushdown"],
-    "cues": ["Hands close together, thumbs almost touching", "Elbows stay tucked close to your ribs", "Lower with control, press back up"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "wrists",
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 4,
+      "lean_toned": 8,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "tricep-dip",
+      "tricep-pushdown"
+    ],
+    "cues": [
+      "Hands close together, thumbs almost touching",
+      "Elbows stay tucked close to your ribs",
+      "Lower with control, press back up"
+    ]
   },
   {
     "id": "wrist-curl",
     "name": "Wrist Curl",
-    "muscles": { "primary": ["forearm"], "secondary": [], "other": [] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "forearm"
+      ],
+      "secondary": [],
+      "other": []
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 10, "max": 15 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 3, "slim_thick": 3, "lean_toned": 5, "athletic": 5, "soft_curvy": 4, "functional": 5 },
-    "swappable_with": ["reverse-wrist-curl"],
-    "cues": ["Forearms rested on your thighs or a bench", "Curl the weight up using only your wrists", "Slow and controlled — small range of motion"]
+    "repsRange": {
+      "min": 10,
+      "max": 15
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 3,
+      "slim_thick": 3,
+      "lean_toned": 5,
+      "athletic": 5,
+      "soft_curvy": 4,
+      "functional": 5
+    },
+    "swappable_with": [
+      "reverse-wrist-curl"
+    ],
+    "cues": [
+      "Forearms rested on your thighs or a bench",
+      "Curl the weight up using only your wrists",
+      "Slow and controlled — small range of motion"
+    ]
   },
   {
     "id": "reverse-wrist-curl",
     "name": "Reverse Wrist Curl",
-    "muscles": { "primary": ["forearm"], "secondary": [], "other": [] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "forearm"
+      ],
+      "secondary": [],
+      "other": []
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 10, "max": 15 },
-    "injuries_avoid": ["wrists"],
-    "physique_weight": { "hourglass": 3, "slim_thick": 3, "lean_toned": 5, "athletic": 5, "soft_curvy": 4, "functional": 5 },
-    "swappable_with": ["wrist-curl"],
-    "cues": ["Palms facing down this time", "Lift knuckles toward the ceiling", "Keep the movement slow and small"]
+    "repsRange": {
+      "min": 10,
+      "max": 15
+    },
+    "injuries_avoid": [
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 3,
+      "slim_thick": 3,
+      "lean_toned": 5,
+      "athletic": 5,
+      "soft_curvy": 4,
+      "functional": 5
+    },
+    "swappable_with": [
+      "wrist-curl"
+    ],
+    "cues": [
+      "Palms facing down this time",
+      "Lift knuckles toward the ceiling",
+      "Keep the movement slow and small"
+    ]
   },
   {
     "id": "hollow-hold",
     "name": "Hollow Hold",
-    "muscles": { "primary": ["core"], "secondary": [], "other": ["hip_flexors"] },
-    "equipment": ["none"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [],
+      "other": [
+        "hip_flexors"
+      ]
+    },
+    "equipment": [
+      "none"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 15, "max": 40 },
+    "repsRange": {
+      "min": 15,
+      "max": 40
+    },
     "timeBased": true,
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 6, "lean_toned": 9, "athletic": 8, "soft_curvy": 5, "functional": 8 },
-    "swappable_with": ["plank", "dead-bug"],
-    "cues": ["Lower back pressed flat to the floor", "Arms and legs extended, lifted slightly off the ground", "Hold — don't let your back arch"]
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 6,
+      "lean_toned": 9,
+      "athletic": 8,
+      "soft_curvy": 5,
+      "functional": 8
+    },
+    "swappable_with": [
+      "plank",
+      "dead-bug"
+    ],
+    "cues": [
+      "Lower back pressed flat to the floor",
+      "Arms and legs extended, lifted slightly off the ground",
+      "Hold — don't let your back arch"
+    ]
   },
   {
     "id": "bicycle-crunch",
     "name": "Bicycle Crunch",
-    "muscles": { "primary": ["obliques"], "secondary": ["core"], "other": [] },
-    "equipment": ["none"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "obliques"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "other": []
+    },
+    "equipment": [
+      "none"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 15, "max": 20 },
-    "injuries_avoid": ["neck"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 6, "lean_toned": 8, "athletic": 6, "soft_curvy": 6, "functional": 6 },
-    "swappable_with": ["russian-twist", "side-plank"],
-    "cues": ["Hands lightly behind your head — don't pull on your neck", "Bring opposite elbow to opposite knee", "Slow and controlled beats fast and sloppy"]
+    "repsRange": {
+      "min": 15,
+      "max": 20
+    },
+    "injuries_avoid": [
+      "neck"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 6,
+      "lean_toned": 8,
+      "athletic": 6,
+      "soft_curvy": 6,
+      "functional": 6
+    },
+    "swappable_with": [
+      "russian-twist",
+      "side-plank"
+    ],
+    "cues": [
+      "Hands lightly behind your head — don't pull on your neck",
+      "Bring opposite elbow to opposite knee",
+      "Slow and controlled beats fast and sloppy"
+    ]
   },
   {
     "id": "russian-twist",
     "name": "Russian Twist",
-    "muscles": { "primary": ["obliques"], "secondary": ["core"], "other": [] },
-    "equipment": ["none", "dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "obliques"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "other": []
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 15, "max": 20 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 6, "lean_toned": 8, "athletic": 6, "soft_curvy": 6, "functional": 6 },
-    "swappable_with": ["bicycle-crunch", "side-plank"],
-    "cues": ["Sit with knees bent, lean back slightly", "Rotate side to side, tapping the floor", "Keep chest up — don't round your back"]
+    "repsRange": {
+      "min": 15,
+      "max": 20
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 6,
+      "lean_toned": 8,
+      "athletic": 6,
+      "soft_curvy": 6,
+      "functional": 6
+    },
+    "swappable_with": [
+      "bicycle-crunch",
+      "side-plank"
+    ],
+    "cues": [
+      "Sit with knees bent, lean back slightly",
+      "Rotate side to side, tapping the floor",
+      "Keep chest up — don't round your back"
+    ]
   },
   {
     "id": "side-plank",
     "name": "Side Plank",
-    "muscles": { "primary": ["obliques"], "secondary": ["core"], "other": ["shoulders"] },
-    "equipment": ["none"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "obliques"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "other": [
+        "shoulders"
+      ]
+    },
+    "equipment": [
+      "none"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 20, "max": 45 },
+    "repsRange": {
+      "min": 20,
+      "max": 45
+    },
     "timeBased": true,
-    "injuries_avoid": ["shoulders", "wrists"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 6, "lean_toned": 8, "athletic": 6, "soft_curvy": 6, "functional": 7 },
-    "swappable_with": ["bicycle-crunch", "russian-twist"],
-    "cues": ["Forearm or hand under your shoulder", "Body in a straight line, hips lifted", "Don't let hips sag toward the floor"]
+    "injuries_avoid": [
+      "shoulders",
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 6,
+      "lean_toned": 8,
+      "athletic": 6,
+      "soft_curvy": 6,
+      "functional": 7
+    },
+    "swappable_with": [
+      "bicycle-crunch",
+      "russian-twist"
+    ],
+    "cues": [
+      "Forearm or hand under your shoulder",
+      "Body in a straight line, hips lifted",
+      "Don't let hips sag toward the floor"
+    ]
   },
   {
     "id": "superman",
     "name": "Superman",
-    "muscles": { "primary": ["lower_back"], "secondary": ["glutes"], "other": ["upper_back"] },
-    "equipment": ["none"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "lower_back"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "upper_back"
+      ]
+    },
+    "equipment": [
+      "none"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 12, "max": 20 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 5, "lean_toned": 7, "athletic": 5, "soft_curvy": 6, "functional": 7 },
-    "swappable_with": ["bird-dog", "dead-bug"],
-    "cues": ["Lie face down, arms extended overhead", "Lift arms, chest and legs off the floor together", "Squeeze glutes and back at the top"]
+    "repsRange": {
+      "min": 12,
+      "max": 20
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 5,
+      "soft_curvy": 6,
+      "functional": 7
+    },
+    "swappable_with": [
+      "bird-dog",
+      "dead-bug"
+    ],
+    "cues": [
+      "Lie face down, arms extended overhead",
+      "Lift arms, chest and legs off the floor together",
+      "Squeeze glutes and back at the top"
+    ]
   },
   {
     "id": "bird-dog",
     "name": "Bird Dog",
-    "muscles": { "primary": ["core"], "secondary": ["glutes"], "other": ["lower_back"] },
-    "equipment": ["none"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "lower_back"
+      ]
+    },
+    "equipment": [
+      "none"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 8, "max": 12 },
-    "injuries_avoid": ["lower_back", "wrists"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 5, "lean_toned": 8, "athletic": 6, "soft_curvy": 7, "functional": 8 },
-    "swappable_with": ["dead-bug", "superman"],
-    "cues": ["On hands and knees, spine neutral", "Extend opposite arm and leg together", "Keep hips level — don't rotate"]
+    "repsRange": {
+      "min": 8,
+      "max": 12
+    },
+    "injuries_avoid": [
+      "lower_back",
+      "wrists"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 8,
+      "athletic": 6,
+      "soft_curvy": 7,
+      "functional": 8
+    },
+    "swappable_with": [
+      "dead-bug",
+      "superman"
+    ],
+    "cues": [
+      "On hands and knees, spine neutral",
+      "Extend opposite arm and leg together",
+      "Keep hips level — don't rotate"
+    ]
   },
   {
     "id": "seated-calf-raise",
     "name": "Seated Calf Raise",
-    "muscles": { "primary": ["calves"], "secondary": [], "other": [] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "calves"
+      ],
+      "secondary": [],
+      "other": []
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate",
+      "advanced"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 12, "max": 20 },
+    "repsRange": {
+      "min": 12,
+      "max": 20
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 5, "slim_thick": 6, "lean_toned": 6, "athletic": 7, "soft_curvy": 5, "functional": 6 },
-    "swappable_with": ["calf-raises", "single-leg-calf-raise"],
-    "cues": ["Pad rests just above your knees", "Full range — heels all the way down, then up onto toes", "Pause at the top for a squeeze"]
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 6,
+      "lean_toned": 6,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "calf-raises",
+      "single-leg-calf-raise"
+    ],
+    "cues": [
+      "Pad rests just above your knees",
+      "Full range — heels all the way down, then up onto toes",
+      "Pause at the top for a squeeze"
+    ]
   },
   {
     "id": "single-leg-calf-raise",
     "name": "Single-Leg Calf Raise",
-    "muscles": { "primary": ["calves"], "secondary": [], "other": ["core"] },
-    "equipment": ["none", "dumbbells"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "calves"
+      ],
+      "secondary": [],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 12, "max": 20 },
+    "repsRange": {
+      "min": 12,
+      "max": 20
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 5, "slim_thick": 6, "lean_toned": 7, "athletic": 6, "soft_curvy": 5, "functional": 7 },
-    "swappable_with": ["calf-raises", "seated-calf-raise"],
-    "cues": ["Balance on one foot near a wall for support", "Rise all the way up onto your toes", "Lower slowly — this is where the burn is"]
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 6,
+      "lean_toned": 7,
+      "athletic": 6,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "calf-raises",
+      "seated-calf-raise"
+    ],
+    "cues": [
+      "Balance on one foot near a wall for support",
+      "Rise all the way up onto your toes",
+      "Lower slowly — this is where the burn is"
+    ]
   },
   {
     "id": "calf-raise-machine",
     "name": "Standing Calf Raise Machine",
-    "muscles": { "primary": ["calves"], "secondary": [], "other": [] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "calves"
+      ],
+      "secondary": [],
+      "other": []
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate",
+      "advanced"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 12, "max": 20 },
+    "repsRange": {
+      "min": 12,
+      "max": 20
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 5, "slim_thick": 6, "lean_toned": 6, "athletic": 7, "soft_curvy": 5, "functional": 6 },
-    "swappable_with": ["calf-raises", "seated-calf-raise"],
-    "cues": ["Shoulders under the pads, balls of feet on the platform", "Full stretch at the bottom, full squeeze at the top", "Don't bounce — control every rep"]
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 6,
+      "lean_toned": 6,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 6
+    },
+    "swappable_with": [
+      "calf-raises",
+      "seated-calf-raise"
+    ],
+    "cues": [
+      "Shoulders under the pads, balls of feet on the platform",
+      "Full stretch at the bottom, full squeeze at the top",
+      "Don't bounce — control every rep"
+    ]
   },
   {
     "id": "jump-rope",
     "name": "Jump Rope",
-    "muscles": { "primary": ["calves"], "secondary": ["core"], "other": [] },
-    "equipment": ["none"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "calves"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "other": []
+    },
+    "equipment": [
+      "none"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 30, "max": 60 },
+    "repsRange": {
+      "min": 30,
+      "max": 60
+    },
     "timeBased": true,
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 5, "lean_toned": 7, "athletic": 7, "soft_curvy": 4, "functional": 7 },
-    "swappable_with": ["mountain-climber", "calf-raises"],
-    "cues": ["Small, quick hops — stay on the balls of your feet", "Elbows close to your body, turn the rope with your wrists", "Land softly, knees slightly bent"]
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 4,
+      "functional": 7
+    },
+    "swappable_with": [
+      "mountain-climber",
+      "calf-raises"
+    ],
+    "cues": [
+      "Small, quick hops — stay on the balls of your feet",
+      "Elbows close to your body, turn the rope with your wrists",
+      "Land softly, knees slightly bent"
+    ]
   },
   {
     "id": "adductor-machine",
     "name": "Hip Adductor Machine",
-    "muscles": { "primary": ["inner_thighs"], "secondary": [], "other": [] },
-    "equipment": ["gym"],
-    "difficulty": ["starter", "intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "inner_thighs"
+      ],
+      "secondary": [],
+      "other": []
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate",
+      "advanced"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["hips"],
-    "physique_weight": { "hourglass": 8, "slim_thick": 7, "lean_toned": 5, "athletic": 5, "soft_curvy": 6, "functional": 4 },
-    "swappable_with": ["cossack-squat", "sumo-squat"],
-    "cues": ["Sit tall, pads against outer thighs", "Squeeze legs together with control", "Don't let the weight slam on the way out"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "hips"
+    ],
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 7,
+      "lean_toned": 5,
+      "athletic": 5,
+      "soft_curvy": 6,
+      "functional": 4
+    },
+    "swappable_with": [
+      "cossack-squat",
+      "sumo-squat"
+    ],
+    "cues": [
+      "Sit tall, pads against outer thighs",
+      "Squeeze legs together with control",
+      "Don't let the weight slam on the way out"
+    ]
   },
   {
     "id": "cossack-squat",
     "name": "Cossack Squat",
-    "muscles": { "primary": ["inner_thighs"], "secondary": ["quads"], "other": ["glutes"] },
-    "equipment": ["none", "dumbbells"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "inner_thighs"
+      ],
+      "secondary": [
+        "quads"
+      ],
+      "other": [
+        "glutes"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees", "hips"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 7, "lean_toned": 7, "athletic": 7, "soft_curvy": 4, "functional": 8 },
-    "swappable_with": ["sumo-squat", "adductor-machine"],
-    "cues": ["Wide stance, shift your weight side to side", "Sink hips toward the bent-knee side", "Keep the straight leg's foot flat if you can"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees",
+      "hips"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 7,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 4,
+      "functional": 8
+    },
+    "swappable_with": [
+      "sumo-squat",
+      "adductor-machine"
+    ],
+    "cues": [
+      "Wide stance, shift your weight side to side",
+      "Sink hips toward the bent-knee side",
+      "Keep the straight leg's foot flat if you can"
+    ]
   },
   {
     "id": "copenhagen-plank",
     "name": "Copenhagen Plank",
-    "muscles": { "primary": ["inner_thighs"], "secondary": ["core"], "other": [] },
-    "equipment": ["none", "gym"],
-    "difficulty": ["advanced"],
+    "muscles": {
+      "primary": [
+        "inner_thighs"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "other": []
+    },
+    "equipment": [
+      "none",
+      "gym"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 15, "max": 30 },
+    "repsRange": {
+      "min": 15,
+      "max": 30
+    },
     "timeBased": true,
-    "injuries_avoid": ["hips", "knees"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 6, "lean_toned": 7, "athletic": 7, "soft_curvy": 3, "functional": 7 },
-    "swappable_with": ["cossack-squat", "adductor-machine"],
-    "cues": ["Top foot on a bench, bottom leg lifted", "Hips stacked, body in a straight line", "Advanced move — build up to it"]
+    "injuries_avoid": [
+      "hips",
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 6,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 3,
+      "functional": 7
+    },
+    "swappable_with": [
+      "cossack-squat",
+      "adductor-machine"
+    ],
+    "cues": [
+      "Top foot on a bench, bottom leg lifted",
+      "Hips stacked, body in a straight line",
+      "Advanced move — build up to it"
+    ]
   },
   {
     "id": "step-up",
     "name": "Step-Up",
-    "muscles": { "primary": ["quads"], "secondary": ["glutes"], "other": ["hamstrings"] },
-    "equipment": ["none", "dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "hamstrings"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 8, "lean_toned": 7, "athletic": 7, "soft_curvy": 6, "functional": 8 },
-    "swappable_with": ["walking-lunge", "bulgarian-split-squat"],
-    "cues": ["Full foot on the box before pushing up", "Drive through the heel, not the back leg", "Step down with control — don't just drop"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 8,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 6,
+      "functional": 8
+    },
+    "swappable_with": [
+      "walking-lunge",
+      "bulgarian-split-squat"
+    ],
+    "cues": [
+      "Full foot on the box before pushing up",
+      "Drive through the heel, not the back leg",
+      "Step down with control — don't just drop"
+    ]
   },
   {
     "id": "single-leg-deadlift",
     "name": "Single-Leg Deadlift",
-    "muscles": { "primary": ["hamstrings"], "secondary": ["glutes"], "other": ["core"] },
-    "equipment": ["none", "dumbbells", "gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 8, "lean_toned": 8, "athletic": 8, "soft_curvy": 4, "functional": 8 },
-    "swappable_with": ["romanian-deadlift", "good-morning"],
-    "cues": ["Soft bend in your standing knee", "Hinge forward as your back leg lifts behind you", "Hips stay square to the floor"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 8,
+      "lean_toned": 8,
+      "athletic": 8,
+      "soft_curvy": 4,
+      "functional": 8
+    },
+    "swappable_with": [
+      "romanian-deadlift",
+      "good-morning"
+    ],
+    "cues": [
+      "Soft bend in your standing knee",
+      "Hinge forward as your back leg lifts behind you",
+      "Hips stay square to the floor"
+    ]
   },
   {
     "id": "good-morning",
     "name": "Good Morning",
-    "muscles": { "primary": ["hamstrings"], "secondary": ["lower_back"], "other": ["glutes"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate", "advanced"],
+    "muscles": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "lower_back"
+      ],
+      "other": [
+        "glutes"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate",
+      "advanced"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["lower_back"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 8, "lean_toned": 7, "athletic": 8, "soft_curvy": 3, "functional": 8 },
-    "swappable_with": ["romanian-deadlift", "single-leg-deadlift"],
-    "cues": ["Bar on your upper back, soft knees", "Hinge at the hips, chest stays up", "Stop when you feel a hamstring stretch"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 8,
+      "lean_toned": 7,
+      "athletic": 8,
+      "soft_curvy": 3,
+      "functional": 8
+    },
+    "swappable_with": [
+      "romanian-deadlift",
+      "single-leg-deadlift",
+      "banded-good-morning"
+    ],
+    "cues": [
+      "Bar on your upper back, soft knees",
+      "Hinge at the hips, chest stays up",
+      "Stop when you feel a hamstring stretch"
+    ]
+  },
+  {
+    "id": "banded-good-morning",
+    "name": "Banded Good Morning",
+    "muscles": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [
+        "lower_back"
+      ],
+      "other": [
+        "glutes"
+      ]
+    },
+    "equipment": [
+      "bands"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
+    "slot": "secondary",
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "lower_back"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 8,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "good-morning",
+      "romanian-deadlift"
+    ],
+    "cues": [
+      "Stand on the band, loop it over your shoulders",
+      "Hinge at the hips, chest stays up",
+      "Stop when you feel a hamstring stretch"
+    ]
   },
   {
     "id": "nordic-hamstring-curl",
     "name": "Nordic Hamstring Curl",
-    "muscles": { "primary": ["hamstrings"], "secondary": [], "other": ["glutes"] },
-    "equipment": ["none", "gym"],
-    "difficulty": ["advanced"],
+    "muscles": {
+      "primary": [
+        "hamstrings"
+      ],
+      "secondary": [],
+      "other": [
+        "glutes"
+      ]
+    },
+    "equipment": [
+      "none",
+      "gym"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 4, "max": 6 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 6, "slim_thick": 7, "lean_toned": 7, "athletic": 8, "soft_curvy": 3, "functional": 8 },
-    "swappable_with": ["leg-curl", "romanian-deadlift"],
-    "cues": ["Ankles anchored, kneeling tall", "Lower yourself forward as slowly as possible", "Catch yourself with your hands if needed"]
+    "repsRange": {
+      "min": 4,
+      "max": 6
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 6,
+      "slim_thick": 7,
+      "lean_toned": 7,
+      "athletic": 8,
+      "soft_curvy": 3,
+      "functional": 8
+    },
+    "swappable_with": [
+      "leg-curl",
+      "romanian-deadlift"
+    ],
+    "cues": [
+      "Ankles anchored, kneeling tall",
+      "Lower yourself forward as slowly as possible",
+      "Catch yourself with your hands if needed"
+    ]
   },
   {
     "id": "curtsy-lunge",
     "name": "Curtsy Lunge",
-    "muscles": { "primary": ["glute_medius"], "secondary": ["glutes"], "other": ["quads"] },
-    "equipment": ["none", "dumbbells"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "glute_medius"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "other": [
+        "quads"
+      ]
+    },
+    "equipment": [
+      "none",
+      "dumbbells"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 9, "slim_thick": 8, "lean_toned": 6, "athletic": 5, "soft_curvy": 6, "functional": 6 },
-    "swappable_with": ["reverse-lunge", "walking-lunge"],
-    "cues": ["Step one leg behind and across the other", "Lower into a curtsy — both knees bend", "Push through the front heel to stand"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 9,
+      "slim_thick": 8,
+      "lean_toned": 6,
+      "athletic": 5,
+      "soft_curvy": 6,
+      "functional": 6
+    },
+    "swappable_with": [
+      "reverse-lunge",
+      "walking-lunge"
+    ],
+    "cues": [
+      "Step one leg behind and across the other",
+      "Lower into a curtsy — both knees bend",
+      "Push through the front heel to stand"
+    ]
   },
   {
     "id": "chin-up",
     "name": "Chin-Up",
-    "muscles": { "primary": ["lats"], "secondary": ["biceps"], "other": ["upper_back"] },
-    "equipment": ["gym"],
-    "difficulty": ["advanced"],
+    "muscles": {
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "other": [
+        "upper_back"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "advanced"
+    ],
     "slot": "main",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 5, "lean_toned": 8, "athletic": 9, "soft_curvy": 3, "functional": 8 },
-    "swappable_with": ["pull-up", "assisted-pull-up"],
-    "cues": ["Palms facing you, shoulder-width grip", "Pull chin over the bar", "Biceps do more work here than a pull-up"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 8,
+      "athletic": 9,
+      "soft_curvy": 3,
+      "functional": 8
+    },
+    "swappable_with": [
+      "pull-up",
+      "assisted-pull-up"
+    ],
+    "cues": [
+      "Palms facing you, shoulder-width grip",
+      "Pull chin over the bar",
+      "Biceps do more work here than a pull-up"
+    ]
   },
   {
     "id": "landmine-press",
     "name": "Landmine Press",
-    "muscles": { "primary": ["shoulders"], "secondary": ["chest"], "other": ["core"] },
-    "equipment": ["gym"],
-    "difficulty": ["intermediate"],
+    "muscles": {
+      "primary": [
+        "shoulders"
+      ],
+      "secondary": [
+        "chest"
+      ],
+      "other": [
+        "core"
+      ]
+    },
+    "equipment": [
+      "gym"
+    ],
+    "difficulty": [
+      "intermediate"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["shoulders"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 5, "lean_toned": 7, "athletic": 8, "soft_curvy": 4, "functional": 8 },
-    "swappable_with": ["overhead-press", "arnold-press"],
-    "cues": ["Barbell end at chest height, one or two hands", "Press up and slightly forward at an angle", "Easier on the shoulders than a straight overhead press"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "shoulders"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 5,
+      "lean_toned": 7,
+      "athletic": 8,
+      "soft_curvy": 4,
+      "functional": 8
+    },
+    "swappable_with": [
+      "overhead-press",
+      "arnold-press"
+    ],
+    "cues": [
+      "Barbell end at chest height, one or two hands",
+      "Press up and slightly forward at an angle",
+      "Easier on the shoulders than a straight overhead press"
+    ]
   },
   {
     "id": "goblet-lateral-lunge",
     "name": "Goblet Lateral Lunge",
-    "muscles": { "primary": ["inner_thighs"], "secondary": ["quads"], "other": ["glutes"] },
-    "equipment": ["dumbbells", "gym"],
-    "difficulty": ["starter", "intermediate"],
+    "muscles": {
+      "primary": [
+        "inner_thighs"
+      ],
+      "secondary": [
+        "quads"
+      ],
+      "other": [
+        "glutes"
+      ]
+    },
+    "equipment": [
+      "dumbbells",
+      "gym"
+    ],
+    "difficulty": [
+      "starter",
+      "intermediate"
+    ],
     "slot": "secondary",
-    "repsRange": { "min": 6, "max": 8 },
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 7, "slim_thick": 7, "lean_toned": 6, "athletic": 6, "soft_curvy": 6, "functional": 7 },
-    "swappable_with": ["cossack-squat", "curtsy-lunge"],
-    "cues": ["Hold a dumbbell at your chest", "Step wide to one side, sink into that hip", "Push back to center through the working leg"]
+    "repsRange": {
+      "min": 6,
+      "max": 8
+    },
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 7,
+      "slim_thick": 7,
+      "lean_toned": 6,
+      "athletic": 6,
+      "soft_curvy": 6,
+      "functional": 7
+    },
+    "swappable_with": [
+      "cossack-squat",
+      "curtsy-lunge"
+    ],
+    "cues": [
+      "Hold a dumbbell at your chest",
+      "Step wide to one side, sink into that hip",
+      "Push back to center through the working leg"
+    ]
   },
   {
     "id": "band-pull-apart",
     "name": "Band Pull-Apart",
-    "muscles": { "primary": ["rear_delts"], "secondary": ["upper_back"], "other": [] },
-    "equipment": ["bands"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "rear_delts"
+      ],
+      "secondary": [
+        "upper_back"
+      ],
+      "other": []
+    },
+    "equipment": [
+      "bands"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "accessory",
-    "repsRange": { "min": 12, "max": 20 },
+    "repsRange": {
+      "min": 12,
+      "max": 20
+    },
     "injuries_avoid": [],
-    "physique_weight": { "hourglass": 8, "slim_thick": 4, "lean_toned": 7, "athletic": 7, "soft_curvy": 5, "functional": 7 },
-    "swappable_with": ["rear-delt-fly", "face-pull"],
-    "cues": ["Arms straight out in front, holding the band", "Pull the band apart until it touches your chest", "Squeeze shoulder blades together at the end"]
+    "physique_weight": {
+      "hourglass": 8,
+      "slim_thick": 4,
+      "lean_toned": 7,
+      "athletic": 7,
+      "soft_curvy": 5,
+      "functional": 7
+    },
+    "swappable_with": [
+      "rear-delt-fly",
+      "face-pull"
+    ],
+    "cues": [
+      "Arms straight out in front, holding the band",
+      "Pull the band apart until it touches your chest",
+      "Squeeze shoulder blades together at the end"
+    ]
   },
   {
     "id": "wall-sit",
     "name": "Wall Sit",
-    "muscles": { "primary": ["quads"], "secondary": [], "other": ["glutes"] },
-    "equipment": ["none"],
-    "difficulty": ["starter"],
+    "muscles": {
+      "primary": [
+        "quads"
+      ],
+      "secondary": [],
+      "other": [
+        "glutes"
+      ]
+    },
+    "equipment": [
+      "none"
+    ],
+    "difficulty": [
+      "starter"
+    ],
     "slot": "finisher",
-    "repsRange": { "min": 20, "max": 60 },
+    "repsRange": {
+      "min": 20,
+      "max": 60
+    },
     "timeBased": true,
-    "injuries_avoid": ["knees"],
-    "physique_weight": { "hourglass": 5, "slim_thick": 5, "lean_toned": 6, "athletic": 5, "soft_curvy": 7, "functional": 6 },
-    "swappable_with": ["bodyweight-squat", "goblet-squat"],
-    "cues": ["Back flat against the wall, knees at 90°", "Thighs parallel to the floor", "Hold — breathe steadily throughout"]
+    "injuries_avoid": [
+      "knees"
+    ],
+    "physique_weight": {
+      "hourglass": 5,
+      "slim_thick": 5,
+      "lean_toned": 6,
+      "athletic": 5,
+      "soft_curvy": 7,
+      "functional": 6
+    },
+    "swappable_with": [
+      "bodyweight-squat",
+      "goblet-squat"
+    ],
+    "cues": [
+      "Back flat against the wall, knees at 90°",
+      "Thighs parallel to the floor",
+      "Hold — breathe steadily throughout"
+    ]
   }
 ]

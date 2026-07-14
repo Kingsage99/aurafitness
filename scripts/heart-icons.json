@@ -1,0 +1,12 @@
+[
+  {
+    "id": "heart-on-fire",
+    "name": "Heart on Fire",
+    "emoji": "❤️‍🔥",
+    "description": "A classic rounded heart shape with 2-3 small flame licks rising from the top of it. Thick black outline, flat red heart fill with orange/yellow flame accents. Match the existing custom heart icon's exact heart shape/style, just add the flame on top. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "heart-on-fire.svg",
+    "usedIn": [
+      "Store — 'Full Refill' item icon"
+    ]
+  }
+]

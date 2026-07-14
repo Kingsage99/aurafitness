@@ -1,10 +1,11 @@
 import React from 'react'
 import { RANKS } from '../utils/gamification'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { NB } from '../styles/neoBrutalism'
+import { LockIcon } from './Icons'
 
 // currentRankId: one of RANKS ids (ignored when unlocked===false)
 export default function RankLadder({ unlocked, rank: currentRankId, rankPoints = 0, subLevelLabel = '', isTop = false }) {
-  const rungs = [...RANKS].reverse() // Olympian first (top) -> Bronze last
+  const rungs = [...RANKS].reverse() // Goddess first (top) -> Rookie last
   const currentIdx = RANKS.findIndex(r => r.id === currentRankId)
 
   return (
@@ -18,13 +19,12 @@ export default function RankLadder({ unlocked, rank: currentRankId, rankPoints =
 
         return (
           <div key={tier.id} style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
-            border: NB_BORDER, borderRadius: 14,
-            background: isCurrent ? tier.bg : NB.white,
-            boxShadow: isCurrent ? hardShadow(4) : 'none',
+            display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px',
+            border: 'none', borderRadius: 14,
+            background: isCurrent ? tier.bg : NB.lavenderMist,
             opacity: achieved || isCurrent ? 1 : 0.5,
           }}>
-            <span style={{ width: 28, height: 28, borderRadius: 6, border: `2.5px solid ${NB.ink}`, background: tier.bg, transform: 'rotate(45deg)', flexShrink: 0 }} />
+            <img src={tier.image} alt={tier.label} style={{ width: 38, height: 38, objectFit: 'contain', flexShrink: 0, filter: achieved || isCurrent ? 'none' : 'grayscale(1)' }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 900, textTransform: 'uppercase', color: NB.ink }}>
                 {label}{isCurrent ? ' ← You' : ''}
@@ -42,11 +42,11 @@ export default function RankLadder({ unlocked, rank: currentRankId, rankPoints =
 
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
-        border: NB_BORDER, borderRadius: 14,
-        background: !unlocked ? NB.ink : NB.white,
+        border: 'none', borderRadius: 14,
+        background: !unlocked ? NB.ink : NB.lavenderMist,
         opacity: !unlocked ? 1 : 0.4,
       }}>
-        <span style={{ fontSize: 20 }}>🔒</span>
+        <LockIcon size={20} />
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 900, textTransform: 'uppercase', color: !unlocked ? NB.white : NB.ink }}>Unranked</div>
           {!unlocked && <div style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.white }}>Complete 5 total workouts to unlock</div>}

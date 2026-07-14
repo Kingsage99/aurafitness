@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { DAY_IDS, estimateDuration } from '../utils/workoutBuilder'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 const DAY_LABELS = {
   monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday', thursday: 'Thursday',
@@ -47,8 +47,9 @@ export default function AssignSchedule({ trainingDays = [], userWorkouts = [], c
                 onClick={() => setPickerDay(dayId)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                  padding: '16px 18px', border: `2.5px solid ${NB.ink}`, borderRadius: 16, textAlign: 'left', cursor: 'pointer',
-                  background: assigned ? NB.teal : NB.white, boxShadow: assigned ? hardShadow(4) : hardShadow(2),
+                  padding: '16px 18px', textAlign: 'left', cursor: 'pointer',
+                  ...nbCardStyle(assigned ? NB.teal : NB_CARD_NEUTRAL, assigned ? 4 : 2, assigned ? undefined : NB_CARD_NEUTRAL_SHADOW),border: `3px solid ${NB.white}`, 
+                  borderRadius: 16,
                 }}
               >
                 <div>
@@ -70,7 +71,7 @@ export default function AssignSchedule({ trainingDays = [], userWorkouts = [], c
 
         <button
           onClick={onBuildAnother}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: `2.5px dashed ${NB.ink}`, borderRadius: 16, background: NB.white, cursor: 'pointer' }}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', ...nbCardStyle(NB_CARD_NEUTRAL, 2, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, cursor: 'pointer' }}
         >
           <div style={{ width: 40, height: 40, borderRadius: 11, border: `2.5px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -91,7 +92,7 @@ export default function AssignSchedule({ trainingDays = [], userWorkouts = [], c
                 <button
                   key={i}
                   onClick={() => handlePick(w)}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', border: `2px solid ${NB.ink}`, borderRadius: 14, background: NB.white, boxShadow: hardShadow(2), cursor: 'pointer', textAlign: 'left' }}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', border: 'none', borderRadius: 14, background: NB.lavenderMist, cursor: 'pointer', textAlign: 'left' }}
                 >
                   <div>
                     <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink }}>{w.label}</div>
@@ -104,7 +105,7 @@ export default function AssignSchedule({ trainingDays = [], userWorkouts = [], c
               )}
               <button
                 onClick={() => { setPickerDay(null); onBuildAnother() }}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', border: `2.5px dashed ${NB.ink}`, borderRadius: 14, background: NB.white, cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', border: 'none', borderRadius: 14, background: NB.lavenderMist, cursor: 'pointer' }}
               >
                 <div style={{ width: 30, height: 30, borderRadius: 9, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

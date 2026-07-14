@@ -1,33 +1,10 @@
 import React, { useState, useRef, useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
-import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
+import MuscleSVG from '../components/MuscleSVG'
 import { createPost, uploadPostMedia, top3Muscles } from '../lib/social'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
-
-const MUSCLE_TO_GROUP = {
-  glutes: 'glutes', glute: 'glutes',
-  hamstrings: 'legs', quads: 'legs', legs: 'legs',
-  chest: 'chest', pecs: 'chest',
-  shoulders: 'shoulders', delts: 'shoulders',
-  back: 'back', lats: 'back', lat: 'back',
-  core: 'core', abs: 'core',
-  arms: 'arms', biceps: 'arms', triceps: 'arms',
-  calves: 'calves',
-}
-
-function buildColors(exercises, side) {
-  const counts = {}
-  ;(exercises || []).forEach(ex => {
-    ;(ex.muscles?.primary || []).forEach(m => {
-      const group = MUSCLE_TO_GROUP[m?.toLowerCase()]
-      if (!group) return
-      MUSCLE_SVG_IDS[group]?.[side]?.forEach(id => { counts[id] = (counts[id] || 0) + 1 })
-    })
-  })
-  const colors = {}
-  Object.entries(counts).forEach(([id, n]) => { colors[id] = n >= 2 ? NB.ink : '#999' })
-  return colors
-}
+import { buildMuscleIntensityColors } from '../utils/muscleIntensity'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { CameraIcon, StrengthArmIcon, StopwatchIcon } from '../components/Icons'
 
 function fmt(s) {
   const m = Math.floor(s / 60)
@@ -48,8 +25,8 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
   const [error,     setError]     = useState('')
   const fileRef = useRef()
 
-  const frontColors = useMemo(() => buildColors(exercises, 'front'), [exercises])
-  const backColors  = useMemo(() => buildColors(exercises, 'back'),  [exercises])
+  const frontColors = useMemo(() => buildMuscleIntensityColors(exercises, 'front'), [exercises])
+  const backColors  = useMemo(() => buildMuscleIntensityColors(exercises, 'back'),  [exercises])
 
   const handlePickMedia = (e) => {
     const file = e.target.files?.[0]
@@ -75,7 +52,7 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
     }
     await createPost(
       session.user.id,
-      userProfile?.name || userProfile?.username || 'Aura user',
+      userProfile?.name || userProfile?.username || 'MissVfit user',
       'workout',
       { label: label.replace(/^Day \d+ — /, ''), elapsed, muscles, totalSets: sessionData?.totalSets, setsCompleted: sessionData?.setsCompleted },
       { caption: caption.trim(), mediaUrl, mediaType }
@@ -102,7 +79,7 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
         <input ref={fileRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handlePickMedia} />
         <div
           onClick={() => fileRef.current?.click()}
-          style={{ overflow: 'hidden', marginBottom: 18, cursor: 'pointer', border: mediaPreview ? NB_BORDER : `2.5px dashed ${NB.ink}`, borderRadius: 18, background: mediaPreview ? 'transparent' : NB.cream, minHeight: mediaPreview ? 0 : 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ overflow: 'hidden', marginBottom: 18, cursor: 'pointer', borderRadius: 18, minHeight: mediaPreview ? 0 : 120, display: 'flex', alignItems: 'center', justifyContent: 'center', ...(mediaPreview ? { border: 'none' } : { ...nbCardStyle(NB.cream, 3), border: `3px solid ${NB.white}` }) }}
         >
           {mediaPreview ? (
             mediaIsVideo
@@ -110,7 +87,7 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
               : <img src={mediaPreview} alt="preview" style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }} />
           ) : (
             <div style={{ textAlign: 'center', padding: 24 }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>📸</div>
+              <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><CameraIcon size={28} /></div>
               <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Add photo or video</div>
               <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Tap to choose from your gallery</div>
             </div>
@@ -123,7 +100,7 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
         )}
 
         {/* Workout summary */}
-        <div style={{ border: NB_BORDER, borderRadius: 18, boxShadow: hardShadow(3), background: NB.white, padding: '14px 16px', marginBottom: 18 }}>
+        <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '14px 16px', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <div style={{ fontFamily: NB.fontDisplay, fontSize: 17, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>
               {label.replace(/^Day \d+ — /, '')}
@@ -131,8 +108,8 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
             <span style={{ background: NB.yellow, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '3px 10px', fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink }}>WORKOUT</span>
           </div>
           <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#555', marginBottom: 10 }}>
-            <span>⏱ {fmt(elapsed)}</span>
-            <span>💪 {exercises.length} exercises</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><StopwatchIcon size={12} /> {fmt(elapsed)}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><StrengthArmIcon size={12} /> {exercises.length} exercises</span>
             {sessionData?.setsCompleted > 0 && <span>🔥 {sessionData.setsCompleted} sets</span>}
           </div>
           {muscles.length > 0 && (
@@ -168,7 +145,7 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
         </div>
 
         {error && (
-          <div style={{ padding: '10px 14px', border: NB_BORDER, borderRadius: 12, background: NB.red, marginBottom: 16 }}>
+          <div style={{ padding: '10px 14px', ...nbCardStyle(NB.red, 2), border: `3px solid ${NB.white}`, borderRadius: 12, marginBottom: 16 }}>
             <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
           </div>
         )}

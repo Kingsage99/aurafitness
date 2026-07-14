@@ -1,0 +1,12 @@
+[
+  {
+    "id": "ice-cube",
+    "name": "Ice Cube",
+    "emoji": "🧊",
+    "description": "A simple cube viewed at a slight 3/4 angle, with a few thin diagonal line details on its front face suggesting a frozen, faceted surface. Thick black outline, flat pale-blue fill. Match the art style of the reference image provided. Background is pure white (#FFFFFF).",
+    "suggestedFilename": "ice-cube.svg",
+    "usedIn": [
+      "Store — 'Streak Freeze' item icon"
+    ]
+  }
+]

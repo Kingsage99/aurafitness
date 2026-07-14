@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { chatWithCoach } from '../utils/claudeApi'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, nbCardStyle } from '../styles/neoBrutalism'
 
-const GREETING = "Hey! I'm Aura, your fitness coach 💪 Ask me anything — workout form, meal swaps, motivation, or what muscles you're hitting today."
+const GREETING = "Hey! I'm your MissVfit coach 💪 Ask me anything — workout form, meal swaps, motivation, or what muscles you're hitting today."
 
 function TypingDots() {
   return (
@@ -80,7 +80,7 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
           transition: 'transform 0.15s',
           transform: open ? 'scale(0.92)' : 'scale(1)',
         }}
-        aria-label="Chat with Aura coach"
+        aria-label="Chat with MissVfit coach"
       >
         {open ? (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
@@ -120,7 +120,7 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
             </svg>
           </div>
           <div>
-            <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Aura Coach</div>
+            <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>MissVfit Coach</div>
             <div style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.green, fontWeight: 700 }}>● Online</div>
           </div>
         </div>
@@ -138,8 +138,8 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
               )}
               <div style={{
                 maxWidth: '78%', padding: '10px 14px',
-                border: `2px solid ${NB.ink}`, borderRadius: 14,
-                background: msg.role === 'user' ? NB.yellow : NB.cream,
+                ...nbCardStyle(msg.role === 'user' ? NB.yellow : NB.cream, 2),border: `3px solid ${NB.white}`, 
+                borderRadius: 14,
                 color: NB.ink,
                 fontSize: 13, lineHeight: 1.55, fontWeight: 500,
               }}>
@@ -155,7 +155,7 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
                   <path d="M12 3l2.2 5.5L20 9l-4.5 3.8L17 19l-5-3-5 3 1.5-6.2L4 9l5.8-.5z" />
                 </svg>
               </div>
-              <div style={{ background: NB.cream, border: `2px solid ${NB.ink}`, borderRadius: 12 }}>
+              <div style={{ ...nbCardStyle(NB.cream, 2), border: `3px solid ${NB.white}`, borderRadius: 12 }}>
                 <TypingDots />
               </div>
             </div>
@@ -170,7 +170,7 @@ export default function ChatCoach({ userProfile, aboveNav = true }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send()}
-            placeholder="Ask Aura anything…"
+            placeholder="Ask MissVfit anything…"
             style={{
               flex: 1, height: 42, border: `2px solid ${NB.ink}`, borderRadius: 12,
               padding: '0 14px', fontSize: 14, color: NB.ink,

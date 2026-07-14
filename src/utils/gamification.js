@@ -16,11 +16,12 @@ export const DEFAULT_GAMIFICATION = {
   lastCalorieDate: '',    // last date calorie penalty/reward was checked
   calorieGoalStreak: 0,   // consecutive days calorie goal hit
   lastMakeupDate: '',     // "YYYY-MM-DD" a missed-workout make-up was completed or explicitly skipped
+  lastCalorieSkipDate: '', // "YYYY-MM-DD" the missed-calorie-goal prompt was explicitly skipped
   badges: [],
   title: 'Beginner',
   frame: 'default',
   aura: 'basic',
-  rank: 'bronze',
+  rank: 'rookie',
   rankPoints: 0,
   dailyQuests: { date: '', completed: [] },
   weeklyChallenges: { week: '', claimed: [] },   // week = Monday "YYYY-MM-DD"
@@ -29,8 +30,8 @@ export const DEFAULT_GAMIFICATION = {
   workoutDates: [],         // "YYYY-MM-DD" array of all workout days
   activeBanner: 'banner_default',
   activeTheme: 'theme_default',
-  activePet: 'pet_panda',   // equipped pet — see src/data/pets.js
-  muscleRanks: {},          // { [muscleId]: { rank: 'bronze', rankPoints: 0 } }
+  activePet: 'pet_greycube', // equipped pet — see src/data/pets.js
+  muscleRanks: {},          // { [muscleId]: { rank: 'rookie', rankPoints: 0, subLevel: 0 } }
 }
 
 // Cumulative XP to reach each level (index = level - 1)
@@ -76,20 +77,31 @@ export const TIER_COLORS = {
 
 // ─── Rank Definitions ────────────────────────────────────────────────────────
 
+// 9-tier ladder with badge art in public/ranks/. Top tier (Goddess) is uncapped.
 export const RANKS = [
-  { id: 'bronze',   label: 'Bronze',   color: '#fff',    bg: '#CD7F32', minWorkouts: 0   },
-  { id: 'silver',   label: 'Silver',   color: '#1A1A1A', bg: '#B8C0CC', minWorkouts: 8   },
-  { id: 'gold',     label: 'Gold',     color: '#1A1A1A', bg: '#FFC93C', minWorkouts: 18  },
-  { id: 'platinum', label: 'Platinum', color: '#1A1A1A', bg: '#C9F3EB', minWorkouts: 30  },
-  { id: 'diamond',  label: 'Diamond',  color: '#1A1A1A', bg: '#7FE6D0', minWorkouts: 45  },
-  { id: 'master',   label: 'Master',   color: '#1A1A1A', bg: '#E7DCFB', minWorkouts: 65  },
-  { id: 'elite',    label: 'Elite',    color: '#1A1A1A', bg: '#B48CF2', minWorkouts: 90  },
-  { id: 'olympian', label: 'Olympian', color: '#fff',    bg: '#9366E6', minWorkouts: 120 },
+  { id: 'rookie',   label: 'Rookie',   color: '#1A1A1A', bg: '#F7F4E6', image: '/ranks/rookie.png',   minWorkouts: 0   },
+  { id: 'bronze',   label: 'Bronze',   color: '#fff',    bg: '#CD7F32', image: '/ranks/bronze.png',   minWorkouts: 5   },
+  { id: 'silver',   label: 'Silver',   color: '#1A1A1A', bg: '#B8C0CC', image: '/ranks/silver.png',   minWorkouts: 12  },
+  { id: 'gold',     label: 'Gold',     color: '#1A1A1A', bg: '#FFC93C', image: '/ranks/gold.png',     minWorkouts: 20  },
+  { id: 'platinum', label: 'Platinum', color: '#1A1A1A', bg: '#C9F3EB', image: '/ranks/platinum.png', minWorkouts: 30  },
+  { id: 'diamond',  label: 'Diamond',  color: '#1A1A1A', bg: '#7FE6D0', image: '/ranks/diamond.png',  minWorkouts: 45  },
+  { id: 'queen',    label: 'Queen',    color: '#1A1A1A', bg: '#E7DCFB', image: '/ranks/queen.png',    minWorkouts: 65  },
+  { id: 'empress',  label: 'Empress',  color: '#1A1A1A', bg: '#B48CF2', image: '/ranks/empress.png',  minWorkouts: 90  },
+  { id: 'goddess',  label: 'Goddess',  color: '#fff',    bg: '#9366E6', image: '/ranks/goddess.png',  minWorkouts: 120 },
 ]
-// Points needed per sub-level. Each tier (except the uncapped top tier) has 4 sub-levels: IV (entry) -> I (about to promote).
+// Points needed per sub-level. Each tier (except the uncapped top tier) has 3 sub-levels: III (entry) -> I (about to promote).
 export const RANK_UP_AT = 100
-export const SUB_LEVELS_PER_TIER = 4
-export const SUB_LEVEL_ROMAN = ['IV', 'III', 'II', 'I']
+export const SUB_LEVELS_PER_TIER = 3
+export const SUB_LEVEL_ROMAN = ['III', 'II', 'I']
+
+// Saved profiles may still hold ids from the retired 8-tier ladder.
+const LEGACY_RANK_MAP = { master: 'queen', elite: 'empress', olympian: 'goddess' }
+export function normalizeRankId(id) {
+  const mapped = LEGACY_RANK_MAP[id] || id || 'rookie'
+  return RANKS.some(r => r.id === mapped) ? mapped : 'rookie'
+}
+export const rankIndexOf = (id) => RANKS.findIndex(r => r.id === normalizeRankId(id))
+const clampSubLevel = (s) => Math.min(Math.max(s || 0, 0), SUB_LEVELS_PER_TIER - 1)
 
 // Minimum total workouts before muscle-group ranks become visible
 export const MUSCLE_RANK_MIN_WORKOUTS = 5
@@ -192,7 +204,7 @@ function getYesterday(todayStr) {
 }
 
 function getHighestTitle(g) {
-  if (g.totalWorkouts >= 50 || g.workoutStreak >= 60) return 'Aura Elite'
+  if (g.totalWorkouts >= 50 || g.workoutStreak >= 60) return 'MissVfit Elite'
   if (g.badges.includes('macro_master')) return 'Macro Master'
   if (g.totalWorkouts >= 25) return 'Sweat Legend'
   if (g.workoutStreak >= 14) return 'Iron Queen'
@@ -327,16 +339,16 @@ export function checkBadges(g, events = {}) {
 }
 
 // Returns { g, rankedUp, newRank } — newRank includes the sub-level roman numeral, e.g. "Gold III"
-// Olympian (the top tier) has no sub-levels — points accumulate uncapped as a raw leaderboard score.
+// Goddess (the top tier) has no sub-levels — points accumulate uncapped as a raw leaderboard score.
 export function awardRankPoints(g, amount) {
-  const currentIdx = RANKS.findIndex(r => r.id === (g.rank || 'bronze'))
+  const currentIdx = rankIndexOf(g.rank)
   const isMax = currentIdx === RANKS.length - 1
 
   if (isMax) {
-    return { g: { ...g, rankPoints: (g.rankPoints || 0) + amount }, rankedUp: false, newRank: RANKS[currentIdx].label }
+    return { g: { ...g, rank: RANKS[currentIdx].id, rankPoints: (g.rankPoints || 0) + amount }, rankedUp: false, newRank: RANKS[currentIdx].label }
   }
 
-  let subLevel = g.rankSubLevel || 0
+  let subLevel = clampSubLevel(g.rankSubLevel)
   let points = (g.rankPoints || 0) + amount
   let idx = currentIdx
   let rankedUp = false
@@ -361,19 +373,19 @@ export function awardRankPoints(g, amount) {
   }
 }
 
-// Returns { g, rankedUp, newRank } — same 8-tier/sub-level progression as awardRankPoints, keyed per muscle
+// Returns { g, rankedUp, newRank } — same tier/sub-level progression as awardRankPoints, keyed per muscle group
 export function awardMuscleRankPoints(g, muscleId, amount) {
   const muscleRanks = g.muscleRanks || {}
-  const entry = muscleRanks[muscleId] || { rank: 'bronze', rankPoints: 0, subLevel: 0 }
-  const currentIdx = RANKS.findIndex(r => r.id === entry.rank)
+  const entry = muscleRanks[muscleId] || { rank: 'rookie', rankPoints: 0, subLevel: 0 }
+  const currentIdx = rankIndexOf(entry.rank)
   const isMax = currentIdx === RANKS.length - 1
 
   if (isMax) {
-    const updated = { rank: entry.rank, rankPoints: (entry.rankPoints || 0) + amount, subLevel: 0 }
+    const updated = { rank: RANKS[currentIdx].id, rankPoints: (entry.rankPoints || 0) + amount, subLevel: 0 }
     return { g: { ...g, muscleRanks: { ...muscleRanks, [muscleId]: updated } }, rankedUp: false, newRank: RANKS[currentIdx].label }
   }
 
-  let subLevel = entry.subLevel || 0
+  let subLevel = clampSubLevel(entry.subLevel)
   let points = (entry.rankPoints || 0) + amount
   let idx = currentIdx
   let rankedUp = false
@@ -403,11 +415,11 @@ export function awardMuscleRankPoints(g, muscleId, amount) {
 // score is -1 when locked (sorts last); otherwise a combined value across all tiers+sub-levels for sorting.
 export function getMuscleRankInfo(g, muscleId) {
   const unlocked = (g?.totalWorkouts || 0) >= MUSCLE_RANK_MIN_WORKOUTS
-  const entry = g?.muscleRanks?.[muscleId] || { rank: 'bronze', rankPoints: 0, subLevel: 0 }
-  const tierIdx = Math.max(0, RANKS.findIndex(r => r.id === entry.rank))
+  const entry = g?.muscleRanks?.[muscleId] || { rank: 'rookie', rankPoints: 0, subLevel: 0 }
+  const tierIdx = Math.max(0, rankIndexOf(entry.rank))
   const tier = RANKS[tierIdx]
   const isTop = tierIdx === RANKS.length - 1
-  const subLevel = isTop ? 0 : (entry.subLevel || 0)
+  const subLevel = isTop ? 0 : clampSubLevel(entry.subLevel)
   const tierScore = tierIdx * SUB_LEVELS_PER_TIER * RANK_UP_AT
   const score = !unlocked ? -1 : isTop
     ? tierScore + (entry.rankPoints || 0)
@@ -471,6 +483,20 @@ export function purchaseItem(g, itemId, costOverride) {
   return { g: updated, success: true, reason: '' }
 }
 
+// Re-equips an already-owned (or free) cosmetic — no gem cost, unlike
+// purchaseItem. Covers pets, banners, themes and borders (frame_ ids map to
+// the short id FRAMES/getHighestFrame use internally).
+// Note: a future purchase or badge unlock can still re-sync `frame` to the
+// highest eligible tier (see getHighestFrame) — a manual pick here holds
+// until the next such event.
+export function equipCosmetic(g, itemId) {
+  if (itemId.startsWith('pet_'))    return { ...g, activePet: itemId }
+  if (itemId.startsWith('banner_')) return { ...g, activeBanner: itemId }
+  if (itemId.startsWith('theme_'))  return { ...g, activeTheme: itemId }
+  if (itemId.startsWith('frame_'))  return { ...g, frame: itemId.replace('frame_', '') }
+  return g
+}
+
 // ─── Leaderboard scoring ──────────────────────────────────────────────────────
 
 // metric: 'streaks' | 'ranks' | 'levels'
@@ -479,10 +505,10 @@ export function getMetricScore(g, metric) {
   if (metric === 'streaks') return g.workoutStreak || 0
   if (metric === 'levels')  return getLevel(g.xp || 0)
   if (metric === 'ranks') {
-    const idx = Math.max(0, RANKS.findIndex(r => r.id === (g.rank || 'bronze')))
+    const idx = Math.max(0, rankIndexOf(g.rank))
     const isTop = idx === RANKS.length - 1
     const tierScore = idx * SUB_LEVELS_PER_TIER * RANK_UP_AT
-    return isTop ? tierScore + (g.rankPoints || 0) : tierScore + (g.rankSubLevel || 0) * RANK_UP_AT + (g.rankPoints || 0)
+    return isTop ? tierScore + (g.rankPoints || 0) : tierScore + clampSubLevel(g.rankSubLevel) * RANK_UP_AT + (g.rankPoints || 0)
   }
   return 0
 }
@@ -541,7 +567,7 @@ export function getMissFlags(missState, gamification = {}, loggedMacros = { calo
   if (!missState) return { showWorkoutMiss: false, showCalorieMiss: false, missedWorkoutEntry: null }
   const todayKey = new Date().toISOString().slice(0, 10)
   const showWorkoutMiss = !!missState.workoutMissedYesterday && gamification.lastMakeupDate !== todayKey
-  const showCalorieMiss = !!missState.calorieMissedYesterday && !((loggedMacros.calories || 0) > 0)
+  const showCalorieMiss = !!missState.calorieMissedYesterday && !((loggedMacros.calories || 0) > 0) && gamification.lastCalorieSkipDate !== todayKey
   return {
     showWorkoutMiss,
     showCalorieMiss,

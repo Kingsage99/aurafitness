@@ -5,24 +5,26 @@ import BottomSheet from '../components/BottomSheet'
 import { Avatar } from '../components/AvatarSilhouette'
 import CharacterAvatar from '../components/CharacterAvatar'
 import { uploadAvatar } from '../lib/social'
-import { FRAMES, AURAS, xpProgress, RANKS, RANK_UP_AT } from '../utils/gamification'
+import { FRAMES, AURAS, xpProgress, RANKS, normalizeRankId, SUB_LEVEL_ROMAN, SUB_LEVELS_PER_TIER } from '../utils/gamification'
 import { PETS, getActivePet } from '../data/pets'
 import { STORE_BORDERS, STORE_BANNERS, STORE_THEMES } from './StoreScreen'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { HeartIcon, ShoppingBagsIcon, renderIcon } from '../components/Icons'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 // Icon tiles replacing the old text tab bar. Light sections open a bottom
 // sheet in place; heavy sections navigate to their own full screen.
 const SECTIONS = [
-  { id: 'overview',  label: 'Overview',  icon: '📊', bg: NB.lavender, sheet: true },
   { id: 'medals',    label: 'Medals',    icon: '🏅', bg: NB.yellow,   screen: 'medals' },
   { id: 'quests',    label: 'Quests',    icon: '🎯', bg: NB.teal,     screen: 'quests' },
   { id: 'store',     label: 'Store',     icon: '🛍️', bg: NB.pink,     screen: 'store' },
   { id: 'inventory', label: 'Inventory', icon: '🎒', bg: NB.green,    sheet: true },
   { id: 'nutrition', label: 'Nutrition', icon: '🥗', bg: NB.cream,    screen: 'meals' },
   { id: 'calendar',  label: 'Calendar',  icon: '📅', bg: NB.white,    sheet: true },
+  { id: 'analytics',   label: 'Analytics',   icon: '📈', bg: NB.magenta, screen: 'analytics' },
+  { id: 'leaderboard', label: 'Leaderboard', icon: '🏆', bg: NB.yellow,  screen: 'leaderboard' },
 ]
 
-export default function Profile({ userProfile, session, gamification = {}, onNavigate, onUpdateProfile }) {
+export default function Profile({ userProfile, session, gamification = {}, isProUser = false, onNavigate, onUpdateProfile, onEquipCosmetic }) {
   const g = gamification
   const [openSheet, setOpenSheet] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
@@ -41,95 +43,97 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
 
   const xp      = xpProgress(g.xp || 0)
   const xpPct   = Math.round((xp.current / Math.max(xp.needed, 1)) * 100)
-  const rank    = RANKS.find(r => r.id === (g.rank || 'bronze')) || RANKS[0]
-  const rpPct   = Math.round(((g.rankPoints || 0) / RANK_UP_AT) * 100)
+  const rank    = RANKS.find(r => r.id === normalizeRankId(g.rank)) || RANKS[0]
   const owned   = new Set(g.purchasedItems || [])
 
-  const rankIcon = rank.id === 'bronze' ? '🥉' : rank.id === 'silver' ? '🥈' : rank.id === 'gold' ? '🥇' : rank.id === 'diamond' ? '💎' : rank.id === 'olympian' ? '🏆' : '⭐'
+  const isTopRank = rank.id === RANKS[RANKS.length - 1].id
+  const rankRoman = isTopRank ? '' : ` ${SUB_LEVEL_ROMAN[Math.min(g.rankSubLevel || 0, SUB_LEVELS_PER_TIER - 1)]}`
 
   const pet = getActivePet(g)
   const lives = g.lives ?? 3
 
   // Equipped cosmetics — frame replaces the border, aura replaces the shadow.
-  const frameStyle = g.frame && g.frame !== 'default' ? (FRAMES.find(f => f.id === g.frame)?.style || {}) : {}
+  // An image-based ring frame (bat/bunny/etc.) takes over entirely instead —
+  // it overlays around the avatar rather than styling its CSS border.
+  const equippedBorder = g.frame ? STORE_BORDERS.find(b => b.id === `frame_${g.frame}`) : null
+  const borderImage = equippedBorder?.image || null
+  const frameStyle = !borderImage && g.frame && g.frame !== 'default' ? (FRAMES.find(f => f.id === g.frame)?.style || {}) : {}
   const auraStyle  = g.aura && g.aura !== 'basic' ? (AURAS.find(a => a.id === g.aura)?.style || {}) : {}
-
-  // ── Overview sheet ──────────────────────────────────────────────────────────
-  const OverviewContent = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ background: rank.bg, border: NB_BORDER, borderRadius: 18, padding: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <span style={{ fontSize: 26 }}>{rankIcon}</span>
-          <div>
-            <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>{rank.label} Rank</div>
-            <div style={{ fontSize: 11, color: NB.ink }}>{g.rankPoints || 0} / {RANK_UP_AT} RP to next rank</div>
-          </div>
-        </div>
-        <div style={{ height: 10, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
-          <div style={{ width: `${rpPct}%`, height: '100%', background: NB.ink }} />
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 10 }}>
-        <div style={{ flex: 1, background: NB.white, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: 14 }}>
-          <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: '#555', fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>CURRENT STREAK</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 18 }}>🔥</span>
-            <span style={{ fontFamily: NB.fontDisplay, fontSize: 26, fontWeight: 900, color: NB.ink }}>{g.workoutStreak ?? 0}</span>
-            <span style={{ fontSize: 11, color: '#555' }}>days</span>
-          </div>
-          <div style={{ fontSize: 10, color: '#777', marginTop: 4 }}>Best: {g.longestStreak ?? 0} days</div>
-        </div>
-        <div style={{ flex: 1, background: NB.magenta, border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: 14 }}>
-          <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.white, fontWeight: 800, letterSpacing: 1, marginBottom: 6 }}>THIS WEEK</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 18 }}>💪</span>
-            <span style={{ fontFamily: NB.fontDisplay, fontSize: 26, fontWeight: 900, color: NB.white }}>{g.weeklyWorkoutsDone ?? 0}</span>
-            <span style={{ fontSize: 11, color: '#f0d9ff' }}>/ {userProfile?.daysPerWeek ?? 3}</span>
-          </div>
-          <div style={{ fontSize: 10, color: '#f0d9ff', marginTop: 4 }}>Total: {g.totalWorkouts ?? 0} workouts</div>
-        </div>
-      </div>
-    </div>
-  )
 
   // ── Inventory sheet ─────────────────────────────────────────────────────────
   const InventoryContent = () => {
-    const ownedPets = PETS.filter(p => p.image && (p.cost === 0 || owned.has(p.id))).map(p => ({ ...p, icon: '🐾' }))
+    const ownedPets = PETS.filter(p => p.image && (p.cost === 0 || owned.has(p.id) || (p.legendary && isProUser)))
     const allItems = [...STORE_BORDERS, ...STORE_BANNERS, ...STORE_THEMES]
     const ownedItems = [...ownedPets, ...allItems.filter(item => item.cost === 0 || owned.has(item.id))]
     const categories = [
-      { label: 'Pets',     items: ownedPets },
-      { label: 'Borders',  items: ownedItems.filter(i => i.id.startsWith('frame_')) },
-      { label: 'Banners',  items: ownedItems.filter(i => i.id.startsWith('banner_')) },
-      { label: 'Designs',  items: ownedItems.filter(i => i.id.startsWith('theme_')) },
+      { label: 'Pets',     items: ownedPets,                                          type: 'pet' },
+      { label: 'Borders',  items: ownedItems.filter(i => i.id.startsWith('frame_')),  type: 'frame' },
+      { label: 'Banners',  items: ownedItems.filter(i => i.id.startsWith('banner_')), type: 'banner' },
+      { label: 'Designs',  items: ownedItems.filter(i => i.id.startsWith('theme_')),  type: 'theme' },
     ].filter(c => c.items.length > 0)
+
+    const EQUIP_META = {
+      pet:    { equippedId: g.activePet, defaultId: 'pet_greycube' },
+      frame:  { equippedId: `frame_${g.frame || 'default'}`, defaultId: 'frame_default' },
+      banner: { equippedId: g.activeBanner || 'banner_default', defaultId: 'banner_default' },
+      theme:  { equippedId: g.activeTheme || 'theme_default', defaultId: 'theme_default' },
+    }
     return (
       <div>
         <div style={{ fontSize: 13, fontWeight: 800, color: NB.ink, marginBottom: 14 }}>Owned ({ownedItems.length} items)</div>
         {ownedItems.length <= 3 && (
-          <div style={{ textAlign: 'center', padding: '24px 0', color: '#555', fontSize: 13, marginBottom: 14, background: NB.cream, border: NB_BORDER, borderRadius: 14 }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🛍️</div>
+          <div style={{ textAlign: 'center', padding: '24px 0', color: '#555', fontSize: 13, marginBottom: 14, ...nbCardStyle(NB.cream, 3), border: `3px solid ${NB.white}`, borderRadius: 14 }}>
+            <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><ShoppingBagsIcon size={32} /></div>
             Visit the Store to unlock more cosmetics!
           </div>
         )}
-        {categories.map(cat => (
+        {categories.map(cat => {
+          const { equippedId, defaultId } = EQUIP_META[cat.type]
+          return (
           <div key={cat.label} style={{ marginBottom: 16 }}>
             <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: 1, marginBottom: 8 }}>{cat.label.toUpperCase()}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {cat.items.map(item => (
-                <div key={item.id} style={{ background: NB.white, border: `2px solid ${NB.ink}`, borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 22 }}>{item.icon}</span>
+              {cat.items.map(item => {
+                const isEquipped = item.id === equippedId
+                return (
+                <div key={item.id} style={{ background: NB.lavenderMist, borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {item.image ? (
+                    <div style={{ width: 32, height: 32, borderRadius: 9, overflow: 'hidden', flexShrink: 0 }}>
+                      <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 22 }}>{renderIcon(item.icon)}</span>
+                  )}
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>{item.label}</div>
                     <div style={{ fontSize: 11, color: '#555' }}>{item.desc}</div>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: NB.green, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '3px 8px' }}>Owned</span>
+                  {isEquipped ? (
+                    item.id === defaultId ? (
+                      <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: NB.teal, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '3px 8px', whiteSpace: 'nowrap' }}>Equipped</span>
+                    ) : (
+                      <button
+                        onClick={() => onEquipCosmetic?.(defaultId)}
+                        style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: NB.teal, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '4px 8px', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                      >
+                        Equipped ✕
+                      </button>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => onEquipCosmetic?.(item.id)}
+                      style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: NB.green, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '4px 8px', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                    >
+                      Equip
+                    </button>
+                  )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
     )
   }
@@ -212,26 +216,41 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
           {/* Identity row — who you are, anchored at the top */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
             {/* Your photo — still used on Home and the squad feed */}
-            <button
-              onClick={() => avatarFileRef.current?.click()}
-              style={{ width: 46, height: 46, borderRadius: '50%', border: `2px solid ${NB.ink}`, background: NB.yellow, boxShadow: hardShadow(2), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', padding: 0, flexShrink: 0 }}
-            >
-              {avatarUploading
-                ? <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2.5px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'avatarSpin 0.7s linear infinite' }} />
-                : userProfile?.avatarUrl
-                  ? <Avatar url={userProfile.avatarUrl} height={42} style={{ width: '100%', height: '100%' }} />
-                  : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              }
-            </button>
+            <div style={{ position: 'relative', width: 46, height: 46, flexShrink: 0 }}>
+              <button
+                onClick={() => avatarFileRef.current?.click()}
+                style={{ width: 46, height: 46, borderRadius: '50%', border: `2px solid ${NB.ink}`, background: NB.yellow, boxShadow: hardShadow(2), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', padding: 0, ...frameStyle, ...auraStyle }}
+              >
+                {avatarUploading
+                  ? <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2.5px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'avatarSpin 0.7s linear infinite' }} />
+                  : userProfile?.avatarUrl
+                    ? <Avatar url={userProfile.avatarUrl} height={42} style={{ width: '100%', height: '100%' }} />
+                    : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                }
+              </button>
+              {/* Image-based ring frame — sized/offset per-design (see
+                  frameOffset in STORE_BORDERS) so its transparent hole lines
+                  up over the round avatar photo above. */}
+              {borderImage && (
+                <img
+                  src={borderImage}
+                  alt=""
+                  style={{
+                    position: 'absolute',
+                    top: equippedBorder.frameOffset.top,
+                    left: equippedBorder.frameOffset.left,
+                    width: equippedBorder.frameOffset.size,
+                    height: equippedBorder.frameOffset.size,
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+            </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 21, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {userProfile?.name || 'Aura User'}
+                {userProfile?.name || 'MissVfit User'}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 4, flexWrap: 'wrap' }}>
-                {userProfile?.username && <span style={{ fontSize: 12, color: '#555', fontWeight: 600 }}>@{userProfile.username}</span>}
-                <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 7, padding: '2px 8px' }}>{g.title || 'Beginner'}</span>
-                <span style={{ fontSize: 10, fontWeight: 800, color: rank.color === '#fff' ? NB.ink : rank.color, background: rank.bg, border: `1.5px solid ${NB.ink}`, borderRadius: 7, padding: '2px 8px' }}>{rankIcon} {rank.label}</span>
-              </div>
+              {userProfile?.username && <div style={{ fontSize: 12, color: '#555', fontWeight: 600, marginTop: 4 }}>@{userProfile.username}</div>}
             </div>
             <button onClick={() => onNavigate('settings')} style={{ width: 38, height: 38, borderRadius: 12, border: `2px solid ${NB.ink}`, background: NB.white, boxShadow: hardShadow(2), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -239,10 +258,20 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
           </div>
 
           {/* Pet stage — the companion is the centerpiece */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 2 }}>
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 2 }}>
+            {/* Big rank badge — tap to open the full Rank page */}
+            <button
+              onClick={() => onNavigate('rankPage')}
+              style={{ position: 'absolute', top: 0, right: 2, zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+            >
+              <img src={rank.image} alt={`${rank.label} rank`} style={{ width: 74, height: 74, objectFit: 'contain', filter: `drop-shadow(${hardShadow(2)})` }} />
+              <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', color: NB.ink, background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '1px 6px' }}>
+                {rank.label}{rankRoman}
+              </span>
+            </button>
             {/* willChange promotes the bob onto its own GPU layer so it stays
                 smooth while the pet video/animation repaints inside it */}
-            <div style={{ width: 230, height: 230, borderRadius: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'petBob 3s ease-in-out infinite', willChange: 'transform', ...frameStyle, ...auraStyle }}>
+            <div style={{ width: 230 * (pet.aspect || 1), height: 230, borderRadius: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'petBob 3s ease-in-out infinite', willChange: 'transform' }}>
               {pet.video && !petVideoFailed ? (
                 <video
                   src={pet.video}
@@ -272,7 +301,7 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
             <div style={{ display: 'flex', alignItems: 'center', marginTop: 8, background: NB.white, border: `2px solid ${NB.ink}`, borderRadius: 9, boxShadow: hardShadow(2), overflow: 'hidden' }}>
               <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, letterSpacing: 1, color: NB.ink, padding: '4px 10px', textTransform: 'uppercase' }}>{pet.label}</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '4px 10px', background: lives === 0 ? '#eee' : NB.pink, borderLeft: `2px solid ${NB.ink}`, alignSelf: 'stretch' }}>
-                {[1,2,3].map(j => <svg key={j} width="11" height="11" viewBox="0 0 24 24" fill={j <= lives ? NB.red : 'rgba(255,255,255,.75)'} stroke={NB.ink} strokeWidth="1"><path d="M12 21.593c-.5-.388-10-6.77-10-12.093 0-3.314 2.686-6 6-6 1.878 0 3.561.888 4.666 2.276C13.771 4.388 15.453 3.5 17.333 3.5 20.648 3.5 23 6.186 23 9.5c0 5.323-9.5 11.705-10 12.093z"/></svg>)}
+                {[1,2,3].map(j => <HeartIcon key={j} size={11} filled={j <= lives} />)}
               </span>
             </div>
             {lives === 0 && (
@@ -283,7 +312,7 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
           </div>
 
           {/* Stats card — one unit instead of floating numbers */}
-          <div style={{ display: 'flex', marginTop: 12, background: NB.white, border: `2px solid ${NB.ink}`, borderRadius: 13, boxShadow: hardShadow(2), overflow: 'hidden' }}>
+          <div style={{ display: 'flex', marginTop: 12, ...nbCardStyle(NB.white, 2, 'rgba(0,0,0,0.18)'), border: `3px solid ${NB.white}`, borderRadius: 13, overflow: 'hidden' }}>
             {[
               { icon: '💎', value: g.gems ?? 0,          label: 'GEMS' },
               { icon: '🔥', value: g.workoutStreak ?? 0,  label: 'STREAK' },
@@ -291,7 +320,7 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
             ].map((s, i) => (
               <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '7px 4px 6px', borderLeft: i > 0 ? `2px solid ${NB.ink}` : 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{ fontSize: 11 }}>{s.icon}</span>
+                  <span style={{ fontSize: 11 }}>{renderIcon(s.icon, 13)}</span>
                   <span style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 900, color: NB.ink, lineHeight: 1 }}>{s.value}</span>
                 </div>
                 <span style={{ fontFamily: NB.fontMono, fontSize: 7.5, fontWeight: 800, letterSpacing: 1, color: '#555', marginTop: 2 }}>{s.label}</span>
@@ -320,8 +349,8 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
                 onClick={() => handleSectionTap(section)}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               >
-                <div style={{ width: 58, height: 58, borderRadius: 16, border: `2.5px solid ${NB.ink}`, background: section.bg, boxShadow: hardShadow(3), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>
-                  {section.icon}
+                <div style={{ width: 58, height: 58, borderRadius: 16, ...nbCardStyle(section.bg === NB.white ? NB_CARD_NEUTRAL : section.bg, 3, section.bg === NB.white ? NB_CARD_NEUTRAL_SHADOW : undefined), border: `3px solid ${NB.white}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>
+                  {renderIcon(section.icon, 40)}
                 </div>
                 <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', color: NB.ink }}>{section.label}</span>
               </button>
@@ -331,9 +360,6 @@ export default function Profile({ userProfile, session, gamification = {}, onNav
       </div>
 
       {/* Section sheets */}
-      <BottomSheet open={openSheet === 'overview'} onClose={() => setOpenSheet(null)} title="Overview">
-        <OverviewContent />
-      </BottomSheet>
       <BottomSheet open={openSheet === 'inventory'} onClose={() => setOpenSheet(null)} title="Inventory">
         <InventoryContent />
       </BottomSheet>

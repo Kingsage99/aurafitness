@@ -1,20 +1,49 @@
 import React from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
-import { getWeekdayIndex, getPrimaryMuscles, dateKeyFor } from '../utils/workoutBuilder'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
-
-function estimateDuration(exercises) {
-  if (!exercises?.length) return 0
-  return Math.max(15, exercises.reduce((acc, ex) => acc + (ex.sets || 3) * 2, 0) + 5)
-}
+import { getWeekdayIndex, getPrimaryMuscles, dateKeyFor, estimateDuration } from '../utils/workoutBuilder'
+import { readWorkoutDraft } from '../utils/workoutDraft'
+import { FireIcon, SpaIcon, ToolsIcon } from '../components/Icons'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const DAY_LABELS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
-export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWorkout, onNavigate, gamification, userProfile, routine = {} }) {
+// Compact kg/lbs pill — writes to the same userProfile.units field Settings.jsx
+// uses, so toggling here or there always stays in sync app-wide.
+function UnitToggle({ units, onUpdateProfile }) {
+  return (
+    <div style={{ display: 'flex', border: NB_BORDER, borderRadius: 10, overflow: 'hidden', boxShadow: hardShadow(2), flexShrink: 0 }}>
+      {['metric', 'imperial'].map(u => {
+        const sel = (units || 'metric') === u
+        return (
+          <button
+            key={u}
+            onClick={() => onUpdateProfile?.({ units: u })}
+            style={{
+              width: 40, height: 32, border: 'none', cursor: 'pointer',
+              background: sel ? NB.teal : NB.white, color: NB.ink,
+              fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 11, textTransform: 'uppercase',
+            }}
+          >
+            {u === 'metric' ? 'Kg' : 'Lbs'}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWorkout, onNavigate, gamification, userProfile, onUpdateProfile, routine = {}, userId }) {
   const now      = new Date()
   const todayDow = getWeekdayIndex(now)
+  const draft    = readWorkoutDraft(userId)
+
+  const handleResumeDraft = () => {
+    if (!draft) return
+    setActiveWorkout({ label: draft.label, exercises: draft.exercises, source: 'resume' })
+    onNavigate('workoutActive')
+  }
 
   const routineToday    = routine[dateKeyFor(now)]
   const today           = weeklyPlan?.[todayDow]
@@ -37,18 +66,38 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
       <StatusBar />
 
       {/* Header */}
-      <div style={{ padding: '10px 22px 6px', flexShrink: 0 }}>
-        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1 }}>
-          Workout
+      <div style={{ padding: '10px 22px 6px', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <div>
+          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1 }}>
+            Workout
+          </div>
+          <div style={{ fontSize: 13, color: '#555', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+            {gamification?.workoutStreak > 0
+              ? <><FireIcon size={13} /> {gamification.workoutStreak}-day streak · keep it up</>
+              : "Let's get moving"}
+          </div>
         </div>
-        <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
-          {gamification?.workoutStreak > 0
-            ? `🔥 ${gamification.workoutStreak}-day streak · keep it up`
-            : "Let's get moving"}
-        </div>
+        <UnitToggle units={userProfile?.units} onUpdateProfile={onUpdateProfile} />
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '6px 22px 16px' }}>
+
+        {/* ── Resume unfinished workout (autosaved draft) ──────────── */}
+        {draft && (
+          <div
+            onClick={handleResumeDraft}
+            style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '13px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}
+          >
+            <div style={{ width: 36, height: 36, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Resume unfinished workout</div>
+              <div style={{ fontSize: 12, color: '#555' }}>{draft.label} · {Math.floor((draft.elapsed || 0) / 60)} min in</div>
+            </div>
+            <ChevronRight />
+          </div>
+        )}
 
         {/* ── Today's Workout ──────────────────────── */}
         <div style={{ marginBottom: 22 }}>
@@ -58,9 +107,8 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
             <div
               onClick={handleViewToday}
               style={{
-                border: NB_BORDER, borderRadius: 20, padding: '20px 20px 18px',
-                background: NB.magenta, cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                boxShadow: hardShadow(6),
+                ...nbCardStyle(NB.magenta, 6), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '20px 20px 18px',
+                cursor: 'pointer', position: 'relative', overflow: 'hidden',
               }}
             >
               <div style={{ position: 'relative' }}>
@@ -96,19 +144,19 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
               </div>
             </div>
           ) : isRestDay ? (
-            <div style={{ border: NB_BORDER, borderRadius: 20, padding: 20, background: NB.cream, textAlign: 'center' }}>
-              <div style={{ fontSize: 28, marginBottom: 6 }}>💆</div>
+            <div style={{ ...nbCardStyle(NB.cream, 5), border: `3px solid ${NB.white}`, borderRadius: 20, padding: 20, textAlign: 'center' }}>
+              <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center' }}><SpaIcon size={28} /></div>
               <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>Rest day</div>
               <div style={{ fontSize: 13, color: '#555' }}>No workout scheduled today — recover up and come back stronger.</div>
             </div>
           ) : userProfile?.planningMode === 'custom' ? (
-            <div style={{ border: NB_BORDER, borderRadius: 20, padding: 20, background: NB.lavender, textAlign: 'center' }}>
-              <div style={{ fontSize: 28, marginBottom: 6 }}>🛠️</div>
+            <div style={{ ...nbCardStyle(NB.lavender, 5, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: 20, textAlign: 'center' }}>
+              <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center' }}><ToolsIcon size={28} /></div>
               <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 4 }}>You're in build-your-own mode</div>
               <div style={{ fontSize: 13, color: '#555' }}>Create a workout below and it will show up here on the days you schedule it.</div>
             </div>
           ) : (
-            <div style={{ border: NB_BORDER, borderRadius: 20, padding: 20, background: NB.white, textAlign: 'center' }}>
+            <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 5, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: 20, textAlign: 'center' }}>
               <div style={{ fontSize: 14, color: '#555' }}>Complete onboarding to get your plan</div>
             </div>
           )}
@@ -122,7 +170,7 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
               <div
                 key={i}
                 onClick={() => { setActiveWorkout(w); onNavigate('workoutDetail') }}
-                style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '14px 16px', background: NB.white, cursor: 'pointer', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '14px 16px', cursor: 'pointer', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <div>
                   <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 2 }}>{w.label}</div>
@@ -139,7 +187,7 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
           <SectionLabel>Muscle Map</SectionLabel>
           <div
             onClick={() => onNavigate('musclemap')}
-            style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '16px 18px', background: NB.white, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
+            style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
           >
             <div style={{ width: 50, height: 50, borderRadius: 13, border: `2.5px solid ${NB.ink}`, background: NB.teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <BodyIcon />
@@ -157,7 +205,7 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
           <SectionLabel>Create Your Own</SectionLabel>
           <div
             onClick={() => onNavigate(userProfile?.planningMode === 'custom' ? 'assignSchedule' : 'workoutBuilder')}
-            style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '16px 18px', background: NB.white, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
+            style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
           >
             <div style={{ width: 50, height: 50, borderRadius: 13, border: `2.5px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <PlusIcon />
@@ -177,7 +225,7 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
           <SectionLabel>Routine</SectionLabel>
           <div
             onClick={() => onNavigate('workoutRoutine')}
-            style={{ border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), padding: '16px 18px', background: NB.white, cursor: 'pointer' }}
+            style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px 18px', cursor: 'pointer' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div>

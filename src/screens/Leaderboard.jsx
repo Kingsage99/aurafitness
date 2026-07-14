@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
-import { RANKS, getLevel, getMetricScore, compareByMetric, getMuscleRankInfo, MUSCLE_RANK_MIN_WORKOUTS } from '../utils/gamification'
+import { RANKS, getLevel, getMetricScore, compareByMetric, getMuscleRankInfo, MUSCLE_RANK_MIN_WORKOUTS, normalizeRankId, SUB_LEVEL_ROMAN } from '../utils/gamification'
 import { fetchLeaderboardProfiles } from '../lib/social'
 import { COUNTRIES } from '../data/countries'
 import { MUSCLE_GROUPS } from '../utils/muscleLabels'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import CountrySheet from '../components/CountrySheet'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { CrownIcon, LockIcon, GlobeIcon } from '../components/Icons'
 
 const SCOPES  = [['friends', 'Friends'], ['global', 'Global'], ['regional', 'Regional']]
 const METRICS = [['streaks', 'Streaks'], ['ranks', 'Ranks'], ['levels', 'Levels']]
 
 const INFO_COPY = {
   streaks: 'Ranked by your current workout streak — miss a day and it resets.',
-  ranks:   'Ranked by tier (Bronze → Olympian) and rank points earned within it. Tap a muscle below to see rankings for that muscle group.',
+  ranks:   'Ranked by tier (Rookie → Goddess) and rank points earned within it. Tap a muscle below to see rankings for that muscle group.',
   levels:  'Ranked by your XP level, earned from workouts, meals and badges.',
 }
 
@@ -22,16 +24,19 @@ const LOCKED_COPY = {
 }
 
 function displayName(row) {
-  return row?.profile_data?.name || row?.username || 'Aura user'
+  return row?.profile_data?.name || row?.username || 'MissVfit user'
 }
 
 function getRankDisplay(entry, rankMode) {
   const g = entry?.gamification || {}
   if (rankMode === 'overall') {
-    return { tier: RANKS.find(r => r.id === (g.rank || 'bronze')) || RANKS[0], unranked: false }
+    const tier = RANKS.find(r => r.id === normalizeRankId(g.rank)) || RANKS[0]
+    const isTop = tier.id === RANKS[RANKS.length - 1].id
+    const sub = isTop ? '' : SUB_LEVEL_ROMAN[Math.min(g.rankSubLevel || 0, SUB_LEVEL_ROMAN.length - 1)]
+    return { tier, sub, unranked: false }
   }
   const info = getMuscleRankInfo(g, rankMode)
-  return { tier: info.tier, unranked: !info.unlocked }
+  return { tier: info.tier, sub: info.subLevelLabel, unranked: !info.unlocked }
 }
 
 function isZeroForMetric(entry, metric, rankMode) {
@@ -39,7 +44,7 @@ function isZeroForMetric(entry, metric, rankMode) {
   if (metric === 'streaks') return (g.workoutStreak || 0) === 0
   if (metric === 'levels')  return (g.xp || 0) === 0
   if (metric === 'ranks') {
-    if (rankMode === 'overall') return (g.rank || 'bronze') === 'bronze' && (g.rankPoints || 0) === 0 && (g.totalWorkouts || 0) === 0
+    if (rankMode === 'overall') return normalizeRankId(g.rank) === 'rookie' && (g.rankPoints || 0) === 0 && (g.totalWorkouts || 0) === 0
     const info = getMuscleRankInfo(g, rankMode)
     return !info.unlocked || info.score <= 0
   }
@@ -108,7 +113,7 @@ function PodiumSlot({ entry, place, metric, rankMode }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: place === 1 ? 96 : 80 }}>
       <div style={{ position: 'relative', width: size + 20, height: size + 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {place === 1 && <div style={{ position: 'absolute', top: -16, fontSize: 22, zIndex: 2 }}>👑</div>}
+        {place === 1 && <div style={{ position: 'absolute', top: -16, zIndex: 2 }}><CrownIcon size={22} /></div>}
         <div style={{ position: 'relative', zIndex: 1 }}>
           <Avatar name={entry ? displayName(entry) : '?'} size={size} ring={ring} />
         </div>
@@ -136,9 +141,8 @@ function BoardRow({ entry, rank, metric, rankMode }) {
 
   return (
     <div style={{
-      border: `2.5px solid ${NB.ink}`, borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
-      background: entry.you ? NB.yellow : NB.white,
-      boxShadow: entry.you ? hardShadow(3) : hardShadow(1),
+      border: 'none', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+      background: entry.you ? NB.yellow : NB.lavenderMist,
     }}>
       <div style={{
         width: 32, height: 32, borderRadius: 10, border: `2px solid ${NB.ink}`, flexShrink: 0, background: badgeBg,
@@ -153,10 +157,13 @@ function BoardRow({ entry, rank, metric, rankMode }) {
           <span style={{ fontSize: 14, fontWeight: 700, color: NB.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName(entry)}</span>
           {entry.you && <span style={{ fontSize: 10, color: NB.ink, fontWeight: 800, flexShrink: 0 }}>(you)</span>}
           {metric === 'ranks' && (() => {
-            const { tier, unranked } = getRankDisplay(entry, rankMode)
+            const { tier, sub, unranked } = getRankDisplay(entry, rankMode)
             return unranked
               ? <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: '#e5e5e5', border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '1px 6px', flexShrink: 0 }}>Unranked</span>
-              : <span style={{ fontSize: 10, fontWeight: 800, color: tier.color === '#fff' ? NB.ink : tier.color, background: tier.bg, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '1px 6px', flexShrink: 0 }}>{tier.label}</span>
+              : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 800, color: tier.color === '#fff' ? NB.ink : tier.color, background: tier.bg, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '1px 6px 1px 3px', flexShrink: 0 }}>
+                  <img src={tier.image} alt="" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                  {tier.label}{sub ? ` ${sub}` : ''}
+                </span>
           })()}
         </div>
         {sub && <div style={{ fontSize: 12, color: '#555' }}>{sub}</div>}
@@ -186,47 +193,14 @@ function PinnedYouRow({ entry, rank, metric, rankMode, rankModeLabel }) {
 
   return (
     <div style={{
-      border: `2.5px solid ${NB.ink}`, borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
-      background: NB.lavender,
+      border: 'none', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+      background: NB.lavenderMist,
     }}>
       <div style={{ width: 32, height: 32, borderRadius: 10, border: `1.5px solid ${NB.ink}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: NB.ink }}>N/A</div>
-      <span style={{ fontSize: 18 }}>🔒</span>
+      <LockIcon size={18} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>You</div>
         <div style={{ fontSize: 11, color: '#555', lineHeight: 1.4 }}>{copy}</div>
-      </div>
-    </div>
-  )
-}
-
-function CountrySheet({ onSelect, onClose }) {
-  const [q, setQ] = useState('')
-  const results = q.trim()
-    ? COUNTRIES.filter(c => c.name.toLowerCase().includes(q.trim().toLowerCase()))
-    : COUNTRIES
-
-  return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 60, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)' }} />
-      <div style={{ position: 'relative', background: NB.white, borderTop: NB_BORDER, borderTopLeftRadius: 22, borderTopRightRadius: 22, boxShadow: `0 -6px 0 ${NB.ink}`, padding: '0 20px 24px', zIndex: 1, maxHeight: '78%', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ width: 38, height: 5, background: NB.ink, margin: '14px auto 14px', flexShrink: 0 }} />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexShrink: 0 }}>
-          <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 19, textTransform: 'uppercase', color: NB.ink }}>Choose your country</span>
-          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', color: NB.ink, fontSize: 16, fontWeight: 700 }}>✕</button>
-        </div>
-        <input
-          value={q} onChange={e => setQ(e.target.value)} placeholder="Search country"
-          style={{ width: '100%', height: 44, border: `2px solid ${NB.ink}`, borderRadius: 12, padding: '0 14px', fontSize: 14, color: NB.ink, background: NB.white, outline: 'none', boxSizing: 'border-box', fontFamily: NB.fontDisplay, marginBottom: 10, flexShrink: 0 }}
-        />
-        <div style={{ overflowY: 'auto' }}>
-          {results.map(c => (
-            <button key={c.code} onClick={() => onSelect(c.code)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 6px', background: 'none', border: 'none', borderBottom: `1px solid ${NB.ink}30`, cursor: 'pointer', textAlign: 'left' }}>
-              <span style={{ fontSize: 18 }}>{c.flag}</span>
-              <span style={{ fontSize: 14, color: NB.ink, fontWeight: 600 }}>{c.name}</span>
-            </button>
-          ))}
-          {results.length === 0 && <div style={{ padding: '16px 6px', fontSize: 13, color: '#555' }}>No countries match "{q}"</div>}
-        </div>
       </div>
     </div>
   )
@@ -305,7 +279,7 @@ export default function Leaderboard({ session, userProfile = {}, gamification = 
           <div style={{ position: 'relative' }}>
             <button onClick={() => setInfoOpen(o => !o)} style={{ width: 32, height: 32, borderRadius: 10, background: NB.yellow, border: `2px solid ${NB.ink}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: NB.ink, fontSize: 13, fontWeight: 800 }}>i</button>
             {infoOpen && (
-              <div style={{ position: 'absolute', right: 0, top: 38, width: 200, background: NB.lavender, color: NB.ink, border: `2px solid ${NB.ink}`, borderRadius: 12, boxShadow: hardShadow(3), padding: '10px 12px', fontSize: 11, lineHeight: 1.5, zIndex: 30 }}>
+              <div style={{ position: 'absolute', right: 0, top: 38, width: 200, ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, color: NB.ink, borderRadius: 12, padding: '10px 12px', fontSize: 11, lineHeight: 1.5, zIndex: 30 }}>
                 {INFO_COPY[metric]}
               </div>
             )}
@@ -348,8 +322,8 @@ export default function Leaderboard({ session, userProfile = {}, gamification = 
         )}
 
         {!loading && scope === 'regional' && !country && (
-          <div style={{ border: `2.5px dashed ${NB.ink}`, borderRadius: 16, background: NB.cream, padding: '28px 20px', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>🌍</div>
+          <div style={{ ...nbCardStyle(NB.cream, 5), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '28px 20px', textAlign: 'center' }}>
+            <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'center' }}><GlobeIcon size={32} /></div>
             <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 18, textTransform: 'uppercase', color: NB.ink, marginBottom: 6 }}>Pick your country</div>
             <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5, marginBottom: 16 }}>Set your country to see how you rank regionally.</div>
             <button onClick={() => setCountrySheet(true)} style={{ height: 44, padding: '0 20px', border: `2px solid ${NB.ink}`, borderRadius: 12, boxShadow: hardShadow(3), background: NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', cursor: 'pointer' }}>Choose country</button>

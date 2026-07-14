@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { PETS } from '../data/pets'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { GemIcon, HeartIcon, renderIcon } from '../components/Icons'
+import { NB, nbCardStyle, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 export const STORE_BORDERS = [
   { id: 'frame_default', label: 'Default',   cost: 0,   icon: '⬜', desc: 'Clean minimal border' },
@@ -10,6 +11,22 @@ export const STORE_BORDERS = [
   { id: 'frame_rose',    label: 'Rose Gold', cost: 250, icon: '🌸', desc: 'Elegant rose gold' },
   { id: 'frame_gold',    label: 'Gold',      cost: 300, icon: '✨', desc: 'Premium gold border' },
   { id: 'frame_crystal', label: 'Crystal',   cost: 500, icon: '💎', desc: 'Rare crystal frame' },
+  // Image-based ring frames — a separate set from the CSS glows above. Each
+  // has an `image` (transparent PNG ring) rendered as an overlay around the
+  // avatar photo in Profile.jsx, instead of a CSS border/boxShadow.
+  // frameOffset (top/left/size, all px) was hand-calibrated per design with
+  // the Border Calibrator tool — https://claude.ai/code/artifact/fb2e1170-32e4-4ef3-ab68-dd3c1ae05971
+  // (drag-and-resize UI against the real 46px avatar). Use it again for any
+  // future borders rather than guessing offsets.
+  { id: 'frame_cat',       label: 'Cat',       cost: 400, icon: '🐱', desc: 'Cat ears ring frame',   image: '/borders/cat.png',       frameOffset: { top: -29, left: -36, size: 120 } },
+  { id: 'frame_devil',     label: 'Devil',     cost: 400, icon: '😈', desc: 'Devil horns ring frame', image: '/borders/devil.png',    frameOffset: { top: -31, left: -39, size: 124 } },
+  { id: 'frame_fox',       label: 'Fox',       cost: 400, icon: '🦊', desc: 'Fox ears ring frame',   image: '/borders/fox.png',       frameOffset: { top: -29, left: -36, size: 120 } },
+  { id: 'frame_glitch',    label: 'Glitch',    cost: 400, icon: '📶', desc: 'Glitch ring frame',     image: '/borders/glitch.png',    frameOffset: { top: -29, left: -36, size: 120 } },
+  { id: 'frame_love',      label: 'Love',      cost: 400, icon: '💕', desc: 'Heart ring frame',      image: '/borders/love.png',      frameOffset: { top: -29, left: -36, size: 120 } },
+  { id: 'frame_plant',     label: 'Plant',     cost: 400, icon: '🌿', desc: 'Leafy ring frame',      image: '/borders/plant.png',     frameOffset: { top: -31, left: -39, size: 124 } },
+  { id: 'frame_reindeer',  label: 'Reindeer',  cost: 400, icon: '🦌', desc: 'Reindeer antler ring frame', image: '/borders/reindeer.png', frameOffset: { top: -29, left: -39, size: 120 } },
+  { id: 'frame_unicorn',   label: 'Unicorn',   cost: 400, icon: '🦄', desc: 'Unicorn ring frame',    image: '/borders/unicorn.png',   frameOffset: { top: -29, left: -36, size: 120 } },
+  { id: 'frame_witch',     label: 'Witch',     cost: 400, icon: '🧙', desc: 'Witch hat ring frame',  image: '/borders/witch.png',     frameOffset: { top: -29, left: -39, size: 120 } },
 ]
 
 export const STORE_BANNERS = [
@@ -21,7 +38,7 @@ export const STORE_BANNERS = [
 ]
 
 export const STORE_THEMES = [
-  { id: 'theme_default', label: 'Default',   cost: 0,   icon: '💜', desc: 'Classic Aura purple' },
+  { id: 'theme_default', label: 'Default',   cost: 0,   icon: '💜', desc: 'Classic MissVfit purple' },
   { id: 'theme_dark',    label: 'Dark Mode', cost: 200, icon: '🖤', desc: 'Sleek dark interface' },
   { id: 'theme_rose',    label: 'Rose',      cost: 150, icon: '🌸', desc: 'Soft rose pink' },
   { id: 'theme_ocean',   label: 'Ocean',     cost: 175, icon: '🔵', desc: 'Ocean blue palette' },
@@ -40,7 +57,7 @@ const LIFE_ITEMS = [
   { id: 'streak_freeze', label: 'Streak Freeze',  icon: '🧊',   desc: 'Protect streak for 1 missed day',  cost: 75  },
 ]
 
-export default function StoreScreen({ gamification = {}, onShopPurchase, onNavigate }) {
+export default function StoreScreen({ gamification = {}, isProUser = false, onShopPurchase, onEquipPet, onNavigate }) {
   const g = gamification
   const [subTab, setSubTab] = useState('pets')
   const owned = new Set(g.purchasedItems || [])
@@ -49,8 +66,10 @@ export default function StoreScreen({ gamification = {}, onShopPurchase, onNavig
     const isOwned = item.cost === 0 || owned.has(item.id)
     const canAfford = (g.gems ?? 0) >= item.cost
     return (
-      <div style={{ background: NB.white, border: NB_BORDER, borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
+      <div style={{ background: NB.lavenderMist, border: 'none', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 13, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0, overflow: 'hidden' }}>
+          {item.image ? <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : renderIcon(item.icon, 26)}
+        </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{item.label}</div>
           <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{item.desc}</div>
@@ -61,9 +80,9 @@ export default function StoreScreen({ gamification = {}, onShopPurchase, onNavig
           <button
             onClick={() => onShopPurchase?.(item.id, item.cost)}
             disabled={!canAfford}
-            style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, whiteSpace: 'nowrap', background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed' }}
+            style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, whiteSpace: 'nowrap', background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed', display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >
-            {item.cost} 💎
+            {item.cost} <GemIcon size={13} />
           </button>
         )}
       </div>
@@ -75,30 +94,51 @@ export default function StoreScreen({ gamification = {}, onShopPurchase, onNavig
   // Pet card — real art gets the standard buy flow; teaser slots (no art yet)
   // show as locked mystery cards.
   const PetItem = ({ pet }) => {
-    const isOwned = pet.cost === 0 || owned.has(pet.id)
-    const isEquipped = (g.activePet || 'pet_panda') === pet.id
+    const freeWithPro = pet.legendary && isProUser
+    const isOwned = pet.cost === 0 || owned.has(pet.id) || freeWithPro
+    const isEquipped = (g.activePet || 'pet_greycube') === pet.id
     const canAfford = (g.gems ?? 0) >= pet.cost
     const teaser = !pet.image
     return (
-      <div style={{ background: NB.white, border: NB_BORDER, borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, opacity: teaser ? 0.75 : 1 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 14, border: `2px solid ${NB.ink}`, background: teaser ? '#e8e2ef' : NB.lavender, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0, overflow: 'hidden' }}>
+      <div style={{ background: NB.lavenderMist, border: 'none', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, opacity: teaser ? 0.75 : 1 }}>
+        <div style={{ width: 56, height: 56, borderRadius: 14, background: teaser ? '#e8e2ef' : NB.lavender, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0, overflow: 'hidden' }}>
           {teaser ? '❓' : <img src={pet.image} alt={pet.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{teaser ? '???' : pet.label}</div>
-          <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{pet.desc}</div>
+          <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>
+            {pet.desc}{pet.legendary && !isOwned ? ' · free with MissVfit Pro' : ''}
+          </div>
         </div>
         {teaser ? (
           <span style={{ fontSize: 10, fontWeight: 800, color: NB.ink, background: NB.lavender, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px', whiteSpace: 'nowrap' }}>SOON</span>
         ) : isOwned ? (
-          <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink, background: isEquipped ? NB.teal : NB.green, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px', whiteSpace: 'nowrap' }}>{isEquipped ? 'Equipped' : 'Owned'}</span>
+          isEquipped ? (
+            pet.id === 'pet_greycube' ? (
+              <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink, background: NB.teal, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px', whiteSpace: 'nowrap' }}>Equipped</span>
+            ) : (
+              <button
+                onClick={() => onEquipPet?.('pet_greycube')}
+                style={{ height: 32, padding: '0 12px', border: `1.5px solid ${NB.ink}`, borderRadius: 8, whiteSpace: 'nowrap', background: NB.teal, color: NB.ink, fontWeight: 800, fontSize: 11, cursor: 'pointer' }}
+              >
+                Equipped ✕
+              </button>
+            )
+          ) : (
+            <button
+              onClick={() => onEquipPet?.(pet.id)}
+              style={{ height: 32, padding: '0 12px', border: `1.5px solid ${NB.ink}`, borderRadius: 8, whiteSpace: 'nowrap', background: NB.green, color: NB.ink, fontWeight: 800, fontSize: 11, cursor: 'pointer' }}
+            >
+              Equip
+            </button>
+          )
         ) : (
           <button
             onClick={() => onShopPurchase?.(pet.id, pet.cost)}
             disabled={!canAfford}
-            style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, whiteSpace: 'nowrap', background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed' }}
+            style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, whiteSpace: 'nowrap', background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed', display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >
-            {pet.cost} 💎
+            {pet.cost} <GemIcon size={13} />
           </button>
         )}
       </div>
@@ -131,14 +171,14 @@ export default function StoreScreen({ gamification = {}, onShopPurchase, onNavig
           ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, background: NB.yellow, border: NB_BORDER, borderRadius: 12, padding: '8px 12px' }}>
-          <span style={{ width: 12, height: 12, background: NB.blue, border: `1.5px solid ${NB.ink}`, transform: 'rotate(45deg)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, ...nbCardStyle(NB.yellow, 3), border: `3px solid ${NB.white}`, borderRadius: 12, padding: '8px 12px' }}>
+          <GemIcon size={14} />
           <span style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{g.gems ?? 0} gems available</span>
         </div>
 
         {subTab === 'pets' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ border: NB_BORDER, borderRadius: 16, background: NB.lavender, padding: 16 }}>
+            <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: 16 }}>
               <div style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700 }}>Adopt a companion</div>
               <div style={{ fontSize: 13, color: NB.ink, fontWeight: 700, marginTop: 4 }}>Your pet lives on your profile — keep your lives up to keep it happy</div>
             </div>
@@ -152,15 +192,15 @@ export default function StoreScreen({ gamification = {}, onShopPurchase, onNavig
 
         {subTab === 'gems' && (
           <div>
-            <div style={{ border: NB_BORDER, borderRadius: 16, background: NB.lavender, padding: 16, marginBottom: 14 }}>
+            <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: 16, marginBottom: 14 }}>
               <div style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700 }}>Top up your gems</div>
               <div style={{ fontSize: 13, color: NB.ink, fontWeight: 700, marginTop: 4 }}>Gems never expire — use them to unlock exclusive cosmetics</div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {GEM_PACKAGES.map(pkg => (
-                <div key={pkg.id} style={{ background: NB.white, border: NB_BORDER, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+                <div key={pkg.id} style={{ background: NB.lavenderMist, border: 'none', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
                   {pkg.tag && <div style={{ position: 'absolute', top: -10, right: 12, background: NB.magenta, color: NB.white, fontSize: 9, fontWeight: 800, borderRadius: 6, padding: '3px 8px', border: `1.5px solid ${NB.ink}` }}>{pkg.tag}</div>}
-                  <div style={{ width: 48, height: 48, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>💎</div>
+                  <div style={{ width: 48, height: 48, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><GemIcon size={26} /></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{pkg.label}</div>
                     <div style={{ fontSize: 11, color: '#555' }}>{pkg.gems.toLocaleString()} gems</div>
@@ -174,23 +214,23 @@ export default function StoreScreen({ gamification = {}, onShopPurchase, onNavig
 
         {subTab === 'lives' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ background: NB.red, border: NB_BORDER, borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ ...nbCardStyle(NB.red, 3), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ display: 'flex', gap: 3 }}>
-                {[1,2,3].map(i => <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill={i <= (g.lives ?? 3) ? NB.white : 'rgba(255,255,255,.3)'}><path d="M12 21.593c-.5-.388-10-6.77-10-12.093 0-3.314 2.686-6 6-6 1.878 0 3.561.888 4.666 2.276C13.771 4.388 15.453 3.5 17.333 3.5 20.648 3.5 23 6.186 23 9.5c0 5.323-9.5 11.705-10 12.093z"/></svg>)}
+                {[1,2,3].map(i => <HeartIcon key={i} size={16} filled={i <= (g.lives ?? 3)} />)}
               </div>
               <span style={{ fontSize: 12, fontWeight: 700, color: NB.white }}>You have {g.lives ?? 3} / 3 lives this week</span>
             </div>
             {LIFE_ITEMS.map(item => {
               const canAfford = (g.gems ?? 0) >= item.cost
               return (
-                <div key={item.id} style={{ background: NB.white, border: NB_BORDER, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 13, border: `2px solid ${NB.ink}`, background: NB.pink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{item.icon}</div>
+                <div key={item.id} style={{ background: NB.lavenderMist, border: 'none', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 13, background: NB.pink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{renderIcon(item.icon, 26)}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{item.label}</div>
                     <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{item.desc}</div>
                   </div>
-                  <button onClick={() => onShopPurchase?.(item.id, item.cost)} disabled={!canAfford} style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
-                    {item.cost} 💎
+                  <button onClick={() => onShopPurchase?.(item.id, item.cost)} disabled={!canAfford} style={{ height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: canAfford ? NB.teal : NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, cursor: canAfford ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    {item.cost} <GemIcon size={13} />
                   </button>
                 </div>
               )

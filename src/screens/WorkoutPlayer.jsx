@@ -3,7 +3,8 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { BodyOutline, MUSCLE_MAP } from '../components/AvatarSilhouette'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
-import { NB, NB_BORDER, hardShadow, NB_INTENSITY_RAMP } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, NB_INTENSITY_RAMP, nbCardStyle, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { resolveExerciseImage } from '../utils/workoutBuilder'
 
 const FALLBACK_EXERCISES = [
   { name: 'Glute Bridge', sets: 3, reps: 12, muscles: { glutes: NB.red, legs: NB.orange }, target: 'Glutes · Hams', category: 'MAIN' },
@@ -17,7 +18,7 @@ const FALLBACK_EXERCISES = [
 
 const CATEGORY_COLOR = { MAIN: NB.magenta, SECONDARY: NB.blue, ACCESSORY: NB.yellow, FINISHER: NB.pink }
 
-function buildExerciseList(workout) {
+function buildExerciseList(workout, equipment) {
   if (!workout || !workout.exercises || workout.exercises.length === 0) return FALLBACK_EXERCISES
   return workout.exercises.map(ex => ({
     name: ex.name || ex.id,
@@ -26,12 +27,12 @@ function buildExerciseList(workout) {
     muscles: { [ex.muscles?.primary?.[0] || 'full body']: NB.red },
     target: ex.muscles?.primary?.join(' · ') || 'Full Body',
     category: ex.slot ? ex.slot.toUpperCase() : 'MAIN',
-    image: ex.image || null,
+    image: resolveExerciseImage(ex, equipment),
   }))
 }
 
 export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, onWorkoutComplete, onNavigate }) {
-  const exercises = buildExerciseList(workout)
+  const exercises = buildExerciseList(workout, userProfile?.equipment)
 
   const [view, setView] = useState('list') // 'list' | 'active'
   const [exerciseIdx, setExerciseIdx] = useState(0)
@@ -145,7 +146,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
 
           {/* Muscles today */}
-          <div style={{ border: NB_BORDER, borderRadius: 18, background: NB.lavender, padding: '12px 16px', marginBottom: 14 }}>
+          <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '12px 16px', marginBottom: 14 }}>
             <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Muscles Today</div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
               <div style={{ width: 110, height: 185 }}>
@@ -165,7 +166,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
                 <button
                   key={idx}
                   onClick={() => goToExercise(idx)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', border: `2.5px solid ${NB.ink}`, borderRadius: 16, boxShadow: hardShadow(2), background: done ? NB.green : NB.white, cursor: 'pointer', textAlign: 'left' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', border: 'none', borderRadius: 16, background: done ? NB.green : NB.lavenderMist, cursor: 'pointer', textAlign: 'left' }}
                 >
                   <div style={{ width: 44, height: 44, borderRadius: 12, border: `2px solid ${NB.ink}`, background: done ? NB.ink : catColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {done
@@ -223,7 +224,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
       </div>
 
       <div style={{ padding: '10px 22px 0', flexShrink: 0, display: 'flex', gap: 11 }}>
-        <div style={{ flex: 1.5, border: NB_BORDER, borderRadius: 16, background: exercise.image ? NB.white : NB.yellow, height: 180, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ flex: 1.5, ...nbCardStyle(exercise.image ? NB.white : NB.yellow, 3, exercise.image ? 'rgba(0,0,0,0.18)' : undefined), border: `3px solid ${NB.white}`, borderRadius: 16, height: 180, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {exercise.image
             ? <img src={exercise.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <span style={{ fontFamily: NB.fontDisplay, fontSize: 32, opacity: 0.2, color: NB.ink }}>▶</span>
@@ -239,7 +240,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
           </div>
         </div>
 
-        <div style={{ flex: 1, border: NB_BORDER, borderRadius: 16, background: NB.lavender, height: 180, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ flex: 1, ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, height: 180, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ position: 'absolute', top: 9, left: 0, right: 0, textAlign: 'center', fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.ink, letterSpacing: 1 }}>Target</span>
           <div style={{ marginTop: 12 }}>
             <BodyOutline muscleColors={exercise.muscles} height={140} />
@@ -262,7 +263,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
               <div
                 key={setNum}
                 onClick={() => !done && active && logSet(setNum)}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', border: active ? `2.5px solid ${NB.ink}` : `2px solid ${NB.ink}`, borderRadius: 14, boxShadow: active ? hardShadow(2) : 'none', background: done ? NB.green : NB.white, opacity: !done && !active ? 0.55 : 1, cursor: active ? 'pointer' : 'default' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', border: 'none', borderRadius: 14, background: done ? NB.green : NB.lavenderMist, opacity: !done && !active ? 0.55 : 1, cursor: active ? 'pointer' : 'default' }}
               >
                 <div style={{ width: 28, height: 28, borderRadius: 9, border: `1.5px solid ${NB.ink}`, background: done || active ? NB.ink : NB.white, color: done || active ? NB.white : NB.ink, fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{setNum}</div>
                 <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: NB.ink }}>{exercise.reps} reps</span>
@@ -277,7 +278,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
         </div>
 
         {restTimer && (
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', border: NB_BORDER, borderRadius: 14, background: NB.lavender }}>
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', ...nbCardStyle(NB.lavender, 2, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 14 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
             <span style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>Rest · 0:{restCount.toString().padStart(2, '0')}</span>
             <button onClick={() => setRestTimer(null)} style={{ marginLeft: 'auto', fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink, textTransform: 'uppercase', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>Skip</button>

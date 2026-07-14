@@ -1,0 +1,88 @@
+[
+  
+  
+  {
+    "id": "single-leg-deadlift--dumbbells",
+    "name": "Single-Leg Deadlift",
+    "variant": "Dumbbells",
+    "filename": "single-leg-deadlift--dumbbells.png",
+    "prompt": "Exercise: Single-Leg Deadlift — Dumbbells\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nEquipment for this variant: a pair of dumbbells.\n\nCreate two frames showing the Single-Leg Deadlift, performed with a pair of dumbbells.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Single-Leg Deadlift when performed with a pair of dumbbells.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "good-morning",
+    "name": "Good Morning",
+    "variant": null,
+    "filename": "good-morning.png",
+    "prompt": "Exercise: Good Morning\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nCreate two frames showing the Good Morning.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Good Morning.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "banded-good-morning",
+    "name": "Banded Good Morning",
+    "variant": null,
+    "filename": "banded-good-morning.png",
+    "prompt": "Exercise: Banded Good Morning\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nCreate two frames showing the Banded Good Morning.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Banded Good Morning.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "nordic-hamstring-curl--none",
+    "name": "Nordic Hamstring Curl",
+    "variant": "Bodyweight",
+    "filename": "nordic-hamstring-curl--none.png",
+    "prompt": "Exercise: Nordic Hamstring Curl — Bodyweight\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nEquipment for this variant: no equipment — bodyweight only.\n\nCreate two frames showing the Nordic Hamstring Curl, performed with no equipment — bodyweight only.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Nordic Hamstring Curl when performed with no equipment — bodyweight only.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "nordic-hamstring-curl--gym",
+    "name": "Nordic Hamstring Curl",
+    "variant": "Gym",
+    "filename": "nordic-hamstring-curl--gym.png",
+    "prompt": "Exercise: Nordic Hamstring Curl — Gym\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nEquipment for this variant: a nordic curl machine or anchored pad.\n\nCreate two frames showing the Nordic Hamstring Curl, performed with a nordic curl machine or anchored pad.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Nordic Hamstring Curl when performed with a nordic curl machine or anchored pad.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "curtsy-lunge--none",
+    "name": "Curtsy Lunge",
+    "variant": "Bodyweight",
+    "filename": "curtsy-lunge--none.png",
+    "prompt": "Exercise: Curtsy Lunge — Bodyweight\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nEquipment for this variant: no equipment — bodyweight only.\n\nCreate two frames showing the Curtsy Lunge, performed with no equipment — bodyweight only.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Curtsy Lunge when performed with no equipment — bodyweight only.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "curtsy-lunge--dumbbells",
+    "name": "Curtsy Lunge",
+    "variant": "Dumbbells",
+    "filename": "curtsy-lunge--dumbbells.png",
+    "prompt": "Exercise: Curtsy Lunge — Dumbbells\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nEquipment for this variant: a pair of dumbbells.\n\nCreate two frames showing the Curtsy Lunge, performed with a pair of dumbbells.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Curtsy Lunge when performed with a pair of dumbbells.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "chin-up",
+    "name": "Chin-Up",
+    "variant": null,
+    "filename": "chin-up.png",
+    "prompt": "Exercise: Chin-Up\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nCreate two frames showing the Chin-Up.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Chin-Up.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "landmine-press",
+    "name": "Landmine Press",
+    "variant": null,
+    "filename": "landmine-press.png",
+    "prompt": "Exercise: Landmine Press\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nCreate two frames showing the Landmine Press.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Landmine Press.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "goblet-lateral-lunge",
+    "name": "Goblet Lateral Lunge",
+    "variant": null,
+    "filename": "goblet-lateral-lunge.png",
+    "prompt": "Exercise: Goblet Lateral Lunge\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nCreate two frames showing the Goblet Lateral Lunge.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Goblet Lateral Lunge.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "band-pull-apart",
+    "name": "Band Pull-Apart",
+    "variant": null,
+    "filename": "band-pull-apart.png",
+    "prompt": "Exercise: Band Pull-Apart\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nCreate two frames showing the Band Pull-Apart.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Band Pull-Apart.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  },
+  {
+    "id": "wall-sit",
+    "name": "Wall Sit",
+    "variant": null,
+    "filename": "wall-sit.png",
+    "prompt": "Exercise: Wall Sit\n\nUse the provided character reference as the exact source for the character's appearance. Preserve the same face, body proportions, clothing, colours, and art style.\n\nCreate two frames showing the Wall Sit.\n\nFrame 1 (left): Starting position of the exercise.\nFrame 2 (right): Ending position of the exercise.\n\nThe exercise form must be anatomically correct and match the standard technique for the Wall Sit.\n\nBackground: Pure white (#FFFFFF).\nNo text, labels, arrows, logos, borders or watermarks.\nOutput only the two frames."
+  }
+]

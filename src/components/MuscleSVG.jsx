@@ -2,14 +2,22 @@ import React, { useState, useEffect, useRef } from 'react'
 import { NB_INTENSITY_RAMP } from '../styles/neoBrutalism'
 
 export const MUSCLE_SVG_IDS = {
-  glutes:    { back: ['glute'],                                          front: [] },
-  legs:      { back: ['hamstrings', 'back_adductor', 'abductor'],       front: ['front_quad', 'front_adductor', 'front_abductor'] },
-  core:      { back: ['back_oblique', 'erector_spinae'],                front: ['front_core', 'oblique', 'abs'] },
-  chest:     { back: [],                                                  front: ['front_Chest'] },
-  shoulders: { back: ['back_shoulder'],                                  front: ['front_shoulder'] },
-  arms:      { back: ['back_tricep', 'back_forearm'],                   front: ['front_bicep', 'front_tricep', 'forearm'] },
-  calves:    { back: ['back_calf'],                                      front: ['calf_front'] },
-  back:      { back: ['trap', 'lat', 'scapular_muscle'],                front: [] },
+  glutes:     { back: ['glute'],                                          front: [] },
+  legs:       { back: ['hamstrings', 'back_adductor', 'abductor'],       front: ['front_quad', 'front_adductor', 'front_abductor'] },
+  core:       { back: ['back_oblique', 'erector_spinae'],                front: ['front_core', 'oblique', 'abs'] },
+  chest:      { back: [],                                                  front: ['front_Chest'] },
+  shoulders:  { back: ['back_shoulder'],                                  front: ['front_shoulder'] },
+  arms:       { back: ['back_tricep', 'back_forearm'],                   front: ['front_bicep', 'front_tricep', 'forearm'] },
+  calves:     { back: ['back_calf'],                                      front: ['calf_front'] },
+  back:       { back: ['trap', 'lat', 'scapular_muscle'],                front: [] },
+  // Finer-grained groups (WorkoutBuilder's "Pick Target Muscles" picker) — same
+  // underlying SVG ids as above, just exposed as their own top-level entries.
+  hamstrings: { back: ['hamstrings'],                                     front: [] },
+  quads:      { back: [],                                                  front: ['front_quad'] },
+  adductors:  { back: ['back_adductor'],                                  front: ['front_adductor'] },
+  abductors:  { back: ['abductor'],                                       front: ['front_abductor'] },
+  trap:       { back: ['trap'],                                           front: [] },
+  lats:       { back: ['lat'],                                            front: [] },
 }
 
 // Broad TARGET_AREA → SVG IDs (for onboarding step 8)
@@ -96,7 +104,7 @@ function applyColors(container, muscleColors) {
   })
 }
 
-export default function MuscleSVG({ url, muscleColors = {}, onMuscleClick }) {
+export default function MuscleSVG({ url, muscleColors = {}, onMuscleClick, focusViewBox }) {
   const ref = useRef(null)
   const [ready, setReady] = useState(false)
   const colorsKey = JSON.stringify(muscleColors)
@@ -110,7 +118,8 @@ export default function MuscleSVG({ url, muscleColors = {}, onMuscleClick }) {
       ref.current.innerHTML = html
       const svgEl = ref.current.querySelector('svg')
       if (svgEl) {
-        svgEl.setAttribute('viewBox', VIEW_BOX)
+        svgEl.setAttribute('viewBox', focusViewBox || VIEW_BOX)
+        svgEl.setAttribute('preserveAspectRatio', focusViewBox ? 'xMidYMid slice' : 'xMidYMid meet')
         svgEl.removeAttribute('width')
         svgEl.removeAttribute('height')
         svgEl.style.width = '100%'
@@ -128,7 +137,7 @@ export default function MuscleSVG({ url, muscleColors = {}, onMuscleClick }) {
     }
 
     return () => { cancelled = true }
-  }, [url])
+  }, [url, focusViewBox])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (ready && ref.current) applyColors(ref.current, muscleColors) }, [ready, colorsKey])

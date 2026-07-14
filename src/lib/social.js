@@ -5,7 +5,7 @@ import { supabase } from './supabase'
 export async function createPost(userId, displayName, type, content, { caption = '', mediaUrl = null, mediaType = null } = {}) {
   const { error } = await supabase.from('posts').insert({
     user_id: userId,
-    display_name: displayName || 'Aura user',
+    display_name: displayName || 'MissVfit user',
     type,
     content,
     caption,
@@ -123,7 +123,7 @@ export async function fetchReactions(postIds, userId) {
 export async function sendFriendRequest(senderId, senderName, receiverId) {
   const { error } = await supabase.from('friend_requests').insert({
     sender_id: senderId,
-    sender_name: senderName || 'Aura user',
+    sender_name: senderName || 'MissVfit user',
     receiver_id: receiverId,
     status: 'pending',
   })
@@ -219,6 +219,64 @@ export async function fetchWorkoutHistory(userId, limit = 90) {
   return data || []
 }
 
+// ─── Nutrition & Body Weight Logs ─────────────────────────────────────────────
+
+export async function logNutrition(userId, { date, name, mealType, macros }) {
+  const { error } = await supabase.from('nutrition_log').insert({
+    user_id: userId,
+    date,
+    name: name || 'Meal',
+    meal_type: mealType || null,
+    macros: macros || {},
+  })
+  if (error) console.error('logNutrition error:', error.message)
+}
+
+// sinceDateKey: 'YYYY-MM-DD' lower bound, or null for everything
+export async function fetchNutritionLog(userId, sinceDateKey) {
+  let query = supabase
+    .from('nutrition_log')
+    .select('*')
+    .eq('user_id', userId)
+    .order('logged_at', { ascending: true })
+    .limit(2000)
+  if (sinceDateKey) query = query.gte('date', sinceDateKey)
+  const { data, error } = await query
+  if (error) { console.error('fetchNutritionLog error:', error.message); return [] }
+  return data || []
+}
+
+export async function logBodyWeight(userId, { date, weightKg, photoUrl }) {
+  const row = { user_id: userId, date, weight_kg: weightKg }
+  if (photoUrl !== undefined) row.photo_url = photoUrl
+  const { error } = await supabase
+    .from('body_weight_log')
+    .upsert(row, { onConflict: 'user_id,date' })
+  if (error) console.error('logBodyWeight error:', error.message)
+  return !error
+}
+
+// Progress photo upload — same bucket as avatars/exercise images, own prefix.
+export async function uploadBodyProgressPhoto(userId, file) {
+  const ext = file.name.split('.').pop() || 'bin'
+  const path = `progress/${userId}-${Date.now()}.${ext}`
+  const { data, error } = await supabase.storage.from('post-media').upload(path, file)
+  if (error) { console.error('uploadBodyProgressPhoto error:', error.message); return null }
+  const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(data.path)
+  return publicUrl
+}
+
+export async function fetchBodyWeightLog(userId) {
+  const { data, error } = await supabase
+    .from('body_weight_log')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: true })
+    .limit(1000)
+  if (error) { console.error('fetchBodyWeightLog error:', error.message); return [] }
+  return data || []
+}
+
 // ─── Leaderboards ─────────────────────────────────────────────────────────────
 
 // scope: 'friends' | 'global' | 'regional'
@@ -263,4 +321,27 @@ export function top3Muscles(exercises) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([m]) => m)
+}
+
+// ─── Push Notification Subscriptions ──────────────────────────────────────────
+
+// subscription: the raw PushSubscription object from pushManager.subscribe()
+export async function savePushSubscription(userId, subscription) {
+  const json = subscription.toJSON ? subscription.toJSON() : subscription
+  const { error } = await supabase.from('push_subscriptions').upsert({
+    user_id: userId,
+    endpoint: json.endpoint,
+    p256dh: json.keys?.p256dh,
+    auth: json.keys?.auth,
+  }, { onConflict: 'user_id,endpoint' })
+  if (error) console.error('savePushSubscription error:', error.message)
+}
+
+export async function deletePushSubscription(userId, endpoint) {
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('endpoint', endpoint)
+  if (error) console.error('deletePushSubscription error:', error.message)
 }

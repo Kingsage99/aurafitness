@@ -1,7 +1,7 @@
 import React from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { BADGES, TIER_COLORS } from '../utils/gamification'
-import { NB, hardShadow } from '../styles/neoBrutalism'
+import { NB } from '../styles/neoBrutalism'
 
 // Literal metal tones for the medal discs (matches the rank-tier decision:
 // bronze/silver/gold stay real metals, not palette pastels)
@@ -11,10 +11,23 @@ const MEDAL_METALS = {
   bronze: { disc: '#CD7F32', rim: '#7C3F0E', ribbonA: '#F79AC6', ribbonB: '#C2557F' },
 }
 
+// Custom art exists for some badge emoji already (see scripts/medal-icons.json);
+// the rest still emboss the raw emoji as SVG text until art is commissioned.
+const BADGE_ICON_IMAGES = {
+  '🥗': '/icons/bowl.png',
+  '🎯': '/icons/quest.png',
+  '👑': '/icons/crown.png',
+  '⚡': '/icons/bolt.png',
+  '🏆': '/icons/trophy.png',
+  '🍽️': '/icons/meal-plate-new.png',
+  '💪': '/icons/glute.png',
+}
+
 // Hand-drawn neo-brutalist medal: twin ribbon tails + struck metal disc,
-// with the badge's emoji embossed in the centre.
+// with the badge's icon embossed in the centre.
 function MedalArt({ tier, icon, earned }) {
   const m = MEDAL_METALS[tier] || MEDAL_METALS.bronze
+  const iconImg = BADGE_ICON_IMAGES[icon]
   return (
     <svg width="64" height="72" viewBox="0 0 64 72" style={{ filter: earned ? 'none' : 'grayscale(1)', opacity: earned ? 1 : 0.55 }}>
       {/* Ribbon tails */}
@@ -23,8 +36,10 @@ function MedalArt({ tier, icon, earned }) {
       {/* Disc */}
       <circle cx="32" cy="46" r="22" fill={m.disc} stroke={NB.ink} strokeWidth="2.5" />
       <circle cx="32" cy="46" r="16" fill="none" stroke={m.rim} strokeWidth="2" strokeDasharray="3 3" />
-      {/* Emoji emblem */}
-      <text x="32" y="53" textAnchor="middle" fontSize="18">{icon}</text>
+      {/* Emblem */}
+      {iconImg
+        ? <image href={iconImg} x="20" y="34" width="24" height="24" />
+        : <text x="32" y="53" textAnchor="middle" fontSize="18">{icon}</text>}
     </svg>
   )
 }
@@ -65,7 +80,7 @@ export default function MedalsScreen({ gamification = {}, onNavigate }) {
                 {tierBadges.map(badge => {
                   const isEarned = earned.has(badge.id)
                   return (
-                    <div key={badge.id} style={{ background: isEarned ? tc.bg : '#eee', padding: '12px 8px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, border: `2px solid ${NB.ink}`, borderRadius: 14, boxShadow: isEarned ? hardShadow(2) : 'none' }}>
+                    <div key={badge.id} style={{ background: isEarned ? tc.bg : '#eee', padding: '12px 8px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, border: 'none', borderRadius: 14 }}>
                       <MedalArt tier={tier} icon={badge.icon} earned={isEarned} />
                       <div style={{ fontSize: 10, fontWeight: 800, color: NB.ink, textAlign: 'center', lineHeight: 1.3, opacity: isEarned ? 1 : 0.55 }}>{badge.label}</div>
                       {isEarned && <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.ink, fontWeight: 700, background: NB.white, border: `1px solid ${NB.ink}`, borderRadius: 6, padding: '2px 7px' }}>Earned ✓</div>}

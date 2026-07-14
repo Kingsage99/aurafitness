@@ -1,4 +1,4 @@
-# Aura Fitness — Project Guide
+# MissVfit — Project Guide
 
 ## What This App Is
 

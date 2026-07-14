@@ -1,5 +1,5 @@
 import React from 'react'
-import { NB, NB_BORDER, hardShadow } from '../styles/neoBrutalism'
+import { NB, nbCardStyle } from '../styles/neoBrutalism'
 
 export default function RewardToast({ notifications }) {
   if (!notifications.length) return null
@@ -11,7 +11,7 @@ export default function RewardToast({ notifications }) {
     }}>
       {notifications.map(n => (
         <div key={n.id} style={{
-          background: NB.yellow, border: NB_BORDER, borderRadius: 14, boxShadow: hardShadow(4),
+          ...nbCardStyle(NB.yellow, 4), border: `3px solid ${NB.white}`, borderRadius: 14,
           padding: '11px 16px',
           display: 'flex', alignItems: 'center', gap: 10,
           animation: 'toastIn 0.28s ease',
