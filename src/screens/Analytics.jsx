@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
-import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
+import MuscleSVG, { MUSCLE_SVG_IDS, MUSCLE_PRO_FILL } from '../components/MuscleSVG'
 import RadarChart from '../components/RadarChart'
 import { TrendChart, BarTrend, HBarList, StackedShareBar } from '../components/Charts'
 import { fetchWorkoutHistory, fetchNutritionLog, fetchBodyWeightLog } from '../lib/social'
@@ -31,7 +31,7 @@ const PERIODS = [
 const MEAL_SPLIT_COLORS = { breakfast: NB.yellow, lunch: NB.teal, dinner: NB.magenta, snacks: NB.pink, other: NB.lavender }
 const MEAL_SPLIT_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snacks: 'Snacks', other: 'Other' }
 
-export default function Analytics({ gamification, userProfile, loggedMacros, session, onNavigate }) {
+export default function Analytics({ gamification, userProfile, loggedMacros, session, isProUser = false, onNavigate }) {
   const [tab, setTab] = useState('training')
   const [period, setPeriod] = useState(30)
   const [selectedGroup, setSelectedGroup] = useState(null)
@@ -89,12 +89,12 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
       Object.entries(muscleCounts).forEach(([group, count]) => {
         if (count <= 0) return
         const idx = Math.min(4, 1 + Math.floor((count / max) * 3.99))
-        ;(MUSCLE_SVG_IDS[group]?.[side] || []).forEach(id => { colors[id] = NB_INTENSITY_RAMP[idx] })
+        ;(MUSCLE_SVG_IDS[group]?.[side] || []).forEach(id => { colors[id] = isProUser ? MUSCLE_PRO_FILL : NB_INTENSITY_RAMP[idx] })
       })
       return colors
     }
     return { front: build('front'), back: build('back') }
-  }, [muscleCounts])
+  }, [muscleCounts, isProUser])
 
   // ── Nutrition aggregations ──────────────────────────────────────────────────
   const totals = useMemo(() => mergeToday(dailyTotals(nutriRows), loggedMacros || {}), [nutriRows, loggedMacros])

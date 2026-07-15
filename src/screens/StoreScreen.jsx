@@ -27,15 +27,53 @@ export const STORE_BORDERS = [
   { id: 'frame_reindeer',  label: 'Reindeer',  cost: 400, icon: '🦌', desc: 'Reindeer antler ring frame', image: '/borders/reindeer.png', frameOffset: { top: -29, left: -39, size: 120 } },
   { id: 'frame_unicorn',   label: 'Unicorn',   cost: 400, icon: '🦄', desc: 'Unicorn ring frame',    image: '/borders/unicorn.png',   frameOffset: { top: -29, left: -36, size: 120 } },
   { id: 'frame_witch',     label: 'Witch',     cost: 400, icon: '🧙', desc: 'Witch hat ring frame',  image: '/borders/witch.png',     frameOffset: { top: -29, left: -39, size: 120 } },
+  // Pro-exclusive border — CSS-rendered (blue/purple gradient ring + crown
+  // overlay), not a raster image, so it has no `image`/`frameOffset` — the
+  // avatar components special-case `id === 'frame_pro'` instead.
+  { id: 'frame_pro', label: 'MissVfit Pro', cost: 0, icon: '👑', desc: 'Exclusive shiny ring for Pro members', proOnly: true },
 ]
 
 export const STORE_BANNERS = [
-  { id: 'banner_default', label: 'Default', cost: 0,   icon: '🌑', desc: 'Dark purple gradient' },
-  { id: 'banner_sunset',  label: 'Sunset',  cost: 100, icon: '🌅', desc: 'Warm sunset vibes' },
-  { id: 'banner_galaxy',  label: 'Galaxy',  cost: 200, icon: '🌌', desc: 'Deep space nebula' },
-  { id: 'banner_forest',  label: 'Forest',  cost: 150, icon: '🌿', desc: 'Fresh forest green' },
-  { id: 'banner_ocean',   label: 'Ocean',   cost: 175, icon: '🌊', desc: 'Cool ocean waves' },
+  { id: 'banner_default',  label: 'Clouds',   cost: 0,   icon: '☁️', desc: 'Dreamy soft clouds',  image: '/banner/clouds.png' },
+  { id: 'banner_sunset',   label: 'Sunset',   cost: 100, icon: '🌅', desc: 'Warm sunset skies',   image: '/banner/sunset.png' },
+  { id: 'banner_beach',    label: 'Beach',    cost: 150, icon: '🏖️', desc: 'Sandy beach vibes',   image: '/banner/beach.png' },
+  { id: 'banner_mountain', label: 'Mountain', cost: 150, icon: '⛰️', desc: 'Mountain horizon',    image: '/banner/mountain.png' },
+  { id: 'banner_cat',      label: 'Cat',      cost: 250, icon: '🐱', desc: 'Cute cat banner',     image: '/banner/cat.png' },
 ]
+
+// Gradient fallbacks — shown behind the banner image so the profile banner
+// never looks broken if a PNG is missing.
+const BANNER_GRADIENTS = {
+  banner_default:  'linear-gradient(135deg, #C9D6FF, #E2E2F0)',
+  banner_sunset:   'linear-gradient(135deg, #F79AC6, #F7CF4A)',
+  banner_beach:    'linear-gradient(135deg, #7FD0E6, #F7E7B0)',
+  banner_mountain: 'linear-gradient(135deg, #6D7B9A, #C9D6FF)',
+  banner_cat:      'linear-gradient(135deg, #E7DCFB, #B48CF2)',
+}
+
+// The gradient fallback for a banner (shown behind the image, or alone if the
+// PNG isn't present yet).
+export function bannerGradientFor(bannerId) {
+  const id = bannerId || 'banner_default'
+  return BANNER_GRADIENTS[id] || BANNER_GRADIENTS.banner_default
+}
+
+// The banner PNG path, or null.
+export function bannerImageFor(bannerId) {
+  const id = bannerId || 'banner_default'
+  return STORE_BANNERS.find(b => b.id === id)?.image || null
+}
+
+// Convenience CSS-background version (used where an <img> layer isn't practical).
+export function bannerStyleFor(bannerId) {
+  const grad = bannerGradientFor(bannerId)
+  const img = bannerImageFor(bannerId)
+  return {
+    backgroundImage: img ? `url(${img}), ${grad}` : grad,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  }
+}
 
 export const STORE_THEMES = [
   { id: 'theme_default', label: 'Default',   cost: 0,   icon: '💜', desc: 'Classic MissVfit purple' },
@@ -53,8 +91,8 @@ const GEM_PACKAGES = [
 
 const LIFE_ITEMS = [
   { id: 'extra_life',    label: 'Extra Life',     icon: '❤️',   desc: 'Restore 1 life immediately',       cost: 50  },
-  { id: 'life_refill',   label: 'Full Refill',    icon: '❤️‍🔥', desc: 'Restore all 3 lives at once',    cost: 120 },
-  { id: 'streak_freeze', label: 'Streak Freeze',  icon: '🧊',   desc: 'Protect streak for 1 missed day',  cost: 75  },
+  { id: 'life_refill',   label: 'Full Refill',    icon: '❤️‍🔥', desc: 'Restore all 3 lives at once',    cost: 120, image: '/icons/revive_heart.png' },
+  { id: 'streak_freeze', label: 'Streak Freeze',  icon: '🧊',   desc: 'Protect streak for 1 missed day',  cost: 75,  image: '/icons/frezze_streak.png' },
 ]
 
 export default function StoreScreen({ gamification = {}, isProUser = false, onShopPurchase, onEquipPet, onNavigate }) {
@@ -63,10 +101,11 @@ export default function StoreScreen({ gamification = {}, isProUser = false, onSh
   const owned = new Set(g.purchasedItems || [])
 
   const StoreItem = ({ item }) => {
-    const isOwned = item.cost === 0 || owned.has(item.id)
+    const locked = item.proOnly && !isProUser
+    const isOwned = !locked && (item.proOnly || item.cost === 0 || owned.has(item.id))
     const canAfford = (g.gems ?? 0) >= item.cost
     return (
-      <div style={{ background: NB.lavenderMist, border: 'none', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ background: NB.lavenderMist, border: 'none', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, opacity: locked ? 0.75 : 1 }}>
         <div style={{ width: 48, height: 48, borderRadius: 13, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0, overflow: 'hidden' }}>
           {item.image ? <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : renderIcon(item.icon, 26)}
         </div>
@@ -74,7 +113,9 @@ export default function StoreScreen({ gamification = {}, isProUser = false, onSh
           <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{item.label}</div>
           <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{item.desc}</div>
         </div>
-        {isOwned ? (
+        {locked ? (
+          <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink, background: NB.lavender, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px', whiteSpace: 'nowrap' }}>Pro Only</span>
+        ) : isOwned ? (
           <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink, background: NB.green, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px', whiteSpace: 'nowrap' }}>Owned</span>
         ) : (
           <button
@@ -224,7 +265,9 @@ export default function StoreScreen({ gamification = {}, isProUser = false, onSh
               const canAfford = (g.gems ?? 0) >= item.cost
               return (
                 <div key={item.id} style={{ background: NB.lavenderMist, border: 'none', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 13, background: NB.pink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{renderIcon(item.icon, 26)}</div>
+                  <div style={{ width: 48, height: 48, borderRadius: 13, background: NB.pink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0, overflow: 'hidden' }}>
+                    {item.image ? <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : renderIcon(item.icon, 26)}
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>{item.label}</div>
                     <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{item.desc}</div>

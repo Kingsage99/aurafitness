@@ -4,6 +4,7 @@ import { NavBadgeContext } from './components/BottomNav'
 import Auth from './screens/Auth'
 import Onboarding from './screens/Onboarding'
 import WhyAura from './screens/WhyAura'
+import ProUpsell from './screens/ProUpsell'
 import Home from './screens/Home'
 import WorkoutHub from './screens/WorkoutHub'
 import WorkoutDetail from './screens/WorkoutDetail'
@@ -20,12 +21,14 @@ import MedalsScreen from './screens/MedalsScreen'
 import QuestsScreen from './screens/QuestsScreen'
 import StoreScreen from './screens/StoreScreen'
 import Discovery from './screens/Discovery'
+import UserProfileView from './screens/UserProfileView'
 import MealPost from './screens/MealPost'
 import Analytics from './screens/Analytics'
 import BodyProgress from './screens/BodyProgress'
 import RankPage from './screens/RankPage'
 import Leaderboard from './screens/Leaderboard'
 import Settings from './screens/Settings'
+import LegalDoc from './screens/LegalDoc'
 import { buildWeeklyPlan, buildCustomWeeklyPlan, getWeekdayIndex, dateKeyFor } from './utils/workoutBuilder'
 import { supabase } from './lib/supabase'
 import { saveWorkoutHistory, fetchPendingRequests, setUsername, logNutrition } from './lib/social'
@@ -33,8 +36,9 @@ import {
   DEFAULT_GAMIFICATION, resetWeeklyIfNeeded, awardGems, awardXP,
   updateStreak, checkBadges, checkCaloriePenalty, calorieGoalStatus,
   awardRankPoints, awardMuscleRankPoints, completeQuest, purchaseItem, equipCosmetic, QUEST_POOL, SHOP_ITEMS,
-  MUSCLE_RANK_MIN_WORKOUTS, claimWeeklyChallenge,
+  MUSCLE_RANK_MIN_WORKOUTS, claimWeeklyChallenge, evaluateDailyQuests,
 } from './utils/gamification'
+import { getDailyTargets } from './utils/nutrition'
 import { MUSCLE_LABELS } from './utils/muscleLabels'
 import RewardToast from './components/RewardToast'
 
@@ -60,14 +64,29 @@ const DEFAULT_PROFILE = {
   avatarUrl: null,
   units: 'metric',
   notificationsEnabled: true,
+  notificationPrefs: {
+    workoutReminders: true, mealReminders: true, streakAlerts: true, petCare: true,
+    socialActivity: true, questsAndChallenges: true, weeklySummary: true,
+  },
   planningMode: 'guided',
   country: '',
   cookbookCollections: [], // user-defined cookbook collections: [{ id, name }]
+  customStickers: [], // user-uploaded reaction stickers: [{ id, url }]
 }
 
 const DEFAULT_LOGGED_MACROS = {
   calories: 0, protein: 0, carbs: 0, fat: 0,
   fiber: 0, sugar: 0, saturatedFat: 0, sodium: 0, cholesterol: 0, potassium: 0,
+}
+
+// Buckets any meal-type string (breakfast/lunch/dinner/snack_1/second_lunch/…)
+// into one of four kinds, for meal-logging quest auto-completion.
+function mealBucket(type) {
+  const t = (type || '').toLowerCase()
+  if (t.includes('breakfast')) return 'breakfast'
+  if (t.includes('lunch')) return 'lunch'
+  if (t.includes('dinner')) return 'dinner'
+  return 'snack'
 }
 
 const Spinner = () => (
@@ -93,6 +112,7 @@ export default function App() {
   const [routine, setRoutine] = useState({})
   const [pendingRequests, setPendingRequests] = useState([])
   const [mealPostData, setMealPostData] = useState(null)
+  const [viewUserId, setViewUserId] = useState(null)
   const [missState, setMissState] = useState(null)
   const [onboardingFlow, setOnboardingFlow] = useState(false)
   const [customSchedule, setCustomSchedule] = useState({})
@@ -279,6 +299,29 @@ export default function App() {
     }, 1500)
     return () => clearTimeout(t)
   }, [gamification]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-complete daily quests from real actions (meals logged, calories/protein
+  // hit, workout done). Idempotent + only setGamification on a NEW completion, so
+  // it can't loop even though it reads and writes gamification.
+  useEffect(() => {
+    if (!dataReady.current) return
+    const todayKey = new Date().toISOString().slice(0, 10)
+    const targets = getDailyTargets(userProfile)
+    const mealsToday = gamification.mealsToday?.date === todayKey ? gamification.mealsToday.types : []
+    const signals = {
+      workoutDoneToday: (gamification.workoutDates || []).includes(todayKey) || gamification.lastWorkoutDate === todayKey,
+      caloriesHit: (loggedMacros.calories || 0) >= (targets.calories || 0) * 0.9,
+      proteinHit: (loggedMacros.protein || 0) >= (targets.protein || 0) * 0.9,
+      mealTypes: new Set(mealsToday),
+      mealCount: mealsToday.length,
+    }
+    const { g: updated, newlyCompleted } = evaluateDailyQuests(gamification, signals, todayKey)
+    if (newlyCompleted.length > 0) {
+      setGamification(updated)
+      newlyCompleted.forEach(q => pushNotification(`Quest complete! +${q.reward} 💎`))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loggedMacros, gamification.mealsToday, gamification.lastWorkoutDate, gamification.workoutDates, userProfile.dailyCalorieTarget])
 
   // Auto-save user-built workouts to Supabase (debounced 1.5s)
   useEffect(() => {
@@ -578,6 +621,14 @@ export default function App() {
     ;({ g } = awardXP(g, 10))
     const { updatedG, newBadges } = checkBadges(g, { mealLogged: true })
     g = updatedG
+
+    // Track today's meal-kind buckets so meal-logging quests can auto-complete.
+    // Date format must match the quest system (Home/QuestsScreen use ISO UTC date).
+    const todayKey = new Date().toISOString().slice(0, 10)
+    const bucket = mealBucket(mealData.mealType)
+    const mt = g.mealsToday?.date === todayKey ? g.mealsToday : { date: todayKey, types: [] }
+    g = { ...g, mealsToday: { date: todayKey, types: [...mt.types, bucket] } }
+
     setGamification(g)
     pushNotification('+5 💎  Meal logged!')
     newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
@@ -626,11 +677,13 @@ export default function App() {
           <WhyAura
             userProfile={userProfile}
             weeklyPlan={weeklyPlan}
-            onContinue={() => { setOnboardingFlow(false); navigate('home') }}
+            onContinue={() => { setOnboardingFlow(false); navigate('proUpsell') }}
           />
         )
+      case 'proUpsell':
+        return <ProUpsell subscription={subscription} onContinue={() => navigate('home')} />
       case 'home':
-        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} missState={missState} session={session} onStartMakeup={handleStartMakeup} onSkipMakeup={handleSkipMakeup} onSkipCalorieMiss={handleSkipCalorieMiss} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} isProUser={isProUser} missState={missState} session={session} onStartMakeup={handleStartMakeup} onSkipMakeup={handleSkipMakeup} onSkipCalorieMiss={handleSkipCalorieMiss} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
 
       // ── Workout section ──────────────────────────────────────────────────────
       case 'workout':
@@ -669,9 +722,9 @@ export default function App() {
           />
         )
       case 'workoutComplete':
-        return <WorkoutComplete sessionData={workoutSession} gamification={gamification} userProfile={userProfile} onNavigate={navigate} />
+        return <WorkoutComplete sessionData={workoutSession} gamification={gamification} userProfile={userProfile} isProUser={isProUser} onNavigate={navigate} />
       case 'workoutPost':
-        return <WorkoutPost sessionData={workoutSession} userProfile={userProfile} session={session} onNavigate={navigate} />
+        return <WorkoutPost sessionData={workoutSession} userProfile={userProfile} session={session} isProUser={isProUser} onNavigate={navigate} />
       case 'mealPost':
         return <MealPost mealData={mealPostData} userProfile={userProfile} session={session} onNavigate={navigate} />
       case 'workoutBuilder':
@@ -708,6 +761,7 @@ export default function App() {
             userProfile={userProfile}
             userWorkouts={userWorkouts}
             routine={routine}
+            isProUser={isProUser}
             onUpdateRoutine={handleUpdateRoutine}
             onNavigate={navigate}
           />
@@ -756,6 +810,10 @@ export default function App() {
             onResetOnboarding={handleResetOnboarding}
           />
         )
+      case 'terms':
+        return <LegalDoc doc="terms" onBack={() => navigate('settings')} />
+      case 'privacy':
+        return <LegalDoc doc="privacy" onBack={() => navigate('settings')} />
       case 'medals':
         return <MedalsScreen gamification={gamification} onNavigate={navigate} />
       case 'quests':
@@ -766,15 +824,20 @@ export default function App() {
             session={session}
             userProfile={userProfile}
             gamification={gamification}
+            onGamificationChange={setGamification}
+            onUpdateProfile={handleUpdateProfile}
             loggedMacros={loggedMacros}
             missState={missState}
             onStartMakeup={handleStartMakeup}
             onPendingChange={setPendingRequests}
+            onViewProfile={(uid) => { setViewUserId(uid); navigate('userProfile') }}
             onNavigate={navigate}
           />
         )
+      case 'userProfile':
+        return <UserProfileView userId={viewUserId} session={session} onNavigate={navigate} />
       case 'analytics':
-        return <Analytics gamification={gamification} userProfile={userProfile} loggedMacros={loggedMacros} session={session} onNavigate={navigate} />
+        return <Analytics gamification={gamification} userProfile={userProfile} loggedMacros={loggedMacros} session={session} isProUser={isProUser} onNavigate={navigate} />
       case 'bodyProgress':
         return <BodyProgress session={session} userProfile={userProfile} onNavigate={navigate} />
       case 'rankPage':
@@ -790,7 +853,7 @@ export default function App() {
           />
         )
       default:
-        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} session={session} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} isProUser={isProUser} session={session} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
     }
   }
 

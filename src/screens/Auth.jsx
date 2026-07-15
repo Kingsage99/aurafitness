@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { StatusBar } from '../components/PhoneFrame'
+import LegalDoc from './LegalDoc'
 import { NB, NB_BORDER, hardShadow, nbCardStyle } from '../styles/neoBrutalism'
 
 export default function Auth() {
@@ -11,6 +12,11 @@ export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
+  const [legalDoc, setLegalDoc] = useState(null) // null | 'terms' | 'privacy' — Auth renders before the app router exists, so it views these itself
+
+  if (legalDoc) {
+    return <LegalDoc doc={legalDoc} onBack={() => setLegalDoc(null)} />
+  }
 
   const handleGoogle = async () => {
     setLoading(true)
@@ -114,6 +120,15 @@ export default function Auth() {
             style={{ width: '100%', height: 54, border: NB_BORDER, borderRadius: 16, boxShadow: loading ? 'none' : hardShadow(5), background: loading ? '#ccc' : NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', cursor: loading ? 'default' : 'pointer', marginTop: 22 }}>
             {loading ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
           </button>
+
+          {mode === 'signup' && (
+            <div style={{ textAlign: 'center', marginTop: 14, fontSize: 12, color: '#666', lineHeight: 1.6 }}>
+              By creating an account, you agree to our{' '}
+              <button onClick={() => setLegalDoc('terms')} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: NB.ink, fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>Terms of Service</button>
+              {' '}and{' '}
+              <button onClick={() => setLegalDoc('privacy')} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: NB.ink, fontWeight: 700, textDecoration: 'underline', cursor: 'pointer' }}>Privacy Policy</button>.
+            </div>
+          )}
 
           <div style={{ textAlign: 'center', marginTop: 20, paddingBottom: 32 }}>
             <span style={{ fontSize: 14, color: '#555' }}>

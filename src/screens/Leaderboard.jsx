@@ -206,65 +206,7 @@ function PinnedYouRow({ entry, rank, metric, rankMode, rankModeLabel }) {
   )
 }
 
-export default function Leaderboard({ session, userProfile = {}, gamification = {}, onUpdateCountry, onNavigate }) {
-  const userId = session?.user?.id
-  const country = userProfile?.country || ''
-  const countryInfo = COUNTRIES.find(c => c.code === country)
-
-  const [scope,   setScope]   = useState('global')
-  const [metric,  setMetric]  = useState('streaks')
-  const [rankMode, setRankMode] = useState('overall')
-  const [board,   setBoard]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search,  setSearch]  = useState('')
-  const [countrySheet, setCountrySheet] = useState(false)
-  const [infoOpen, setInfoOpen] = useState(false)
-
-  const rankModeLabel = rankMode === 'overall' ? 'Overall' : (MUSCLE_GROUPS.find(m => m.id === rankMode)?.label || rankMode)
-
-  const load = useCallback(async () => {
-    if (scope === 'regional' && !country) { setBoard([]); setLoading(false); return }
-    setLoading(true)
-
-    // High cap, not a real page size — the board only ever displays the top 18 (+ pinned "you"),
-    // but ranking has to be computed from every user, not an arbitrary slice fetched pre-sort.
-    const rows = await fetchLeaderboardProfiles({ scope, userId, country, limit: 1000 })
-
-    const youEntry = {
-      id: userId,
-      username: userProfile?.username,
-      profile_data: { ...userProfile },
-      gamification,
-      you: true,
-    }
-
-    const others = rows.filter(r => r.id !== userId)
-    const combined = [...others, youEntry]
-
-    combined.sort((a, b) => {
-      if (metric === 'ranks' && rankMode !== 'overall') {
-        const sa = getMuscleRankInfo(a.gamification, rankMode).score
-        const sb = getMuscleRankInfo(b.gamification, rankMode).score
-        if (sb !== sa) return sb - sa
-        return (b.gamification?.totalWorkouts || 0) - (a.gamification?.totalWorkouts || 0)
-      }
-      return compareByMetric(a, b, metric)
-    })
-
-    setBoard(combined.map((e, i) => ({ ...e, rank: i + 1 })))
-    setLoading(false)
-  }, [scope, metric, rankMode, country, userId, userProfile, gamification])
-
-  useEffect(() => { load() }, [load])
-
-  const youIndex = board.findIndex(e => e.you)
-  const visible  = board.slice(0, 18)
-  const youVisible = youIndex >= 0 && youIndex < 18
-
-  const filtered = search.trim()
-    ? board.filter(e => displayName(e).toLowerCase().includes(search.trim().toLowerCase()))
-    : null
-
+export default function Leaderboard({ onNavigate }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <StatusBar />
@@ -276,129 +218,18 @@ export default function Leaderboard({ session, userProfile = {}, gamification = 
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
           </button>
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink }}>Leaderboards</div>
-          <div style={{ position: 'relative' }}>
-            <button onClick={() => setInfoOpen(o => !o)} style={{ width: 32, height: 32, borderRadius: 10, background: NB.yellow, border: `2px solid ${NB.ink}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: NB.ink, fontSize: 13, fontWeight: 800 }}>i</button>
-            {infoOpen && (
-              <div style={{ position: 'absolute', right: 0, top: 38, width: 200, ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, color: NB.ink, borderRadius: 12, padding: '10px 12px', fontSize: 11, lineHeight: 1.5, zIndex: 30 }}>
-                {INFO_COPY[metric]}
-              </div>
-            )}
-          </div>
+          <div style={{ width: 32 }} />
         </div>
-
-        {/* Scope pills */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          {SCOPES.map(([id, label]) => (
-            <button key={id} onClick={() => setScope(id)} style={{
-              flex: 1, height: 40, border: `2.5px solid ${NB.ink}`, borderRadius: 12,
-              background: scope === id ? NB.teal : NB.white,
-              boxShadow: scope === id ? hardShadow(2) : 'none',
-              fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase',
-              color: NB.ink, cursor: 'pointer',
-            }}>
-              {label}{id === 'regional' && countryInfo ? ` ${countryInfo.flag}` : ''}
-            </button>
-          ))}
-        </div>
-
-        {scope === 'regional' && country && (
-          <button onClick={() => setCountrySheet(true)} style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-            <span style={{ fontSize: 12, color: '#555' }}>{countryInfo?.flag} {countryInfo?.name || country}</span>
-            <span style={{ fontSize: 12, color: NB.ink, fontWeight: 700, textDecoration: 'underline' }}>change</span>
-          </button>
-        )}
-
-        {/* Search */}
-        <input
-          value={search} onChange={e => setSearch(e.target.value)} placeholder="Find someone…"
-          style={{ width: '100%', height: 40, border: `2px solid ${NB.ink}`, borderRadius: 12, padding: '0 14px', fontSize: 13, color: NB.ink, background: NB.white, outline: 'none', boxSizing: 'border-box', fontFamily: NB.fontDisplay, marginTop: 10 }}
-        />
       </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 12px' }}>
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: '#555' }}>Loading leaderboard…</div>
-        )}
-
-        {!loading && scope === 'regional' && !country && (
-          <div style={{ ...nbCardStyle(NB.cream, 5), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '28px 20px', textAlign: 'center' }}>
-            <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'center' }}><GlobeIcon size={32} /></div>
-            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 18, textTransform: 'uppercase', color: NB.ink, marginBottom: 6 }}>Pick your country</div>
-            <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5, marginBottom: 16 }}>Set your country to see how you rank regionally.</div>
-            <button onClick={() => setCountrySheet(true)} style={{ height: 44, padding: '0 20px', border: `2px solid ${NB.ink}`, borderRadius: 12, boxShadow: hardShadow(3), background: NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', cursor: 'pointer' }}>Choose country</button>
-          </div>
-        )}
-
-        {!loading && !(scope === 'regional' && !country) && (
-          <>
-            {filtered ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {filtered.length === 0 && <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 13, color: '#555' }}>No one matches "{search}"</div>}
-                {filtered.map(entry => <BoardRow key={entry.id} entry={entry} rank={entry.rank} metric={metric} rankMode={rankMode} />)}
-              </div>
-            ) : (
-              <>
-                {visible.length > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 10, padding: '6px 4px 18px' }}>
-                    <PodiumSlot entry={visible[1]} place={2} metric={metric} rankMode={rankMode} />
-                    <PodiumSlot entry={visible[0]} place={1} metric={metric} rankMode={rankMode} />
-                    <PodiumSlot entry={visible[2]} place={3} metric={metric} rankMode={rankMode} />
-                  </div>
-                )}
-
-                {scope !== 'global' && board.length <= 1 && (
-                  <div style={{ textAlign: 'center', fontSize: 12, color: '#555', marginBottom: 12 }}>
-                    {scope === 'friends' ? 'Add more friends to fill the podium 👯' : 'Invite people from your country to fill the podium 🌍'}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {visible.slice(3).map(entry => <BoardRow key={entry.id} entry={entry} rank={entry.rank} metric={metric} rankMode={rankMode} />)}
-                </div>
-
-                {!youVisible && board[youIndex] && (
-                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: `2px dashed ${NB.ink}` }}>
-                    <PinnedYouRow entry={board[youIndex]} rank={board[youIndex].rank} metric={metric} rankMode={rankMode} rankModeLabel={rankModeLabel} />
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Metric bar */}
-      <div style={{ flexShrink: 0, padding: '0 22px', borderTop: `2.5px solid ${NB.ink}` }}>
-        <div style={{ display: 'flex' }}>
-          {METRICS.map(([id, label]) => (
-            <button key={id} onClick={() => setMetric(id)} style={{
-              flex: 1, paddingTop: 10, paddingBottom: 8, background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: NB.ink,
-              borderBottom: metric === id ? `3px solid ${NB.magenta}` : '3px solid transparent', marginBottom: -2.5,
-            }}>
-              {label}
-            </button>
-          ))}
+      {/* Placeholder — leaderboard not ready yet */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 28px' }}>
+        <div style={{ ...nbCardStyle(NB.cream, 5), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '34px 24px', textAlign: 'center', maxWidth: 320 }}>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}><CrownIcon size={40} /></div>
+          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink, marginBottom: 8 }}>Working on the leaderboard</div>
+          <div style={{ fontSize: 14, color: '#555', lineHeight: 1.5 }}>We're building something great here — check back soon to see how you rank against everyone.</div>
         </div>
-        {metric === 'ranks' && (
-          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '8px 0 10px' }}>
-            <button onClick={() => setRankMode('overall')} style={chipStyle(rankMode === 'overall')}>Overall</button>
-            {MUSCLE_GROUPS.map(m => (
-              <button key={m.id} onClick={() => setRankMode(m.id)} style={chipStyle(rankMode === m.id)}>
-                {m.label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
-
-      {countrySheet && (
-        <CountrySheet
-          onClose={() => setCountrySheet(false)}
-          onSelect={(code) => { onUpdateCountry?.(code); setCountrySheet(false) }}
-        />
-      )}
     </div>
   )
 }

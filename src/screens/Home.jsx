@@ -3,11 +3,12 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { Avatar } from '../components/AvatarSilhouette'
 import { STORE_BORDERS } from './StoreScreen'
+import ProBorderRing from '../components/ProBorderRing'
 import { HeartIcon, FireIcon, GemIcon, StarIcon, ToolsIcon, SpaIcon, renderIcon } from '../components/Icons'
 import { getDailyQuests, getMissFlags, xpProgress } from '../utils/gamification'
 import { getPrimaryMuscles } from '../utils/workoutBuilder'
 import { fetchFriendsFeed, timeAgo } from '../lib/social'
-import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
 
 function describeActivity(post) {
   const c = post.content || {}
@@ -15,7 +16,7 @@ function describeActivity(post) {
   return `logged ${c.name || 'a meal'}`
 }
 
-export default function Home({ userProfile, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, todayWorkout = null, gamification = {}, missState = null, session, onStartMakeup, onSkipMakeup, onSkipCalorieMiss, onQuestComplete, onNavigate }) {
+export default function Home({ userProfile, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, todayWorkout = null, gamification = {}, isProUser = false, missState = null, session, onStartMakeup, onSkipMakeup, onSkipCalorieMiss, onQuestComplete, onNavigate }) {
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
   // Image-based ring frame — same equipped cosmetic as Profile.jsx, shown
   // anywhere else the real avatar photo appears.
@@ -61,8 +62,8 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
             onClick={() => onNavigate('profile')}
             style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', minWidth: 0 }}
           >
-            <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', border: NB_BORDER, background: NB.lavender, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0, zIndex: 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', border: equippedBorder?.id === 'frame_pro' ? 'none' : NB_BORDER, background: NB.lavender, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Avatar url={userProfile?.avatarUrl} height={44} color={NB.ink} />
               </div>
               {borderImage && (
@@ -79,9 +80,10 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
                   }}
                 />
               )}
+              {equippedBorder?.id === 'frame_pro' && isProUser && <ProBorderRing size={44} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: NB.fontDisplay, fontSize: 18, fontWeight: 900, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.name || 'MissVfit'}</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontSize: 18, fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(isProUser ? proTextStyle : { color: NB.ink }) }}>{userProfile?.name || 'MissVfit'}</div>
               {(() => {
                 const xp = xpProgress(gamification.xp || 0)
                 const xpPct = Math.round((xp.current / Math.max(xp.needed, 1)) * 100)
@@ -298,13 +300,11 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
             {dailyQuests.map(quest => {
               const isDone = completedQuests.includes(quest.id)
               return (
-                <button
+                <div
                   key={quest.id}
-                  onClick={() => !isDone && onQuestComplete && onQuestComplete(quest.id)}
                   style={{
                     background: NB.lavenderMist, border: 'none', borderRadius: 14, padding: '12px 14px',
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    cursor: isDone ? 'default' : 'pointer', textAlign: 'left', width: '100%',
+                    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
                   }}
                 >
                   <div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${NB.ink}`, background: isDone ? NB.ink : NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -314,7 +314,7 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
                   </div>
                   <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: NB.ink, textDecoration: isDone ? 'line-through' : 'none' }}>{quest.label}</span>
                   <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink, background: NB.yellow, borderRadius: 8, padding: '3px 9px', flexShrink: 0 }}>+{quest.reward}</span>
-                </button>
+                </div>
               )
             })}
           </div>

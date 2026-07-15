@@ -3,7 +3,7 @@ import { StatusBar } from '../components/PhoneFrame'
 import { supabase } from '../lib/supabase'
 import { subscribeToPush, unsubscribeFromPush, isPushSupported } from '../utils/pushNotifications'
 import { savePushSubscription, deletePushSubscription } from '../lib/social'
-import { startCheckout, openBillingPortal, STRIPE_PRICES } from '../lib/stripe'
+import { startCheckout, openBillingPortal, STRIPE_PRICES, isTrialEligible } from '../lib/stripe'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 import { StarIcon } from '../components/Icons'
 
@@ -11,6 +11,20 @@ const TRAINING_STYLES = [
   { id: 'strength',    label: 'Strength',    sub: '6–8 reps' },
   { id: 'hypertrophy', label: 'Hypertrophy', sub: '8–12 reps' },
   { id: 'endurance',   label: 'Endurance',   sub: '12–15 reps' },
+]
+
+// Per-category push toggles — all default on (opt-out). Master switch above
+// these gates real push subscribe/unsubscribe; these just tell the server-side
+// checks (send-push-notifications, notify-friend-post) which categories to
+// skip for this user via profile_data.notificationPrefs.<key>.
+const NOTIFICATION_CATEGORIES = [
+  { key: 'workoutReminders',    label: 'Workout reminders',     desc: "Heads-up on training days, naming today's scheduled session" },
+  { key: 'mealReminders',       label: 'Meal reminders',        desc: "Nudge if you haven't logged meals yet today" },
+  { key: 'streakAlerts',        label: 'Streak alerts',         desc: 'Evening warning when your streak is about to break' },
+  { key: 'petCare',             label: 'Pet & lives',           desc: 'When your pet loses a life, or misses you' },
+  { key: 'socialActivity',      label: 'Friend activity',       desc: 'When a friend posts a workout or meal' },
+  { key: 'questsAndChallenges', label: 'Quests & challenges',   desc: 'Unfinished daily quests and weekly challenge progress' },
+  { key: 'weeklySummary',       label: 'Weekly summary',        desc: 'Monday recap of last week + this week\'s schedule' },
 ]
 
 function SectionLabel({ children }) {
@@ -48,12 +62,14 @@ export default function Settings({ userProfile, session, subscription, isProUser
   const [billingBusy, setBillingBusy] = useState(false)
   const [billingError, setBillingError] = useState('')
 
+  const trialEligible = isTrialEligible(subscription)
+
   const handleUpgrade = async (priceId) => {
     setBillingError('')
     if (!priceId) { setBillingError('MissVfit Pro isn\'t set up yet — check back soon.'); return }
     setBillingBusy(true)
     try {
-      await startCheckout(priceId)
+      await startCheckout(priceId, trialEligible ? 7 : 0)
     } catch (err) {
       setBillingError(err.message || 'Could not start checkout')
       setBillingBusy(false)
@@ -93,6 +109,10 @@ export default function Settings({ userProfile, session, subscription, isProUser
     } finally {
       setPushBusy(false)
     }
+  }
+
+  const handleCategoryToggle = (key, val) => {
+    onUpdateProfile?.({ notificationPrefs: { ...userProfile?.notificationPrefs, [key]: val } })
   }
 
   const handleSignOut = async () => {
@@ -148,7 +168,9 @@ export default function Settings({ userProfile, session, subscription, isProUser
           ) : (
             <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '14px 16px' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink, marginBottom: 2 }}>Unlock unlimited AI nutrition coaching</div>
-              <div style={{ fontSize: 11, color: '#555', marginBottom: 12 }}>Meal suggestions, food lookup, and the AI coach — free for 7 days, then from $8.33/mo.</div>
+              <div style={{ fontSize: 11, color: '#555', marginBottom: 12 }}>
+                Meal suggestions, food lookup, and the AI coach — {trialEligible ? 'free for 7 days, then from $8.33/mo.' : 'from $8.33/mo.'}
+              </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   onClick={() => handleUpgrade(STRIPE_PRICES.monthly)}
@@ -241,6 +263,40 @@ export default function Settings({ userProfile, session, subscription, isProUser
           {pushError && (
             <div style={{ fontSize: 11, color: NB.red, marginTop: 6, paddingLeft: 4 }}>{pushError}</div>
           )}
+
+          {/* Per-category opt-out — only meaningful once the master switch above is on */}
+          <div style={{ marginTop: 14, opacity: userProfile?.notificationsEnabled === false ? 0.45 : 1, pointerEvents: userProfile?.notificationsEnabled === false ? 'none' : 'auto' }}>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Notification types</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {NOTIFICATION_CATEGORIES.map(cat => (
+                <div key={cat.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: NB.lavenderMist, borderRadius: 12, padding: '10px 14px' }}>
+                  <div style={{ paddingRight: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: NB.ink }}>{cat.label}</div>
+                    <div style={{ fontSize: 10, color: '#555', marginTop: 1 }}>{cat.desc}</div>
+                  </div>
+                  <Toggle
+                    on={userProfile?.notificationPrefs?.[cat.key] !== false}
+                    onChange={(val) => handleCategoryToggle(cat.key, val)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Legal */}
+        <div style={{ marginBottom: 24 }}>
+          <SectionLabel>Legal</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button onClick={() => onNavigate('terms')} style={{ height: 46, border: `2px solid ${NB.ink}`, borderRadius: 14, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
+              Terms of Service
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button onClick={() => onNavigate('privacy')} style={{ height: 46, border: `2px solid ${NB.ink}`, borderRadius: 14, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
+              Privacy Policy
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
 
         {/* Account */}

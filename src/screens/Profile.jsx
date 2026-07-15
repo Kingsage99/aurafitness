@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
+import ImageCropSheet from '../components/ImageCropSheet'
+import ProBorderRing from '../components/ProBorderRing'
 import { Avatar } from '../components/AvatarSilhouette'
 import CharacterAvatar from '../components/CharacterAvatar'
 import { uploadAvatar } from '../lib/social'
@@ -9,7 +11,7 @@ import { FRAMES, AURAS, xpProgress, RANKS, normalizeRankId, SUB_LEVEL_ROMAN, SUB
 import { PETS, getActivePet } from '../data/pets'
 import { STORE_BORDERS, STORE_BANNERS, STORE_THEMES } from './StoreScreen'
 import { HeartIcon, ShoppingBagsIcon, renderIcon } from '../components/Icons'
-import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
 
 // Icon tiles replacing the old text tab bar. Light sections open a bottom
 // sheet in place; heavy sections navigate to their own full screen.
@@ -31,12 +33,19 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
   const [petVideoFailed, setPetVideoFailed] = useState(false)
   const [petAnimFailed, setPetAnimFailed] = useState(false)
   const avatarFileRef = useRef()
+  const [avatarCropFile, setAvatarCropFile] = useState(null)
 
-  const handleAvatarChange = async (e) => {
+  const handleAvatarChange = (e) => {
     const file = e.target.files?.[0]
-    if (!file || !session?.user?.id) return
+    e.target.value = ''
+    if (file) setAvatarCropFile(file)
+  }
+
+  const handleAvatarCropped = async (croppedFile) => {
+    setAvatarCropFile(null)
+    if (!session?.user?.id) return
     setAvatarUploading(true)
-    const url = await uploadAvatar(session.user.id, file)
+    const url = await uploadAvatar(session.user.id, croppedFile)
     if (url) onUpdateProfile?.({ avatarUrl: url })
     setAvatarUploading(false)
   }
@@ -64,7 +73,7 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
   const InventoryContent = () => {
     const ownedPets = PETS.filter(p => p.image && (p.cost === 0 || owned.has(p.id) || (p.legendary && isProUser)))
     const allItems = [...STORE_BORDERS, ...STORE_BANNERS, ...STORE_THEMES]
-    const ownedItems = [...ownedPets, ...allItems.filter(item => item.cost === 0 || owned.has(item.id))]
+    const ownedItems = [...ownedPets, ...allItems.filter(item => item.proOnly ? isProUser : (item.cost === 0 || owned.has(item.id)))]
     const categories = [
       { label: 'Pets',     items: ownedPets,                                          type: 'pet' },
       { label: 'Borders',  items: ownedItems.filter(i => i.id.startsWith('frame_')),  type: 'frame' },
@@ -216,10 +225,10 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
           {/* Identity row — who you are, anchored at the top */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
             {/* Your photo — still used on Home and the squad feed */}
-            <div style={{ position: 'relative', width: 46, height: 46, flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 46, height: 46, flexShrink: 0, zIndex: 0 }}>
               <button
                 onClick={() => avatarFileRef.current?.click()}
-                style={{ width: 46, height: 46, borderRadius: '50%', border: `2px solid ${NB.ink}`, background: NB.yellow, boxShadow: hardShadow(2), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', padding: 0, ...frameStyle, ...auraStyle }}
+                style={{ width: 46, height: 46, borderRadius: '50%', border: equippedBorder?.id === 'frame_pro' ? 'none' : `2px solid ${NB.ink}`, background: NB.yellow, boxShadow: hardShadow(2), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', padding: 0, ...frameStyle, ...auraStyle }}
               >
                 {avatarUploading
                   ? <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2.5px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'avatarSpin 0.7s linear infinite' }} />
@@ -245,9 +254,10 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
                   }}
                 />
               )}
+              {equippedBorder?.id === 'frame_pro' && isProUser && <ProBorderRing size={46} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 21, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 21, textTransform: 'uppercase', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(isProUser ? proTextStyle : { color: NB.ink }) }}>
                 {userProfile?.name || 'MissVfit User'}
               </div>
               {userProfile?.username && <div style={{ fontSize: 12, color: '#555', fontWeight: 600, marginTop: 4 }}>@{userProfile.username}</div>}
@@ -368,6 +378,8 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
       </BottomSheet>
 
       <BottomNav active="profile" onNavigate={onNavigate} />
+
+      <ImageCropSheet file={avatarCropFile} shape="circle" onCancel={() => setAvatarCropFile(null)} onCropped={handleAvatarCropped} />
     </>
   )
 }

@@ -58,18 +58,9 @@ export default function QuestsScreen({ gamification = {}, onQuestComplete, onCla
                       <span style={{ fontSize: 12, fontWeight: 700, color: NB.ink }}>+{quest.reward} gems</span>
                     </div>
                   </div>
-                  {done ? (
-                    <div style={{ width: 36, height: 36, borderRadius: 11, border: `2px solid ${NB.ink}`, background: NB.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => onQuestComplete?.(quest.id)}
-                      style={{ height: 38, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 11, background: NB.magenta, color: NB.white, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', boxShadow: hardShadow(2), flexShrink: 0 }}
-                    >
-                      Complete
-                    </button>
-                  )}
+                  <div style={{ width: 36, height: 36, borderRadius: 11, border: `2px solid ${NB.ink}`, background: done ? NB.ink : NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {done && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12"/></svg>}
+                  </div>
                 </div>
               </div>
             )

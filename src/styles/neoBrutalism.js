@@ -106,3 +106,19 @@ export function nbButton(bg = NB.teal, size = 4) {
     boxShadow: hardShadow(size),
   }
 }
+
+// MissVfit Pro's light-blue→purple "shiny" gradient — the one visual
+// signature reused across the Pro-only name treatment, muscle-map highlight,
+// and avatar border ring, so all three read as the same perk.
+export const NB_PRO_BLUE = '#6FA8FF'
+export const NB_PRO_GRADIENT = `linear-gradient(120deg, ${NB_PRO_BLUE}, ${NB.purpleDeep})`
+
+// Spread onto a name/text element to render it as gradient-filled instead of
+// a flat color — the element's own `color` is overridden to `transparent`,
+// so don't also set `color` alongside this.
+export const proTextStyle = {
+  backgroundImage: NB_PRO_GRADIENT,
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  color: 'transparent',
+}

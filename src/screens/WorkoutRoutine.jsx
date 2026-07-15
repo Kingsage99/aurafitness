@@ -25,10 +25,10 @@ function effectiveAssignment(dateKey, routine, weeklyPlan) {
   return { label: slot.label, exercises: slot.workout?.exercises, split: slot.label }
 }
 
-function DayDetailPanel({ dateKey, assigned, availableWorkouts, onAssign, onClose, equipment }) {
+function DayDetailPanel({ dateKey, assigned, availableWorkouts, onAssign, onClose, equipment, isProUser = false }) {
   const [picking, setPicking] = useState(false)
-  const frontColors = useMemo(() => assigned ? buildMuscleIntensityColors(assigned.exercises, 'front') : {}, [assigned])
-  const backColors  = useMemo(() => assigned ? buildMuscleIntensityColors(assigned.exercises, 'back') : {}, [assigned])
+  const frontColors = useMemo(() => assigned ? buildMuscleIntensityColors(assigned.exercises, 'front', isProUser) : {}, [assigned, isProUser])
+  const backColors  = useMemo(() => assigned ? buildMuscleIntensityColors(assigned.exercises, 'back', isProUser) : {}, [assigned, isProUser])
 
   const displayDate = dateKey ? new Date(dateKey + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : ''
   const showPicker = !assigned || picking
@@ -138,7 +138,7 @@ function DayDetailPanel({ dateKey, assigned, availableWorkouts, onAssign, onClos
   )
 }
 
-export default function WorkoutRoutine({ weeklyPlan, userProfile, userWorkouts = [], onNavigate, onUpdateRoutine, routine = {} }) {
+export default function WorkoutRoutine({ weeklyPlan, userProfile, userWorkouts = [], onNavigate, onUpdateRoutine, routine = {}, isProUser = false }) {
   const [selectedDay, setSelectedDay] = useState(null)
   const [localRoutine, setLocalRoutine] = useState(routine)
 
@@ -255,6 +255,7 @@ export default function WorkoutRoutine({ weeklyPlan, userProfile, userWorkouts =
           onAssign={handleAssign}
           onClose={() => setSelectedDay(null)}
           equipment={userProfile?.equipment}
+          isProUser={isProUser}
         />
       ) : (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 22px' }}>

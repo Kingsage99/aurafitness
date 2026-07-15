@@ -4,6 +4,7 @@ import BottomNav from '../components/BottomNav'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
 import ExerciseThumb, { SLOT_COLORS } from '../components/ExerciseThumb'
 import { uploadExerciseImage } from '../lib/social'
+import ImageCropSheet from '../components/ImageCropSheet'
 import { estimateDuration, resolveExerciseImage } from '../utils/workoutBuilder'
 import { toDisplayWeight, fromDisplayWeight, weightUnitLabel } from '../utils/units'
 import allExercises from '../data/exercises.json'
@@ -208,6 +209,7 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate, postSaveScre
   const [customEquipment, setCustomEquipment] = useState(new Set(['none']))
   const [customImage,     setCustomImage]     = useState(null)
   const [uploading,       setUploading]       = useState(false)
+  const [imageCropFile,   setImageCropFile]   = useState(null)
   const fileInputRef = useRef(null)
 
   const exercisePool = useMemo(() => [...allExercises, ...customExercises], [customExercises])
@@ -332,11 +334,17 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate, postSaveScre
     })
   }
 
-  async function handleImagePick(e) {
+  function handleImagePick(e) {
     const file = e.target.files?.[0]
-    if (!file || !userId) return
+    e.target.value = ''
+    if (file) setImageCropFile(file)
+  }
+
+  async function handleImageCropped(croppedFile) {
+    setImageCropFile(null)
+    if (!userId) return
     setUploading(true)
-    const url = await uploadExerciseImage(userId, file)
+    const url = await uploadExerciseImage(userId, croppedFile)
     if (url) setCustomImage(url)
     setUploading(false)
   }
@@ -740,6 +748,8 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate, postSaveScre
       )}
 
       {!isOnboarding && <BottomNav active="workout" onNavigate={onNavigate} />}
+
+      <ImageCropSheet file={imageCropFile} shape="rect" aspect={1} onCancel={() => setImageCropFile(null)} onCropped={handleImageCropped} />
     </>
   )
 }

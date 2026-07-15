@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import MuscleSVG from '../components/MuscleSVG'
 import { createPost, uploadPostMedia, top3Muscles } from '../lib/social'
+import ImageCropSheet from '../components/ImageCropSheet'
 import { buildMuscleIntensityColors } from '../utils/muscleIntensity'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 import { CameraIcon, StrengthArmIcon, StopwatchIcon } from '../components/Icons'
@@ -11,7 +12,7 @@ function fmt(s) {
   return m === 0 ? `${s}s` : `${m}m`
 }
 
-export default function WorkoutPost({ sessionData, userProfile, session, onNavigate }) {
+export default function WorkoutPost({ sessionData, userProfile, session, isProUser = false, onNavigate }) {
   const exercises = sessionData?.exercises ?? []
   const label     = sessionData?.workoutLabel ?? 'Workout'
   const elapsed   = sessionData?.elapsed ?? 0
@@ -23,19 +24,32 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
   const [mediaIsVideo, setMediaIsVideo] = useState(false)
   const [posting,   setPosting]   = useState(false)
   const [error,     setError]     = useState('')
+  const [cropFile,  setCropFile]  = useState(null)
   const fileRef = useRef()
 
-  const frontColors = useMemo(() => buildMuscleIntensityColors(exercises, 'front'), [exercises])
-  const backColors  = useMemo(() => buildMuscleIntensityColors(exercises, 'back'),  [exercises])
+  const frontColors = useMemo(() => buildMuscleIntensityColors(exercises, 'front', isProUser), [exercises, isProUser])
+  const backColors  = useMemo(() => buildMuscleIntensityColors(exercises, 'back',  isProUser), [exercises, isProUser])
 
   const handlePickMedia = (e) => {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
     if (file.size > 50 * 1024 * 1024) { setError('File is too large (max 50 MB).'); return }
     setError('')
-    setMediaFile(file)
-    setMediaIsVideo(file.type.startsWith('video'))
-    setMediaPreview(URL.createObjectURL(file))
+    if (file.type.startsWith('video')) {
+      setMediaFile(file)
+      setMediaIsVideo(true)
+      setMediaPreview(URL.createObjectURL(file))
+    } else {
+      setCropFile(file)
+    }
+  }
+
+  const handleMediaCropped = (croppedFile) => {
+    setCropFile(null)
+    setMediaFile(croppedFile)
+    setMediaIsVideo(false)
+    setMediaPreview(URL.createObjectURL(croppedFile))
   }
 
   const handlePost = async () => {
@@ -166,6 +180,8 @@ export default function WorkoutPost({ sessionData, userProfile, session, onNavig
         </button>
 
       </div>
+
+      <ImageCropSheet file={cropFile} shape="rect" aspect={1} onCancel={() => setCropFile(null)} onCropped={handleMediaCropped} />
     </>
   )
 }

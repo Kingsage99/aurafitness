@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { createPost, uploadPostMedia } from '../lib/social'
+import ImageCropSheet from '../components/ImageCropSheet'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 import { SaladIcon } from '../components/Icons'
 
@@ -15,16 +16,29 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
   const [mediaIsVideo, setMediaIsVideo] = useState(false)
   const [posting,     setPosting]     = useState(false)
   const [error,       setError]       = useState('')
+  const [cropFile,    setCropFile]    = useState(null)
   const fileRef = useRef()
 
   const handlePickMedia = (e) => {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
     if (file.size > 50 * 1024 * 1024) { setError('File is too large (max 50 MB).'); return }
     setError('')
-    setMediaFile(file)
-    setMediaIsVideo(file.type.startsWith('video'))
-    setMediaPreview(URL.createObjectURL(file))
+    if (file.type.startsWith('video')) {
+      setMediaFile(file)
+      setMediaIsVideo(true)
+      setMediaPreview(URL.createObjectURL(file))
+    } else {
+      setCropFile(file)
+    }
+  }
+
+  const handleMediaCropped = (croppedFile) => {
+    setCropFile(null)
+    setMediaFile(croppedFile)
+    setMediaIsVideo(false)
+    setMediaPreview(URL.createObjectURL(croppedFile))
   }
 
   const handlePost = async () => {
@@ -146,6 +160,8 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
         </button>
 
       </div>
+
+      <ImageCropSheet file={cropFile} shape="rect" aspect={1} onCancel={() => setCropFile(null)} onCropped={handleMediaCropped} />
     </>
   )
 }

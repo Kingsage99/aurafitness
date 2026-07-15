@@ -45,6 +45,16 @@ export async function uploadExerciseImage(userId, file) {
   return publicUrl
 }
 
+// Custom reaction sticker upload — same bucket, under a stickers/ prefix.
+export async function uploadSticker(userId, file) {
+  const ext = file.name.split('.').pop() || 'bin'
+  const path = `stickers/${userId}-${Date.now()}.${ext}`
+  const { data, error } = await supabase.storage.from('post-media').upload(path, file)
+  if (error) { console.error('uploadSticker error:', error.message); return null }
+  const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(data.path)
+  return publicUrl
+}
+
 export async function fetchGlobalFeed(limit = 30) {
   const { data, error } = await supabase
     .from('posts')
@@ -164,7 +174,9 @@ export async function checkFriendshipStatus(currentUserId, targetUserId) {
     .from('friend_requests')
     .select('status')
     .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${currentUserId})`)
-    .single()
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
   return data?.status || null
 }
 
@@ -192,6 +204,33 @@ export async function searchUserByUsername(query) {
     username: data.username,
     display_name: data.profile_data?.name || data.username,
   }
+}
+
+// Batch-fetch profile+gamification for a set of user ids — used to enrich the
+// Discovery feed with each author's avatar, border, streak and rank.
+export async function fetchProfilesByIds(ids = []) {
+  const unique = [...new Set(ids)].filter(Boolean)
+  if (!unique.length) return {}
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, username, profile_data, gamification, pro_until')
+    .in('id', unique)
+  if (error || !data) return {}
+  const map = {}
+  data.forEach(row => { map[row.id] = row })
+  return map
+}
+
+// Fetch a single user's full public profile (for the view-another-user screen).
+export async function fetchProfileById(userId) {
+  if (!userId) return null
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, username, profile_data, gamification, pro_until')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error || !data) return null
+  return data
 }
 
 // ─── Workout History ──────────────────────────────────────────────────────────

@@ -24,6 +24,7 @@ export const DEFAULT_GAMIFICATION = {
   rank: 'rookie',
   rankPoints: 0,
   dailyQuests: { date: '', completed: [] },
+  mealsToday: { date: '', types: [] },           // meal-kind buckets logged today, for auto-quests
   weeklyChallenges: { week: '', claimed: [] },   // week = Monday "YYYY-MM-DD"
   purchasedItems: [],
   inventory: { streakFreezes: 0 },
@@ -32,6 +33,7 @@ export const DEFAULT_GAMIFICATION = {
   activeTheme: 'theme_default',
   activePet: 'pet_greycube', // equipped pet — see src/data/pets.js
   muscleRanks: {},          // { [muscleId]: { rank: 'rookie', rankPoints: 0, subLevel: 0 } }
+  stickerUsage: {},         // { [stickerId]: count } — lifetime react counts, survives un-reacting, ranks the sticker picker
 }
 
 // Cumulative XP to reach each level (index = level - 1)
@@ -130,6 +132,41 @@ export function getDailyQuests(dateStr) {
     if (!indices.includes(idx)) indices.push(idx)
   }
   return indices.map(i => QUEST_POOL[i])
+}
+
+// Each quest auto-completes when its predicate over a `signals` object is true.
+// signals: { workoutDoneToday, caloriesHit, proteinHit, mealTypes:Set, mealCount }
+export const QUEST_CONDITIONS = {
+  complete_workout: s => !!s.workoutDoneToday,
+  maintain_streak:  s => !!s.workoutDoneToday,
+  log_breakfast:    s => !!s.mealTypes?.has('breakfast'),
+  log_lunch:        s => !!s.mealTypes?.has('lunch'),
+  log_dinner:       s => !!s.mealTypes?.has('dinner'),
+  hit_calories:     s => !!s.caloriesHit,
+  log_3_meals:      s => (s.mealCount || 0) >= 3,
+  hit_protein:      s => !!s.proteinHit,
+}
+
+// Auto-completes any of today's 3 quests whose condition is now met, awarding
+// gems for each newly-completed one. Idempotent — already-completed quests are
+// skipped, so re-running with unchanged progress returns the same g and no
+// newlyCompleted (safe to call from a state-driven effect without looping).
+export function evaluateDailyQuests(g, signals, dateStr) {
+  const dq = g.dailyQuests || { date: '', completed: [] }
+  const completed = dq.date === dateStr ? [...dq.completed] : []
+  const newlyCompleted = []
+  let updated = g
+  for (const quest of getDailyQuests(dateStr)) {
+    if (completed.includes(quest.id)) continue
+    const cond = QUEST_CONDITIONS[quest.id]
+    if (cond && cond(signals)) {
+      updated = awardGems(updated, quest.reward)
+      completed.push(quest.id)
+      newlyCompleted.push(quest)
+    }
+  }
+  if (newlyCompleted.length === 0) return { g, newlyCompleted: [] }
+  return { g: { ...updated, dailyQuests: { date: dateStr, completed } }, newlyCompleted }
 }
 
 // ─── Weekly Challenges ────────────────────────────────────────────────────────

@@ -80,6 +80,34 @@ const ALL_MUSCLE_IDS = new Set([
 
 const svgCache = {}
 
+// MissVfit Pro's shiny blue→purple muscle-map fill. A plain CSS gradient
+// string doesn't work as an SVG `fill` — it has to be a real `<linearGradient>`
+// def referenced via `url(#id)`, so one is injected into each mounted SVG's
+// `<defs>` (cheap and harmless whether or not anything actually uses it).
+const PRO_GRADIENT_ID = 'missvfit-pro-fill'
+export const MUSCLE_PRO_FILL = `url(#${PRO_GRADIENT_ID})`
+
+function ensureProGradient(svgEl) {
+  if (svgEl.querySelector(`#${PRO_GRADIENT_ID}`)) return
+  const svgNS = 'http://www.w3.org/2000/svg'
+  let defs = svgEl.querySelector('defs')
+  if (!defs) {
+    defs = document.createElementNS(svgNS, 'defs')
+    svgEl.insertBefore(defs, svgEl.firstChild)
+  }
+  const grad = document.createElementNS(svgNS, 'linearGradient')
+  grad.setAttribute('id', PRO_GRADIENT_ID)
+  grad.setAttribute('x1', '0%'); grad.setAttribute('y1', '0%')
+  grad.setAttribute('x2', '100%'); grad.setAttribute('y2', '100%')
+  const stop1 = document.createElementNS(svgNS, 'stop')
+  stop1.setAttribute('offset', '0%'); stop1.setAttribute('stop-color', '#6FA8FF')
+  const stop2 = document.createElementNS(svgNS, 'stop')
+  stop2.setAttribute('offset', '100%'); stop2.setAttribute('stop-color', '#9366E6')
+  grad.appendChild(stop1)
+  grad.appendChild(stop2)
+  defs.appendChild(grad)
+}
+
 function colorGroup(el, color) {
   // Set on the group itself — covers paths that inherit fill from parent
   el.style.fill = color
@@ -124,6 +152,7 @@ export default function MuscleSVG({ url, muscleColors = {}, onMuscleClick, focus
         svgEl.removeAttribute('height')
         svgEl.style.width = '100%'
         svgEl.style.height = '100%'
+        ensureProGradient(svgEl)
       }
       setReady(true)
     }

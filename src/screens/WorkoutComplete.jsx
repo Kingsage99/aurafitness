@@ -16,7 +16,7 @@ function fmt(s) {
   return `${m}m ${sec > 0 ? sec + 's' : ''}`.trim()
 }
 
-export default function WorkoutComplete({ sessionData, gamification, userProfile, onNavigate }) {
+export default function WorkoutComplete({ sessionData, gamification, userProfile, isProUser = false, onNavigate }) {
   const units = userProfile?.units
   const exercises = sessionData?.exercises ?? []
   const label     = sessionData?.workoutLabel ?? 'Workout'
@@ -25,8 +25,8 @@ export default function WorkoutComplete({ sessionData, gamification, userProfile
   const gems      = sessionData?.gemsEarned ?? 30
   const streak    = sessionData?.streak ?? gamification?.workoutStreak ?? 1
 
-  const frontColors = useMemo(() => buildMuscleIntensityColors(exercises, 'front'), [exercises])
-  const backColors  = useMemo(() => buildMuscleIntensityColors(exercises, 'back'),  [exercises])
+  const frontColors = useMemo(() => buildMuscleIntensityColors(exercises, 'front', isProUser), [exercises, isProUser])
+  const backColors  = useMemo(() => buildMuscleIntensityColors(exercises, 'back',  isProUser), [exercises, isProUser])
 
   const hasColors = Object.keys(frontColors).length + Object.keys(backColors).length > 0
 

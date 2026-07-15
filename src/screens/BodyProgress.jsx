@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { TrendChart } from '../components/Charts'
 import { fetchBodyWeightLog, logBodyWeight, uploadBodyProgressPhoto } from '../lib/social'
+import ImageCropSheet from '../components/ImageCropSheet'
 import { dateKeyFor } from '../utils/workoutBuilder'
 import { weightSeries } from '../utils/analytics'
 import { toDisplayWeight, fromDisplayWeight, weightUnitLabel } from '../utils/units'
@@ -19,6 +20,7 @@ export default function BodyProgress({ session, userProfile, onNavigate }) {
   const [photoPreview, setPhotoPreview] = useState(null)
   const [saving, setSaving] = useState(false)
   const [viewingPhoto, setViewingPhoto] = useState(null)
+  const [photoCropFile, setPhotoCropFile] = useState(null)
   const fileRef = useRef()
 
   useEffect(() => {
@@ -35,9 +37,14 @@ export default function BodyProgress({ session, userProfile, onNavigate }) {
 
   const handlePhotoPick = (e) => {
     const file = e.target.files?.[0]
-    if (!file) return
-    setPhotoFile(file)
-    setPhotoPreview(URL.createObjectURL(file))
+    e.target.value = ''
+    if (file) setPhotoCropFile(file)
+  }
+
+  const handlePhotoCropped = (croppedFile) => {
+    setPhotoCropFile(null)
+    setPhotoFile(croppedFile)
+    setPhotoPreview(URL.createObjectURL(croppedFile))
   }
 
   const handleSave = async () => {
@@ -170,6 +177,8 @@ export default function BodyProgress({ session, userProfile, onNavigate }) {
           </div>
         </div>
       )}
+
+      <ImageCropSheet file={photoCropFile} shape="rect" aspect={1} onCancel={() => setPhotoCropFile(null)} onCropped={handlePhotoCropped} />
     </>
   )
 }

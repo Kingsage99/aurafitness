@@ -1,8 +1,9 @@
 import React from 'react'
 
-export const DEFAULT_CHARACTER = '/characters/default-panda.png'
+export const DEFAULT_CHARACTER = '/characters/default-greycube.png'
 
-// The user's custom character — every account starts with the default panda.
+// The user's custom character — every account starts with the free default
+// pet (grey cube). The panda is a purchasable pet, not the default.
 export default function CharacterAvatar({ src = DEFAULT_CHARACTER, size = 150, style = {} }) {
   return (
     <img

@@ -3,6 +3,7 @@ import {
   DEFAULT_GAMIFICATION, BADGES, QUEST_POOL, WEEKLY_CHALLENGES,
   awardGems, awardXP, updateStreak, resetWeeklyIfNeeded,
   getDailyQuests, checkBadges, claimWeeklyChallenge, getWeeklyChallengeState,
+  evaluateDailyQuests,
 } from './gamification'
 
 const g0 = () => ({ ...DEFAULT_GAMIFICATION })
@@ -141,5 +142,49 @@ describe('weekly challenges', () => {
 describe('badge definitions', () => {
   it('all badge ids are unique', () => {
     expect(new Set(BADGES.map(b => b.id)).size).toBe(BADGES.length)
+  })
+})
+
+describe('evaluateDailyQuests', () => {
+  const DATE = '2025-01-15'
+  // A signals object that satisfies every possible quest condition.
+  const allSignals = {
+    workoutDoneToday: true,
+    caloriesHit: true,
+    proteinHit: true,
+    mealTypes: new Set(['breakfast', 'lunch', 'dinner']),
+    mealCount: 3,
+  }
+
+  it('auto-completes met quests and awards their gems', () => {
+    const { g, newlyCompleted } = evaluateDailyQuests(g0(), allSignals, DATE)
+    const todays = getDailyQuests(DATE)
+    expect(newlyCompleted.length).toBe(todays.length) // all 3 met
+    expect(g.dailyQuests.date).toBe(DATE)
+    expect(g.dailyQuests.completed.sort()).toEqual(todays.map(q => q.id).sort())
+    expect(g.gems).toBe(todays.reduce((s, q) => s + q.reward, 0))
+  })
+
+  it('is idempotent — a second run awards nothing and returns the same object', () => {
+    const first = evaluateDailyQuests(g0(), allSignals, DATE)
+    const second = evaluateDailyQuests(first.g, allSignals, DATE)
+    expect(second.newlyCompleted).toEqual([])
+    expect(second.g).toBe(first.g) // same reference → no setState → no loop
+  })
+
+  it('completes nothing when no conditions are met', () => {
+    const none = { workoutDoneToday: false, caloriesHit: false, proteinHit: false, mealTypes: new Set(), mealCount: 0 }
+    const { g, newlyCompleted } = evaluateDailyQuests(g0(), none, DATE)
+    expect(newlyCompleted).toEqual([])
+    expect(g).toBe(g0() === g ? g : g) // returns original g unchanged
+    expect(g.gems).toBe(0)
+  })
+
+  it('resets completion when the date changes', () => {
+    const done = evaluateDailyQuests(g0(), allSignals, DATE)
+    // A new day: prior completions for the old date should not count.
+    const next = evaluateDailyQuests(done.g, allSignals, '2025-01-16')
+    expect(next.newlyCompleted.length).toBeGreaterThan(0)
+    expect(next.g.dailyQuests.date).toBe('2025-01-16')
   })
 })

@@ -37,3 +37,11 @@ export function isPro(profileRow) {
   const proUntil = profileRow?.pro_until
   return !!proUntil && new Date(proUntil).getTime() > Date.now()
 }
+
+// A user is trial-eligible only if they've NEVER had any subscription before.
+// stripe-webhook sets subscription_status/pro_until once and never clears them
+// back to null (even on cancellation), so either being non-null proves prior
+// use — a lapsed or canceled subscriber never gets the free trial offered again.
+export function isTrialEligible(subscription) {
+  return !subscription?.status && !subscription?.proUntil
+}

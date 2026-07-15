@@ -1,4 +1,4 @@
-import { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
+import { MUSCLE_SVG_IDS, MUSCLE_PRO_FILL } from '../components/MuscleSVG'
 import { NB_INTENSITY_RAMP } from '../styles/neoBrutalism'
 
 // Shared "which display muscle group does this exercise-data muscle name map
@@ -19,7 +19,9 @@ export const MUSCLE_TO_GROUP = {
 // primary muscles, then buckets into the 3-tier NB_INTENSITY_RAMP (Light/
 // Moderate/High) — was reimplemented with drifting thresholds/palettes across
 // WorkoutComplete, WorkoutRoutine, and (as a cruder 2-tone version) WorkoutPost.
-export function buildMuscleIntensityColors(exercises, side) {
+// `shiny` (MissVfit Pro perk) swaps every "worked" muscle's flat color for the
+// shared blue→purple gradient fill — rested/untouched muscles stay plain.
+export function buildMuscleIntensityColors(exercises, side, shiny = false) {
   const counts = {}
   ;(exercises || []).forEach(ex => {
     ;(ex.muscles?.primary || []).forEach(m => {
@@ -30,7 +32,7 @@ export function buildMuscleIntensityColors(exercises, side) {
   })
   const colors = {}
   Object.entries(counts).forEach(([id, n]) => {
-    colors[id] = n >= 3 ? NB_INTENSITY_RAMP[4] : n >= 2 ? NB_INTENSITY_RAMP[3] : NB_INTENSITY_RAMP[1]
+    colors[id] = shiny ? MUSCLE_PRO_FILL : n >= 3 ? NB_INTENSITY_RAMP[4] : n >= 2 ? NB_INTENSITY_RAMP[3] : NB_INTENSITY_RAMP[1]
   })
   return colors
 }
