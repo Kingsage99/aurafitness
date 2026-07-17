@@ -17,6 +17,7 @@ self.addEventListener('push', (event) => {
     icon: '/cute_logo.png',
     badge: '/cute_logo.png',
     data: { url: data.url || '/' },
+    requireInteraction: true,
   }
 
   event.waitUntil(self.registration.showNotification(title, options))
