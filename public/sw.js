@@ -7,6 +7,17 @@
 // falling back to a plain bookmark-style shortcut.
 self.addEventListener('fetch', () => {})
 
+// Take over immediately on update instead of waiting for every open tab to
+// close first — this worker has no offline cache to worry about breaking
+// mid-session, so there's no downside to activating right away.
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim())
+})
+
 self.addEventListener('push', (event) => {
   let data = {}
   try { data = event.data ? event.data.json() : {} } catch { /* non-JSON payload, ignore */ }
