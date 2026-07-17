@@ -14,8 +14,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'MissVfit'
   const options = {
     body: data.body || '',
-    icon: '/cute_logo.png',
-    badge: '/cute_logo.png',
+    icon: '/notification_icon.png',
+    badge: '/notification_icon.png',
     data: { url: data.url || '/' },
     requireInteraction: true,
   }
