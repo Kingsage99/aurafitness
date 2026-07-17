@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { supabase } from '../lib/supabase'
-import { subscribeToPush, unsubscribeFromPush, isPushSupported } from '../utils/pushNotifications'
+import { subscribeToPush, unsubscribeFromPush, isPushSupported, isIOSDevice, hasActiveSubscription } from '../utils/pushNotifications'
 import { savePushSubscription, deletePushSubscription } from '../lib/social'
 import { startCheckout, openBillingPortal, STRIPE_PRICES, isTrialEligible } from '../lib/stripe'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
@@ -61,8 +61,16 @@ export default function Settings({ userProfile, session, subscription, isProUser
   const [pushError, setPushError] = useState('')
   const [billingBusy, setBillingBusy] = useState(false)
   const [billingError, setBillingError] = useState('')
+  // Whether a real browser subscription exists right now — distinct from the
+  // stored preference, which defaults to "on" even for an account that's
+  // never actually completed the permission prompt. null = still checking.
+  const [subscriptionActive, setSubscriptionActive] = useState(null)
 
   const trialEligible = isTrialEligible(subscription)
+
+  useEffect(() => {
+    hasActiveSubscription().then(setSubscriptionActive)
+  }, [])
 
   const handleUpgrade = async (priceId) => {
     setBillingError('')
@@ -88,10 +96,21 @@ export default function Settings({ userProfile, session, subscription, isProUser
   }
 
   // Turning this on now also requests real OS-level push permission and
-  // stores a subscription; turning it off removes it. Falls back to the
-  // in-app-only banner behavior (unchanged) on unsupported browsers.
+  // stores a subscription; turning it off removes it. On a browser/device
+  // that can't do push at all (most commonly iOS Safari unless installed to
+  // the Home Screen first), this used to silently do nothing while the
+  // toggle still showed "on" — now it shows exactly why and leaves the
+  // toggle off, since nothing was actually subscribed.
   const handleNotificationsToggle = async (val) => {
     setPushError('')
+    if (val && !isPushSupported()) {
+      setPushError(
+        isIOSDevice()
+          ? 'Needs MissVfit added to your Home Screen first — tap Share, then "Add to Home Screen", and enable notifications from there.'
+          : "Push notifications aren't supported in this browser — try Chrome or Edge."
+      )
+      return
+    }
     onUpdateProfile?.({ notificationsEnabled: val })
     const userId = session?.user?.id
     if (!userId || !isPushSupported()) return
@@ -100,11 +119,12 @@ export default function Settings({ userProfile, session, subscription, isProUser
     try {
       if (val) {
         const subscription = await subscribeToPush()
-        if (subscription) await savePushSubscription(userId, subscription)
+        if (subscription) { await savePushSubscription(userId, subscription); setSubscriptionActive(true) }
         else setPushError('Notifications permission was denied or unavailable.')
       } else {
         const endpoint = await unsubscribeFromPush()
         if (endpoint) await deletePushSubscription(userId, endpoint)
+        setSubscriptionActive(false)
       }
     } finally {
       setPushBusy(false)
@@ -262,6 +282,19 @@ export default function Settings({ userProfile, session, subscription, isProUser
           </div>
           {pushError && (
             <div style={{ fontSize: 11, color: NB.red, marginTop: 6, paddingLeft: 4 }}>{pushError}</div>
+          )}
+          {/* The preference defaults to "on" even for an account that's never
+              actually granted the browser permission (e.g. a new user who's
+              never touched this toggle) — surface that gap instead of letting
+              the toggle silently claim notifications are active. */}
+          {!pushError && userProfile?.notificationsEnabled !== false && isPushSupported() && subscriptionActive === false && (
+            <button
+              onClick={() => handleNotificationsToggle(true)}
+              disabled={pushBusy}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', marginTop: 8, padding: '10px 14px', border: `2px solid ${NB.ink}`, borderRadius: 12, background: NB.yellow, color: NB.ink, fontSize: 12, fontWeight: 700, cursor: pushBusy ? 'default' : 'pointer' }}
+            >
+              ⚠️ Notifications aren't actually turned on yet — tap to finish setup
+            </button>
           )}
 
           {/* Per-category opt-out — only meaningful once the master switch above is on */}

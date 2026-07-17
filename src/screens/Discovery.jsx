@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
-import MuscleSVG, { MUSCLE_SVG_IDS, MUSCLE_PRO_FILL } from '../components/MuscleSVG'
+import MuscleSVG, { MUSCLE_SVG_IDS, RANK_FILL } from '../components/MuscleSVG'
 import {
   fetchGlobalFeed, fetchFriendsFeed, fetchFriendIds,
   fetchPendingRequests, fetchReactions, addReaction, removeReaction,
@@ -10,6 +10,8 @@ import {
 } from '../lib/social'
 import { isPro } from '../lib/stripe'
 import { getMissFlags, RANKS, normalizeRankId, SUB_LEVEL_ROMAN, SUB_LEVELS_PER_TIER } from '../utils/gamification'
+import { groupOf } from '../utils/muscleGroups'
+import { tierForGroup } from '../utils/muscleRankColors'
 import { Avatar } from '../components/AvatarSilhouette'
 import { FireIcon } from '../components/Icons'
 import { STORE_BORDERS } from './StoreScreen'
@@ -17,13 +19,14 @@ import ImageCropSheet from '../components/ImageCropSheet'
 import ProBorderRing from '../components/ProBorderRing'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
 
-// The two stock stickers in public/sticker/ — the fallback set a brand-new
+// The four stock stickers in public/sticker/ — the fallback set a brand-new
 // user (no usage history, no custom stickers) sees in the reaction picker.
+// heart.png stays first so it's always the default trigger icon on a post.
 // Reactions are keyed by the sticker's own URL (not an opaque id) so the
 // aggregate tally can render any user's reaction — default or a friend's
 // custom upload — without needing to resolve whose sticker collection it
 // came from.
-const DEFAULT_STICKERS = ['/sticker/heart.png', '/sticker/peach.png']
+const DEFAULT_STICKERS = ['/sticker/heart.png', '/sticker/peach.png', '/sticker/fire_sticker.png', '/sticker/slay.png']
 const HEART_STICKER = DEFAULT_STICKERS[0]
 const isDefaultSticker = url => DEFAULT_STICKERS.includes(url)
 
@@ -53,23 +56,18 @@ function topStickers(gamification, userProfile, max = 4) {
   return [...pool].sort((a, b) => (usage[b] || 0) - (usage[a] || 0)).slice(0, max)
 }
 
-const MUSCLE_TO_GROUP = {
-  glutes:'glutes', glute:'glutes',
-  hamstrings:'legs', quads:'legs', legs:'legs',
-  chest:'chest', pecs:'chest',
-  shoulders:'shoulders', delts:'shoulders',
-  back:'back', lats:'back', lat:'back',
-  core:'core', abs:'core',
-  arms:'arms', biceps:'arms', triceps:'arms',
-  calves:'calves',
-}
-
-function muscleColors(muscles, side, shiny = false) {
+// Colors a post's worked muscles by the author's own rank tier for that
+// group (bronze glutes, platinum core, etc.) — same "rank colors" Pro perk as
+// the Muscle Map and post-workout recap, always at full/shiny strength since
+// a feed post only carries its top 3 worked muscles, not per-group counts.
+// Non-Pro authors keep the plain flat-ink highlight.
+function muscleColors(muscles, side, gamification, shiny = false) {
   const colors = {}
   ;(muscles || []).forEach(m => {
-    const group = MUSCLE_TO_GROUP[m?.toLowerCase()]
+    const group = groupOf(m)
     if (!group) return
-    ;(MUSCLE_SVG_IDS[group]?.[side] || []).forEach(id => { colors[id] = shiny ? MUSCLE_PRO_FILL : NB.ink })
+    const tier = shiny ? tierForGroup(gamification, group) : null
+    ;(MUSCLE_SVG_IDS[group]?.[side] || []).forEach(id => { colors[id] = shiny ? RANK_FILL(tier.id) : NB.ink })
   })
   return colors
 }
@@ -357,7 +355,7 @@ function AuthorAvatar({ author, size = 42 }) {
   const scale = size / 46 // frameOffsets are calibrated for a 46px avatar
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0, zIndex: 0 }}>
-      <div style={{ width: size, height: size, borderRadius: '50%', border: equippedBorder?.id === 'frame_pro' ? 'none' : `2px solid ${NB.ink}`, background: NB.lavender, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: size, height: size, borderRadius: '50%', border: equippedBorder?.id === 'frame_pro' && isPro(author) ? 'none' : `2px solid ${NB.ink}`, background: NB.lavender, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Avatar url={author?.profile_data?.avatarUrl} height={size} color={NB.ink} />
       </div>
       {equippedBorder?.image && off && (
@@ -384,8 +382,8 @@ function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, 
   const ag        = author?.gamification || {}
   const authorIsPro = isPro(author)
 
-  const frontColors = muscleColors(content.muscles, 'front', authorIsPro)
-  const backColors  = muscleColors(content.muscles, 'back', authorIsPro)
+  const frontColors = muscleColors(content.muscles, 'front', ag, authorIsPro)
+  const backColors  = muscleColors(content.muscles, 'back', ag, authorIsPro)
 
   const allStickerUrls  = Object.keys(postReactions).filter(k => k !== 'mine' && (postReactions[k] || 0) > 0)
   const floatingStickers = allStickerUrls.slice(0, 4)
@@ -440,19 +438,38 @@ function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, 
         </div>
       ) : null}
 
-      {/* Swipeable cards */}
-      <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollPaddingLeft: '16px', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', gap: 10 }}>
+      {/* Swipeable cards — alignItems:'flex-start' keeps each card at its own
+          natural height (top-aligned), instead of flexbox's default 'stretch'
+          forcing the shorter card (usually Card 1's now-variable-size media)
+          to match the taller one, which was inflating/distorting the photo.
+          paddingBottom gives the scrollport room for Card 2's bottom
+          box-shadow: per the CSS overflow spec, overflowX:'auto' silently
+          forces overflowY to 'auto' too (browsers disallow a mismatched
+          visible/non-visible pair, even when overflowY is set explicitly to
+          'visible') — so the shadow WILL get clipped at this row's own box
+          edge unless that edge has enough padding to contain it. */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 9, scrollSnapType: 'x mandatory', scrollPaddingLeft: '16px', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', gap: 10 }}>
 
-        {/* Card 1: Media */}
-        <div style={{ flex: '0 0 calc(100% - 56px)', scrollSnapAlign: 'start', overflow: 'hidden', position: 'relative', flexShrink: 0, ...nbCardStyle(NB.lavender, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, marginLeft: 16 }}>
+        {/* Card 1: Media — real uploaded media shrink-wraps to its own actual
+            size (not a fixed slot) and carries its own outline/shadow, so the
+            row's `gap` to Card 2 is measured from the real photo edge no
+            matter the media's shape. The emoji fallback (no media) keeps the
+            old fixed-width card look since there's no photo to stand on its
+            own. */}
+        <div style={{
+          display: 'flex', justifyContent: 'center', alignItems: 'flex-start', position: 'relative', flexShrink: 0, scrollSnapAlign: 'start', marginLeft: 16,
+          maxWidth: 'calc(100% - 56px)',
+          overflow: post.media_url ? 'visible' : 'hidden',
+          ...(post.media_url ? {} : { width: 'calc(100% - 56px)', borderRadius: 27, ...nbCardStyle(NB.lavender, 6, NB_CARD_NEUTRAL_SHADOW), border: `4.5px solid ${NB.white}` }),
+        }}>
           {post.media_url ? (
             post.media_type === 'video'
-              ? <video src={post.media_url} autoPlay muted loop playsInline style={{ width: '100%', height: 'auto', display: 'block', minHeight: 160 }} />
-              : <img src={post.media_url} alt="" style={{ width: '100%', height: 'auto', display: 'block' }} />
+              ? <video src={post.media_url} autoPlay muted loop playsInline style={{ width: 'auto', maxWidth: '100%', height: 'auto', maxHeight: 330, display: 'block', borderRadius: 21, border: `3.75px solid ${NB.white}`, boxShadow: '4.5px 4.5px 0 #C3A6FF' }} />
+              : <img src={post.media_url} alt="" style={{ width: 'auto', maxWidth: '100%', height: 'auto', maxHeight: 330, display: 'block', borderRadius: 21, border: `3.75px solid ${NB.white}`, boxShadow: '4.5px 4.5px 0 #C3A6FF' }} />
           ) : (
-            <div style={{ width: '100%', height: 280, background: isWorkout ? NB.magenta : NB.green, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontSize: 48 }}>{isWorkout ? '💪' : '🥗'}</div>
-              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink, marginTop: 10, textAlign: 'center', padding: '0 20px' }}>
+            <div style={{ width: '100%', height: 420, background: isWorkout ? NB.magenta : NB.green, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontSize: 72 }}>{isWorkout ? '💪' : '🥗'}</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 30, textTransform: 'uppercase', color: NB.ink, marginTop: 15, textAlign: 'center', padding: '0 30px' }}>
                 {isWorkout ? (content.label || 'Workout') : 'Meal'}
               </div>
             </div>
@@ -502,38 +519,41 @@ function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, 
           </div>
         </div>
 
-        {/* Card 2: Muscle map or nutrition */}
-        <div style={{ flex: '0 0 calc(100% - 56px)', scrollSnapAlign: 'start', overflow: 'hidden', flexShrink: 0, ...nbCardStyle(NB.cream, 4), border: `3px solid ${NB.white}`, borderRadius: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16, marginRight: 16 }}>
+        {/* Card 2: Muscle map or nutrition — height capped to line up with
+            Card 1's own maxHeight (220) instead of growing to whatever its
+            content naturally wants, which used to tower over the now much
+            more compact media card. */}
+        <div style={{ flex: '0 0 calc(100% - 56px)', scrollSnapAlign: 'start', overflow: 'hidden', flexShrink: 0, height: 330, ...nbCardStyle(NB.cream, 6), border: `4.5px solid ${NB.white}`, borderRadius: 27, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 21, marginRight: 16 }}>
           {isWorkout ? (
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flex: 1, alignItems: 'center', width: '100%' }}>
-              <div style={{ flex: 1, maxWidth: 170 }}>
+            <div style={{ display: 'flex', gap: 15, justifyContent: 'center', flex: 1, alignItems: 'center', width: '100%' }}>
+              <div style={{ flex: 1, maxWidth: 174 }}>
                 <MuscleSVG url="/muscle_map_front.svg" muscleColors={frontColors} />
               </div>
-              <div style={{ flex: 1, maxWidth: 170 }}>
+              <div style={{ flex: 1, maxWidth: 174 }}>
                 <MuscleSVG url="/muscle_map_back.svg" muscleColors={backColors} />
               </div>
             </div>
           ) : (
             <>
-              <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 16 }}>Nutrition</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, width: '100%' }}>
+              <div style={{ fontFamily: NB.fontMono, fontSize: 16.5, fontWeight: 800, color: '#555', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 15 }}>Nutrition</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, width: '100%' }}>
                 {[
                   ['Calories', content.macros?.calories, NB.teal, 'kcal'],
                   ['Protein',  content.macros?.protein,  NB.blue, 'g'],
                   ['Carbs',    content.macros?.carbs,    NB.yellow, 'g'],
                   ['Fat',      content.macros?.fat,      NB.pink, 'g'],
                 ].map(([label, val, clr, unit]) => (
-                  <div key={label} style={{ border: `1.5px solid ${NB.ink}`, borderRadius: 10, padding: '12px 8px', background: clr, textAlign: 'center' }}>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: NB.ink, lineHeight: 1 }}>{Math.round(val || 0)}<span style={{ fontSize: 10 }}>{unit}</span></div>
-                    <div style={{ fontSize: 10, color: NB.ink, fontWeight: 700, marginTop: 3 }}>{label}</div>
+                  <div key={label} style={{ border: `2.25px solid ${NB.ink}`, borderRadius: 15, padding: '15px 12px', background: clr, textAlign: 'center' }}>
+                    <div style={{ fontSize: 27, fontWeight: 900, color: NB.ink, lineHeight: 1 }}>{Math.round(val || 0)}<span style={{ fontSize: 15 }}>{unit}</span></div>
+                    <div style={{ fontSize: 15, color: NB.ink, fontWeight: 700, marginTop: 4.5 }}>{label}</div>
                   </div>
                 ))}
               </div>
               {content.ingredients?.length > 0 && (
-                <div style={{ marginTop: 14, width: '100%' }}>
-                  <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Ingredients</div>
-                  {content.ingredients.slice(0, 3).map((ing, i) => (
-                    <div key={i} style={{ fontSize: 12, color: NB.ink, padding: '4px 0', borderBottom: `1px solid ${NB.ink}30` }}>{ing}</div>
+                <div style={{ marginTop: 15, width: '100%' }}>
+                  <div style={{ fontFamily: NB.fontMono, fontSize: 15, fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Ingredients</div>
+                  {content.ingredients.slice(0, 2).map((ing, i) => (
+                    <div key={i} style={{ fontSize: 18, color: NB.ink, padding: '4.5px 0', borderBottom: `1px solid ${NB.ink}30`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ing}</div>
                   ))}
                 </div>
               )}

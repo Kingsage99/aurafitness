@@ -200,83 +200,6 @@ function MacroRing({ protein = 0, carbs = 0, fat = 0, calories = 0, size = 130 }
   )
 }
 
-function MacroBar({ label, consumed, total, color }) {
-  const pct = Math.min((consumed / total) * 100, 100)
-  return (
-    <div style={{ flex: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 700, color: '#555' }}>{label}</span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: NB.ink }}>{consumed}<span style={{ color: '#999' }}>/{total}g</span></span>
-      </div>
-      <div style={{ height: 8, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: color, transition: 'width 0.5s ease' }} />
-      </div>
-    </div>
-  )
-}
-
-// Two-page swipeable macro card: page 1 = main 4 (with targets if given, else plain totals),
-// page 2 = the 6 extra tracked macros (totals only — no daily target for these).
-function MacroSwipeCard({ macros = {}, targets = null, compact = false }) {
-  const scrollRef = useRef()
-  const [page, setPage] = useState(0)
-
-  const onScroll = () => {
-    const el = scrollRef.current
-    if (!el || !el.clientWidth) return
-    setPage(Math.round(el.scrollLeft / el.clientWidth))
-  }
-
-  return (
-    <div>
-      <div
-        ref={scrollRef}
-        onScroll={onScroll}
-        style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
-      >
-        {/* Page 1 — main macros */}
-        <div style={{ minWidth: '100%', scrollSnapAlign: 'center', boxSizing: 'border-box' }}>
-          {targets ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-              <MacroRing protein={macros.protein || 0} carbs={macros.carbs || 0} fat={macros.fat || 0} calories={macros.calories || 0} size={compact ? 92 : 130} />
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <MacroBar label="Protein" consumed={macros.protein || 0} total={targets.protein} color={NB.blue} />
-                <MacroBar label="Carbs" consumed={macros.carbs || 0} total={targets.carbs} color={NB.yellow} />
-                <MacroBar label="Fat" consumed={macros.fat || 0} total={targets.fat} color={NB.pink} />
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-              {[['Cal', macros.calories, NB.teal, ''], ['Protein', macros.protein, NB.blue, 'g'], ['Carbs', macros.carbs, NB.yellow, 'g'], ['Fat', macros.fat, NB.pink, 'g']].map(([l, v, c, u]) => (
-                <div key={l} style={{ border: `1.5px solid ${NB.ink}`, borderRadius: 10, padding: '8px 4px', background: c, textAlign: 'center' }}>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: NB.ink }}>{Math.round(v || 0)}{u}</div>
-                  <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.ink, fontWeight: 700 }}>{l}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        {/* Page 2 — extra macros */}
-        <div style={{ minWidth: '100%', scrollSnapAlign: 'center', boxSizing: 'border-box' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-            {EXTRA_MACRO_FIELDS.map(f => (
-              <div key={f.key} style={{ border: `1.5px solid ${NB.ink}`, borderRadius: 10, padding: '8px 4px', background: NB.cream, textAlign: 'center' }}>
-                <div style={{ fontSize: 14, fontWeight: 900, color: NB.ink }}>{Math.round(macros[f.key] || 0)}{f.unit}</div>
-                <div style={{ fontFamily: NB.fontMono, fontSize: 8, color: '#555', fontWeight: 700 }}>{f.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 6 }}>
-        {[0, 1].map(i => (
-          <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: page === i ? NB.ink : '#ccc' }} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 // Daily totals card — page 1 is the classic Macro Ring, page 2 shows all 10
 // tracked macros against the user's daily targets. Swipe left to switch.
 function DailyMacroCard({ macros = {}, targets = {} }) {
@@ -448,8 +371,60 @@ function SaveToCookbookSheet({ defaultType, collections, onCreateCollection, onC
   )
 }
 
-function CookbookItemSheet({ item, collections = [], onToggleCollection, onCreateCollection, onRemove, onClose, onLog }) {
+// Ingredients/Method as a tab toggle instead of both stacked at once — halves
+// how much a meal-detail view shows at a glance without losing either list.
+// Shared by the cookbook item sheet and the generated-meal detail card so
+// both flows look and behave the same way.
+function RecipeTabs({ ingredients, instructions }) {
+  const hasMethod = instructions?.length > 0
+  const [tab, setTab] = useState('ingredients')
+  return (
+    <div>
+      <div style={{ display: 'flex', border: `2.5px solid ${NB.ink}`, borderRadius: 12, overflow: 'hidden', marginBottom: 14 }}>
+        <button
+          onClick={() => setTab('ingredients')}
+          style={{ flex: 1, padding: '10px 0', border: 'none', cursor: 'pointer', fontFamily: NB.fontMono, fontWeight: 800, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', background: tab === 'ingredients' ? NB.ink : NB.white, color: tab === 'ingredients' ? NB.white : NB.ink }}
+        >
+          Ingredients
+        </button>
+        {hasMethod && (
+          <button
+            onClick={() => setTab('method')}
+            style={{ flex: 1, padding: '10px 0', border: 'none', borderLeft: `2.5px solid ${NB.ink}`, cursor: 'pointer', fontFamily: NB.fontMono, fontWeight: 800, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', background: tab === 'method' ? NB.ink : NB.white, color: tab === 'method' ? NB.white : NB.ink }}
+          >
+            Method
+          </button>
+        )}
+      </div>
+
+      {tab === 'ingredients' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {ingredients.map((ing, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, border: `2.5px solid ${NB.ink}`, borderRadius: 12, padding: '9px 12px' }}>
+              <span style={{ width: 22, height: 22, border: `2.5px solid ${NB.ink}`, borderRadius: 6, background: NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+              </span>
+              <span style={{ fontWeight: 700, fontSize: 14, color: NB.ink }}>{ing}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {instructions.map((step, i) => (
+            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <span style={{ width: 28, height: 28, border: `2.5px solid ${NB.ink}`, borderRadius: 9, background: NB.lavender, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 14, color: NB.ink, flexShrink: 0 }}>{i + 1}</span>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, paddingTop: 2, color: NB.ink }}>{step}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CookbookItemSheet({ item, targets, collections = [], onToggleCollection, onCreateCollection, onRemove, onClose, onLog }) {
   const hasFullRecipe = item.ingredients?.length > 0
+  const hasMethod = item.instructions?.length > 0
   const memberIds = new Set(item.collections || [])
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
@@ -460,28 +435,11 @@ function CookbookItemSheet({ item, collections = [], onToggleCollection, onCreat
         <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink, marginBottom: 16, lineHeight: 1.2 }}>{item.name}</div>
 
         <div style={{ marginBottom: 20 }}>
-          <MacroSwipeCard macros={item.macros || { calories: item.calories || 0, protein: item.protein || 0 }} />
+          <MacroPageGrid macros={item.macros || { calories: item.calories || 0, protein: item.protein || 0 }} targets={targets} />
         </div>
 
         {hasFullRecipe ? (
-          <>
-            <div style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, marginBottom: 8 }}>Ingredients</div>
-            <ul style={{ margin: '0 0 18px', paddingLeft: 18 }}>
-              {item.ingredients.map((ing, i) => (
-                <li key={i} style={{ fontSize: 13, color: '#444', marginBottom: 4 }}>{ing}</li>
-              ))}
-            </ul>
-            {item.instructions?.length > 0 && (
-              <>
-                <div style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, marginBottom: 8 }}>Method</div>
-                <ol style={{ margin: '0 0 18px', paddingLeft: 18 }}>
-                  {item.instructions.map((step, i) => (
-                    <li key={i} style={{ fontSize: 13, color: '#444', marginBottom: 6, lineHeight: 1.4 }}>{step}</li>
-                  ))}
-                </ol>
-              </>
-            )}
-          </>
+          <RecipeTabs ingredients={item.ingredients} instructions={hasMethod ? item.instructions : null} />
         ) : (
           <div style={{ ...nbCardStyle(NB.cream, 2), border: `3px solid ${NB.white}`, borderRadius: 12, padding: '12px 16px', marginBottom: 18 }}>
             <div style={{ fontSize: 13, color: '#555' }}>Full recipe not saved for this item. Log it to track your macros.</div>
@@ -605,7 +563,7 @@ function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEd
       {/* Card 1: photo header + name/rename + favorite */}
       <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 6, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, overflow: 'hidden' }}>
         <div style={{ height: 150, background: color, borderBottom: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <MealTypeIcon type={mealType} size={50} />
+          <MealTypeIcon type={mealType} size={68} />
           <span style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: NB.ink }}>{slotLabel(mealType)}</span>
         </div>
 
@@ -661,38 +619,10 @@ function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEd
         <MacroPageGrid macros={meal.macros || {}} targets={targets} />
       </div>
 
-      {/* Card 3: ingredients + method */}
+      {/* Card 3: ingredients + method, tabbed so only one list shows at a time */}
       {(hasIngredients || hasMethod) && (
         <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 6, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '18px 20px' }}>
-          {hasIngredients && (
-            <div style={{ marginBottom: hasMethod ? 20 : 0 }}>
-              <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>Ingredients</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {meal.ingredients.map((ing, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, border: `2.5px solid ${NB.ink}`, borderRadius: 12, padding: '9px 12px' }}>
-                    <span style={{ width: 22, height: 22, border: `2.5px solid ${NB.ink}`, borderRadius: 6, background: NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6"/></svg>
-                    </span>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: NB.ink }}>{ing}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {hasMethod && (
-            <div>
-              <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>Method</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {meal.instructions.map((step, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                    <span style={{ width: 28, height: 28, border: `2.5px solid ${NB.ink}`, borderRadius: 9, background: NB.lavender, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 14, color: NB.ink, flexShrink: 0 }}>{i + 1}</span>
-                    <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, paddingTop: 2, color: NB.ink }}>{step}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <RecipeTabs ingredients={hasIngredients ? meal.ingredients : []} instructions={hasMethod ? meal.instructions : null} />
         </div>
       )}
     </div>
@@ -905,7 +835,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
 
         results[slot.type] = meal || errorFallback(slot.type, calTarget, pTarget, cTarget, fTarget)
         mealCravingsMap[slot.type] = slot.craving
-        namesMap[slot.type] = meal ? meal.name : slot.label
+        namesMap[slot.type] = meal ? meal.name : '⚠️ Generation failed'
       }))
     } else {
       const effectiveCount = quickCount ?? mealCount
@@ -944,7 +874,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
 
         results[type] = meal || errorFallback(type, calTarget, pTarget, cTarget, fTarget)
         mealCravingsMap[type] = effectiveCraving
-        namesMap[type] = meal ? meal.name : type
+        namesMap[type] = meal ? meal.name : '⚠️ Generation failed'
       }))
 
       if (quickCount !== null) setMealCount(quickCount)
@@ -1288,6 +1218,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         {viewingCookbookItem && (
           <CookbookItemSheet
             item={viewingCookbookItem}
+            targets={targets}
             collections={cookbookCollections}
             onToggleCollection={cid => toggleItemCollection(viewingCookbookItem, cid)}
             onCreateCollection={nm => { const id = createCollection(nm); if (id) toggleItemCollection(viewingCookbookItem, id) }}
@@ -1720,6 +1651,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         {viewingCookbookItem && (
           <CookbookItemSheet
             item={viewingCookbookItem}
+            targets={targets}
             collections={cookbookCollections}
             onToggleCollection={cid => toggleItemCollection(viewingCookbookItem, cid)}
             onCreateCollection={nm => { const id = createCollection(nm); if (id) toggleItemCollection(viewingCookbookItem, id) }}

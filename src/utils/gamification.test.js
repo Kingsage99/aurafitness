@@ -3,7 +3,7 @@ import {
   DEFAULT_GAMIFICATION, BADGES, QUEST_POOL, WEEKLY_CHALLENGES,
   awardGems, awardXP, updateStreak, resetWeeklyIfNeeded,
   getDailyQuests, checkBadges, claimWeeklyChallenge, getWeeklyChallengeState,
-  evaluateDailyQuests,
+  evaluateDailyQuests, equipCosmetic, purchaseItem,
 } from './gamification'
 
 const g0 = () => ({ ...DEFAULT_GAMIFICATION })
@@ -106,6 +106,38 @@ describe('checkBadges', () => {
     const g = { ...g0(), workoutStreak: 7 }
     const { updatedG } = checkBadges(g, {})
     expect(updatedG.badges).toEqual(expect.arrayContaining(['on_a_roll', 'committed']))
+  })
+
+  it('does not revert a manually-equipped frame on the next tracked action', () => {
+    // Regression test: checkBadges used to unconditionally recompute frame
+    // via getHighestFrame() on every call, silently reverting any manual
+    // pick (including frame_pro, which getHighestFrame doesn't know about at
+    // all) back to the auto-suggested tier on the very next workout/meal log.
+    const equipped = equipCosmetic(g0(), 'frame_pro')
+    expect(equipped.frame).toBe('pro')
+    expect(equipped.frameManual).toBe(true)
+
+    const { updatedG } = checkBadges(equipped, { workoutCompleted: true })
+    expect(updatedG.frame).toBe('pro')
+  })
+
+  it('still auto-suggests a frame for a user who has never manually chosen one', () => {
+    const g = { ...g0(), totalWorkouts: 25 } // qualifies for the gold auto-tier
+    const { updatedG } = checkBadges(g, {})
+    expect(updatedG.frame).toBe('gold')
+  })
+})
+
+describe('purchaseItem frame purchases', () => {
+  it('marks a purchased frame as manual too, so it also survives the next checkBadges call', () => {
+    const g = { ...g0(), gems: 1000 }
+    const { g: afterPurchase, success } = purchaseItem(g, 'frame_flame')
+    expect(success).toBe(true)
+    expect(afterPurchase.frame).toBe('flame')
+    expect(afterPurchase.frameManual).toBe(true)
+
+    const { updatedG } = checkBadges(afterPurchase, { workoutCompleted: true })
+    expect(updatedG.frame).toBe('flame')
   })
 })
 

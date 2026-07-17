@@ -201,7 +201,7 @@ export default function App() {
         setRoutine(data.routine && typeof data.routine === 'object' ? data.routine : {})
         setCustomSchedule(data.custom_schedule && typeof data.custom_schedule === 'object' ? data.custom_schedule : {})
         setCustomExercises(Array.isArray(data.custom_exercises) ? data.custom_exercises : [])
-        const todayKey = new Date().toISOString().slice(0, 10)
+        const todayKey = dateKeyFor()
         if (data.daily_log_date === todayKey && data.daily_log) setLoggedMacros(data.daily_log)
 
         // Load + reset weekly gamification
@@ -210,7 +210,7 @@ export default function App() {
 
         // Check yesterday's calorie goal and apply penalty/reward
         const ydDate = new Date(); ydDate.setDate(ydDate.getDate() - 1)
-        const yesterdayKey = ydDate.toISOString().slice(0, 10)
+        const yesterdayKey = dateKeyFor(ydDate)
         if (data.daily_log_date === yesterdayKey && data.daily_log) {
           const dailyTarget = profile.dailyCalorieTarget
           const { g: checkedG, lifeLost, penaltyApplied, goalHit } = checkCaloriePenalty(g, yesterdayKey, dailyTarget, data.daily_log)
@@ -267,7 +267,7 @@ export default function App() {
   // Auto-save loggedMacros to Supabase (debounced 1.5s)
   useEffect(() => {
     if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
-    const todayKey = new Date().toISOString().slice(0, 10)
+    const todayKey = dateKeyFor()
     const t = setTimeout(async () => {
       const { error } = await supabase.from('profiles').update({
         daily_log: loggedMacros,
@@ -305,7 +305,7 @@ export default function App() {
   // it can't loop even though it reads and writes gamification.
   useEffect(() => {
     if (!dataReady.current) return
-    const todayKey = new Date().toISOString().slice(0, 10)
+    const todayKey = dateKeyFor()
     const targets = getDailyTargets(userProfile)
     const mealsToday = gamification.mealsToday?.date === todayKey ? gamification.mealsToday.types : []
     const signals = {
@@ -459,7 +459,7 @@ export default function App() {
   }
 
   const handleWorkoutComplete = (rawSessionData = {}) => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = dateKeyFor()
     let g = resetWeeklyIfNeeded(gamification)
     g = { ...g, totalWorkouts: g.totalWorkouts + 1, weeklyWorkoutsDone: g.weeklyWorkoutsDone + 1 }
     // Track workout date for calendar
@@ -542,12 +542,12 @@ export default function App() {
   }
 
   const handleSkipMakeup = () => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = dateKeyFor()
     setGamification(g => ({ ...g, lastMakeupDate: today }))
   }
 
   const handleSkipCalorieMiss = () => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = dateKeyFor()
     setGamification(g => ({ ...g, lastCalorieSkipDate: today }))
   }
 
@@ -573,7 +573,7 @@ export default function App() {
   }
 
   const handleQuestComplete = (questId) => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = dateKeyFor()
     const { g: updated, alreadyDone } = completeQuest(gamification, questId, today)
     if (!alreadyDone) {
       setGamification(updated)
@@ -623,8 +623,8 @@ export default function App() {
     g = updatedG
 
     // Track today's meal-kind buckets so meal-logging quests can auto-complete.
-    // Date format must match the quest system (Home/QuestsScreen use ISO UTC date).
-    const todayKey = new Date().toISOString().slice(0, 10)
+    // Date format must match the quest system (Home.jsx/QuestsScreen.jsx — local date).
+    const todayKey = dateKeyFor()
     const bucket = mealBucket(mealData.mealType)
     const mt = g.mealsToday?.date === todayKey ? g.mealsToday : { date: todayKey, types: [] }
     g = { ...g, mealsToday: { date: todayKey, types: [...mt.types, bucket] } }
@@ -724,7 +724,7 @@ export default function App() {
       case 'workoutComplete':
         return <WorkoutComplete sessionData={workoutSession} gamification={gamification} userProfile={userProfile} isProUser={isProUser} onNavigate={navigate} />
       case 'workoutPost':
-        return <WorkoutPost sessionData={workoutSession} userProfile={userProfile} session={session} isProUser={isProUser} onNavigate={navigate} />
+        return <WorkoutPost sessionData={workoutSession} userProfile={userProfile} session={session} gamification={gamification} isProUser={isProUser} onNavigate={navigate} />
       case 'mealPost':
         return <MealPost mealData={mealPostData} userProfile={userProfile} session={session} onNavigate={navigate} />
       case 'workoutBuilder':
@@ -767,7 +767,7 @@ export default function App() {
           />
         )
       case 'musclemap':
-        return <MuscleMap session={session} onNavigate={navigate} />
+        return <MuscleMap session={session} gamification={gamification} isProUser={isProUser} onNavigate={navigate} />
       case 'meals':
         return (
           <Meals
@@ -848,6 +848,7 @@ export default function App() {
             session={session}
             userProfile={userProfile}
             gamification={gamification}
+            isProUser={isProUser}
             onUpdateCountry={handleUpdateCountry}
             onNavigate={navigate}
           />

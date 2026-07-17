@@ -2,8 +2,9 @@ import React, { useState, useRef, useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import MuscleSVG from '../components/MuscleSVG'
 import { createPost, uploadPostMedia, top3Muscles } from '../lib/social'
-import ImageCropSheet from '../components/ImageCropSheet'
-import { buildMuscleIntensityColors } from '../utils/muscleIntensity'
+import { buildMuscleIntensityColors, MUSCLE_TO_GROUP } from '../utils/muscleIntensity'
+import { countsByGroup, buildIntensityRankColors } from '../utils/muscleRankColors'
+import { MUSCLE_RANK_MIN_WORKOUTS } from '../utils/gamification'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 import { CameraIcon, StrengthArmIcon, StopwatchIcon } from '../components/Icons'
 
@@ -12,7 +13,7 @@ function fmt(s) {
   return m === 0 ? `${s}s` : `${m}m`
 }
 
-export default function WorkoutPost({ sessionData, userProfile, session, isProUser = false, onNavigate }) {
+export default function WorkoutPost({ sessionData, userProfile, session, gamification, isProUser = false, onNavigate }) {
   const exercises = sessionData?.exercises ?? []
   const label     = sessionData?.workoutLabel ?? 'Workout'
   const elapsed   = sessionData?.elapsed ?? 0
@@ -24,32 +25,31 @@ export default function WorkoutPost({ sessionData, userProfile, session, isProUs
   const [mediaIsVideo, setMediaIsVideo] = useState(false)
   const [posting,   setPosting]   = useState(false)
   const [error,     setError]     = useState('')
-  const [cropFile,  setCropFile]  = useState(null)
   const fileRef = useRef()
 
-  const frontColors = useMemo(() => buildMuscleIntensityColors(exercises, 'front', isProUser), [exercises, isProUser])
-  const backColors  = useMemo(() => buildMuscleIntensityColors(exercises, 'back',  isProUser), [exercises, isProUser])
+  // MissVfit Pro perk: color worked muscles by their real rank tier instead
+  // of a flat "shiny" gradient — same treatment as WorkoutComplete's recap.
+  const useRankColors = isProUser && (gamification?.totalWorkouts || 0) >= MUSCLE_RANK_MIN_WORKOUTS
+  const sessionCounts = useMemo(() => countsByGroup(exercises, MUSCLE_TO_GROUP), [exercises])
+  const sessionCountToLevel = count => count >= 3 ? 4 : count === 2 ? 3 : count === 1 ? 2 : 0
+  const frontColors = useMemo(() => useRankColors
+    ? buildIntensityRankColors(sessionCounts, gamification, 'front', sessionCountToLevel)
+    : buildMuscleIntensityColors(exercises, 'front', false), [sessionCounts, gamification, useRankColors, exercises])
+  const backColors = useMemo(() => useRankColors
+    ? buildIntensityRankColors(sessionCounts, gamification, 'back', sessionCountToLevel)
+    : buildMuscleIntensityColors(exercises, 'back', false), [sessionCounts, gamification, useRankColors, exercises])
 
+  // Photos and videos post in their original, uncropped format — no forced
+  // aspect ratio for this section.
   const handlePickMedia = (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     if (file.size > 50 * 1024 * 1024) { setError('File is too large (max 50 MB).'); return }
     setError('')
-    if (file.type.startsWith('video')) {
-      setMediaFile(file)
-      setMediaIsVideo(true)
-      setMediaPreview(URL.createObjectURL(file))
-    } else {
-      setCropFile(file)
-    }
-  }
-
-  const handleMediaCropped = (croppedFile) => {
-    setCropFile(null)
-    setMediaFile(croppedFile)
-    setMediaIsVideo(false)
-    setMediaPreview(URL.createObjectURL(croppedFile))
+    setMediaFile(file)
+    setMediaIsVideo(file.type.startsWith('video'))
+    setMediaPreview(URL.createObjectURL(file))
   }
 
   const handlePost = async () => {
@@ -97,8 +97,8 @@ export default function WorkoutPost({ sessionData, userProfile, session, isProUs
         >
           {mediaPreview ? (
             mediaIsVideo
-              ? <video src={mediaPreview} autoPlay muted loop playsInline style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }} />
-              : <img src={mediaPreview} alt="preview" style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }} />
+              ? <video src={mediaPreview} autoPlay muted loop playsInline style={{ width: '100%', maxHeight: 260, objectFit: 'contain', display: 'block' }} />
+              : <img src={mediaPreview} alt="preview" style={{ width: '100%', maxHeight: 260, objectFit: 'contain', display: 'block' }} />
           ) : (
             <div style={{ textAlign: 'center', padding: 24 }}>
               <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><CameraIcon size={28} /></div>
@@ -180,8 +180,6 @@ export default function WorkoutPost({ sessionData, userProfile, session, isProUs
         </button>
 
       </div>
-
-      <ImageCropSheet file={cropFile} shape="rect" aspect={1} onCancel={() => setCropFile(null)} onCropped={handleMediaCropped} />
     </>
   )
 }

@@ -9,6 +9,7 @@ import CharacterAvatar from '../components/CharacterAvatar'
 import { uploadAvatar } from '../lib/social'
 import { FRAMES, AURAS, xpProgress, RANKS, normalizeRankId, SUB_LEVEL_ROMAN, SUB_LEVELS_PER_TIER } from '../utils/gamification'
 import { PETS, getActivePet } from '../data/pets'
+import { dateKeyFor } from '../utils/workoutBuilder'
 import { STORE_BORDERS, STORE_BANNERS, STORE_THEMES } from './StoreScreen'
 import { HeartIcon, ShoppingBagsIcon, renderIcon } from '../components/Icons'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
@@ -26,7 +27,7 @@ const SECTIONS = [
   { id: 'leaderboard', label: 'Leaderboard', icon: '🏆', bg: NB.yellow,  screen: 'leaderboard' },
 ]
 
-export default function Profile({ userProfile, session, gamification = {}, isProUser = false, onNavigate, onUpdateProfile, onEquipCosmetic }) {
+export default function Profile({ userProfile, session, gamification = {}, isProUser = false, onNavigate, onUpdateProfile, onEquipCosmetic, onShopPurchase }) {
   const g = gamification
   const [openSheet, setOpenSheet] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
@@ -157,7 +158,7 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
     const firstDay = new Date(year, month, 1).getDay()
     const firstOffset = firstDay === 0 ? 6 : firstDay - 1
     const workoutSet = new Set(g.workoutDates || [])
-    const todayStr = now.toISOString().slice(0, 10)
+    const todayStr = dateKeyFor(now)
     const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
     const thisMonthCount = (g.workoutDates || []).filter(d => d.startsWith(monthKey)).length
 
@@ -228,7 +229,7 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
             <div style={{ position: 'relative', width: 46, height: 46, flexShrink: 0, zIndex: 0 }}>
               <button
                 onClick={() => avatarFileRef.current?.click()}
-                style={{ width: 46, height: 46, borderRadius: '50%', border: equippedBorder?.id === 'frame_pro' ? 'none' : `2px solid ${NB.ink}`, background: NB.yellow, boxShadow: hardShadow(2), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', padding: 0, ...frameStyle, ...auraStyle }}
+                style={{ width: 46, height: 46, borderRadius: '50%', border: equippedBorder?.id === 'frame_pro' && isProUser ? 'none' : `2px solid ${NB.ink}`, background: NB.yellow, boxShadow: hardShadow(2), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', padding: 0, ...frameStyle, ...auraStyle }}
               >
                 {avatarUploading
                   ? <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2.5px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'avatarSpin 0.7s linear infinite' }} />
@@ -280,8 +281,10 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
               </span>
             </button>
             {/* willChange promotes the bob onto its own GPU layer so it stays
-                smooth while the pet video/animation repaints inside it */}
-            <div style={{ width: 230 * (pet.aspect || 1), height: 230, borderRadius: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'petBob 3s ease-in-out infinite', willChange: 'transform' }}>
+                smooth while the pet video/animation repaints inside it. A
+                dead pet (0 lives) stops bobbing and gets a skull overlay on
+                top of the existing grayscale filter — no new art needed. */}
+            <div style={{ position: 'relative', width: 230 * (pet.aspect || 1), height: 230, borderRadius: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: lives === 0 ? 'none' : 'petBob 3s ease-in-out infinite', willChange: 'transform' }}>
               {pet.video && !petVideoFailed ? (
                 <video
                   src={pet.video}
@@ -302,10 +305,15 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
               ) : (
                 <CharacterAvatar src={pet.image} size={230} style={{ width: '100%', height: '100%', filter: lives === 0 ? 'grayscale(1) opacity(.75)' : 'none' }} />
               )}
+              {lives === 0 && (
+                <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: 64, filter: `drop-shadow(${hardShadow(2)})`, pointerEvents: 'none' }}>
+                  💀
+                </span>
+              )}
             </div>
             {/* Ground shadow so the pet stands instead of floats — breathes with the bob.
                 The PNG has empty space below the panda's base, so the shadow tucks up under it */}
-            <div style={{ width: 130, height: 14, borderRadius: '50%', background: 'rgba(26,26,26,.16)', marginTop: -42, animation: 'petShadow 3s ease-in-out infinite' }} />
+            <div style={{ width: 130, height: 14, borderRadius: '50%', background: 'rgba(26,26,26,.16)', marginTop: -42, animation: lives === 0 ? 'none' : 'petShadow 3s ease-in-out infinite' }} />
 
             {/* Nameplate: pet name + health as one plate */}
             <div style={{ display: 'flex', alignItems: 'center', marginTop: 8, background: NB.white, border: `2px solid ${NB.ink}`, borderRadius: 9, boxShadow: hardShadow(2), overflow: 'hidden' }}>
@@ -315,9 +323,13 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
               </span>
             </div>
             {lives === 0 && (
-              <div style={{ fontSize: 10, fontWeight: 700, color: NB.ink, background: NB.yellow, border: `1.5px solid ${NB.ink}`, borderRadius: 7, padding: '3px 10px', marginTop: 8 }}>
-                Your pet needs you! Restore a life in the Store 💔
-              </div>
+              <button
+                onClick={() => onShopPurchase?.('revive_pet')}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800, color: NB.ink, background: NB.yellow, border: `2px solid ${NB.ink}`, borderRadius: 10, boxShadow: hardShadow(2), padding: '7px 14px', marginTop: 10, cursor: 'pointer' }}
+              >
+                <span>💀 {pet.label} died — Revive</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontFamily: NB.fontMono }}>💎120</span>
+              </button>
             )}
           </div>
 

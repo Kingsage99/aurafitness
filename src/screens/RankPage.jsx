@@ -4,7 +4,7 @@ import BottomSheet from '../components/BottomSheet'
 import RankLadder from '../components/RankLadder'
 import { RANKS, RANK_UP_AT, SUB_LEVEL_ROMAN, SUB_LEVELS_PER_TIER, normalizeRankId, getMuscleRankInfo, MUSCLE_RANK_MIN_WORKOUTS } from '../utils/gamification'
 import { MUSCLE_GROUPS, MUSCLE_LABELS } from '../utils/muscleLabels'
-import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { NB, NB_BORDER, hardShadow, nbCardStyle, shade, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 import { TrophyIcon, LockIcon } from '../components/Icons'
 
 // Full rank page — overall rank hero + ladder, plus every body part's rank.
@@ -27,7 +27,7 @@ export default function RankPage({ gamification = {}, onNavigate }) {
       <StatusBar />
 
       {/* Header */}
-      <div style={{ position: 'relative', background: rank.bg, borderBottom: NB_BORDER, padding: '12px 20px 20px', flexShrink: 0 }}>
+      <div style={{ position: 'relative', background: rank.bgGradient || rank.bg, borderBottom: NB_BORDER, padding: '12px 20px 20px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={() => onNavigate('profile')} style={{ width: 38, height: 38, borderRadius: 12, border: `1.5px solid ${NB.ink}`, background: 'rgba(255,255,255,.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
@@ -103,7 +103,7 @@ export default function RankPage({ gamification = {}, onNavigate }) {
                 key={m.id}
                 onClick={() => info.unlocked && setLadderMuscle(m.id)}
                 disabled={!info.unlocked}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, ...nbCardStyle(info.unlocked ? tier.bg : '#eee', info.unlocked ? 2 : 0), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '12px 10px', cursor: info.unlocked ? 'pointer' : 'default', opacity: info.unlocked ? 1 : 0.6 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, ...nbCardStyle(info.unlocked ? (tier.bgGradient || tier.bg) : '#eee', info.unlocked ? 2 : 0, info.unlocked ? shade(tier.bg, -38) : undefined), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '12px 10px', cursor: info.unlocked ? 'pointer' : 'default', opacity: info.unlocked ? 1 : 0.6 }}
               >
                 <div style={{ position: 'relative' }}>
                   <img src={tier.image} alt="" style={{ width: 74, height: 74, objectFit: 'contain', filter: info.unlocked ? 'none' : 'grayscale(1)' }} />

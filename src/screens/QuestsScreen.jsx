@@ -1,11 +1,12 @@
 import React from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { getDailyQuests, WEEKLY_CHALLENGES, getWeeklyChallengeState } from '../utils/gamification'
+import { dateKeyFor } from '../utils/workoutBuilder'
 import { renderIcon, GemIcon } from '../components/Icons'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 export default function QuestsScreen({ gamification = {}, onQuestComplete, onClaimChallenge, onNavigate }) {
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = dateKeyFor()
   const quests = getDailyQuests(todayStr)
   const completedToday = gamification.dailyQuests?.date === todayStr
     ? (gamification.dailyQuests.completed || [])

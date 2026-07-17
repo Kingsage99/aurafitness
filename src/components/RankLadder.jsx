@@ -21,7 +21,7 @@ export default function RankLadder({ unlocked, rank: currentRankId, rankPoints =
           <div key={tier.id} style={{
             display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px',
             border: 'none', borderRadius: 14,
-            background: isCurrent ? tier.bg : NB.lavenderMist,
+            background: isCurrent ? (tier.bgGradient || tier.bg) : NB.lavenderMist,
             opacity: achieved || isCurrent ? 1 : 0.5,
           }}>
             <img src={tier.image} alt={tier.label} style={{ width: 38, height: 38, objectFit: 'contain', flexShrink: 0, filter: achieved || isCurrent ? 'none' : 'grayscale(1)' }} />

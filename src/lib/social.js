@@ -320,7 +320,7 @@ export async function fetchBodyWeightLog(userId) {
 
 // scope: 'friends' | 'global' | 'regional'
 export async function fetchLeaderboardProfiles({ scope, userId, country, limit = 40 }) {
-  let query = supabase.from('profiles').select('id, username, profile_data, gamification')
+  let query = supabase.from('profiles').select('id, username, profile_data, gamification, pro_until')
 
   if (scope === 'friends') {
     const friendIds = await fetchFriendIds(userId)

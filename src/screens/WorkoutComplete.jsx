@@ -3,7 +3,8 @@ import { StatusBar } from '../components/PhoneFrame'
 import MuscleSVG from '../components/MuscleSVG'
 import { getMuscleRankInfo, MUSCLE_RANK_MIN_WORKOUTS } from '../utils/gamification'
 import { MUSCLE_LABELS } from '../utils/muscleLabels'
-import { buildMuscleIntensityColors } from '../utils/muscleIntensity'
+import { buildMuscleIntensityColors, MUSCLE_TO_GROUP } from '../utils/muscleIntensity'
+import { countsByGroup, buildIntensityRankColors } from '../utils/muscleRankColors'
 import RankLadder from '../components/RankLadder'
 import { renderIcon, TrophyIcon } from '../components/Icons'
 import { toDisplayWeight, weightUnitLabel } from '../utils/units'
@@ -25,8 +26,21 @@ export default function WorkoutComplete({ sessionData, gamification, userProfile
   const gems      = sessionData?.gemsEarned ?? 30
   const streak    = sessionData?.streak ?? gamification?.workoutStreak ?? 1
 
-  const frontColors = useMemo(() => buildMuscleIntensityColors(exercises, 'front', isProUser), [exercises, isProUser])
-  const backColors  = useMemo(() => buildMuscleIntensityColors(exercises, 'back',  isProUser), [exercises, isProUser])
+  // MissVfit Pro perk: color worked muscles by their real rank tier instead
+  // of a flat "shiny" gradient — falls back to plain intensity coloring for
+  // non-Pro users, or Pro users who haven't unlocked body-part ranks yet.
+  const useRankColors = isProUser && (gamification?.totalWorkouts || 0) >= MUSCLE_RANK_MIN_WORKOUTS
+  const sessionCounts = useMemo(() => countsByGroup(exercises, MUSCLE_TO_GROUP), [exercises])
+  // Single-session counts skip level 1 (reserved for Muscle Map's low-volume
+  // week/month view) so anything worked this session reads as at least a
+  // visible "Moderate" shade, not a barely-tinted one.
+  const sessionCountToLevel = count => count >= 3 ? 4 : count === 2 ? 3 : count === 1 ? 2 : 0
+  const frontColors = useMemo(() => useRankColors
+    ? buildIntensityRankColors(sessionCounts, gamification, 'front', sessionCountToLevel)
+    : buildMuscleIntensityColors(exercises, 'front', false), [sessionCounts, gamification, useRankColors, exercises])
+  const backColors = useMemo(() => useRankColors
+    ? buildIntensityRankColors(sessionCounts, gamification, 'back', sessionCountToLevel)
+    : buildMuscleIntensityColors(exercises, 'back', false), [sessionCounts, gamification, useRankColors, exercises])
 
   const hasColors = Object.keys(frontColors).length + Object.keys(backColors).length > 0
 
@@ -108,14 +122,20 @@ export default function WorkoutComplete({ sessionData, gamification, userProfile
                 <MuscleSVG key="back-done" url="/muscle_map_back.svg" muscleColors={backColors} />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {[[NB_INTENSITY_RAMP[1],'Light'],[NB_INTENSITY_RAMP[3],'Moderate'],[NB_INTENSITY_RAMP[4],'High']].map(([c, l]) => (
-                <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <div style={{ width: 10, height: 10, border: `1.5px solid ${NB.ink}`, background: c }} />
-                  <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700 }}>{l}</span>
-                </div>
-              ))}
-            </div>
+            {useRankColors ? (
+              <div style={{ textAlign: 'center', marginTop: 8, fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700 }}>
+                Colored by each muscle's current rank tier
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 10, marginTop: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                {[[NB_INTENSITY_RAMP[1],'Light'],[NB_INTENSITY_RAMP[3],'Moderate'],[NB_INTENSITY_RAMP[4],'High']].map(([c, l]) => (
+                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={{ width: 10, height: 10, border: `1.5px solid ${NB.ink}`, background: c }} />
+                    <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700 }}>{l}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -133,7 +153,7 @@ export default function WorkoutComplete({ sessionData, gamification, userProfile
                 return (
                   <button key={muscleId} onClick={() => setLadderMuscle(muscleId)} style={{
                     display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', border: 'none', borderRadius: 14,
-                    background: info.tier.bg, cursor: 'pointer', textAlign: 'left',
+                    background: info.tier.bgGradient || info.tier.bg, cursor: 'pointer', textAlign: 'left',
                   }}>
                     <img src={info.tier.image} alt="" style={{ width: 26, height: 26, objectFit: 'contain', flexShrink: 0 }} />
                     <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: info.tier.color, flex: 1 }}>{MUSCLE_LABELS[muscleId] || muscleId}</span>

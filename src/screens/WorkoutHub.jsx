@@ -3,7 +3,7 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { getWeekdayIndex, getPrimaryMuscles, dateKeyFor, estimateDuration } from '../utils/workoutBuilder'
 import { readWorkoutDraft } from '../utils/workoutDraft'
-import { FireIcon, SpaIcon, ToolsIcon } from '../components/Icons'
+import { FireIcon, SpaIcon, ToolsIcon, CrownIcon } from '../components/Icons'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -195,6 +195,24 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 2 }}>See your muscle map</div>
               <div style={{ fontSize: 12, color: '#555' }}>Training volume & recovery by muscle group</div>
+            </div>
+            <ChevronRight />
+          </div>
+        </div>
+
+        {/* ── Leaderboards ──────────────────────────── */}
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel>Leaderboards</SectionLabel>
+          <div
+            onClick={() => onNavigate('leaderboard')}
+            style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
+          >
+            <div style={{ width: 50, height: 50, borderRadius: 13, border: `2.5px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CrownIcon size={26} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', color: NB.ink, marginBottom: 2 }}>See how you rank</div>
+              <div style={{ fontSize: 12, color: '#555' }}>Streaks, ranks & levels vs friends and beyond</div>
             </div>
             <ChevronRight />
           </div>

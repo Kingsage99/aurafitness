@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { createPost, uploadPostMedia } from '../lib/social'
-import ImageCropSheet from '../components/ImageCropSheet'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 import { SaladIcon } from '../components/Icons'
 
@@ -16,29 +15,19 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
   const [mediaIsVideo, setMediaIsVideo] = useState(false)
   const [posting,     setPosting]     = useState(false)
   const [error,       setError]       = useState('')
-  const [cropFile,    setCropFile]    = useState(null)
   const fileRef = useRef()
 
+  // Photos and videos post in their original, uncropped format — no forced
+  // aspect ratio for this section.
   const handlePickMedia = (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     if (file.size > 50 * 1024 * 1024) { setError('File is too large (max 50 MB).'); return }
     setError('')
-    if (file.type.startsWith('video')) {
-      setMediaFile(file)
-      setMediaIsVideo(true)
-      setMediaPreview(URL.createObjectURL(file))
-    } else {
-      setCropFile(file)
-    }
-  }
-
-  const handleMediaCropped = (croppedFile) => {
-    setCropFile(null)
-    setMediaFile(croppedFile)
-    setMediaIsVideo(false)
-    setMediaPreview(URL.createObjectURL(croppedFile))
+    setMediaFile(file)
+    setMediaIsVideo(file.type.startsWith('video'))
+    setMediaPreview(URL.createObjectURL(file))
   }
 
   const handlePost = async () => {
@@ -93,8 +82,8 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
         >
           {mediaPreview ? (
             mediaIsVideo
-              ? <video src={mediaPreview} autoPlay muted loop playsInline style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }} />
-              : <img src={mediaPreview} alt="preview" style={{ width: '100%', maxHeight: 260, objectFit: 'cover', display: 'block' }} />
+              ? <video src={mediaPreview} autoPlay muted loop playsInline style={{ width: '100%', maxHeight: 260, objectFit: 'contain', display: 'block' }} />
+              : <img src={mediaPreview} alt="preview" style={{ width: '100%', maxHeight: 260, objectFit: 'contain', display: 'block' }} />
           ) : (
             <div style={{ textAlign: 'center', padding: 24 }}>
               <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><SaladIcon size={28} /></div>
@@ -160,8 +149,6 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
         </button>
 
       </div>
-
-      <ImageCropSheet file={cropFile} shape="rect" aspect={1} onCancel={() => setCropFile(null)} onCropped={handleMediaCropped} />
     </>
   )
 }

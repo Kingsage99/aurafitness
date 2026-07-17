@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { NB_INTENSITY_RAMP } from '../styles/neoBrutalism'
+import { RANKS } from '../utils/gamification'
 
 export const MUSCLE_SVG_IDS = {
   glutes:     { back: ['glute'],                                          front: [] },
@@ -108,6 +109,91 @@ function ensureProGradient(svgEl) {
   defs.appendChild(grad)
 }
 
+// MissVfit Pro's "rank map" perk — each body part is filled with its own
+// rank tier's color (bronze glutes, platinum core, etc.), given a metallic
+// shine rather than a flat fill. `level` (1-4) is how hard that muscle's
+// been trained — 4 is the tier's full/strong color, 1 is a light tint of
+// the same hue — so "bronze glutes" reads as pale bronze when barely
+// touched and rich bronze at max volume, never a flat single tone.
+function lightenHex(hex, amount) {
+  const h = hex.replace('#', '')
+  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h
+  const num = parseInt(full, 16)
+  const r = Math.min(255, (num >> 16) + amount)
+  const g = Math.min(255, ((num >> 8) & 0xff) + amount)
+  const b = Math.min(255, (num & 0xff) + amount)
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+}
+
+// Blends `hex` toward `toHex` by `ratio` (0 = pure hex, 1 = pure toHex) —
+// used to make a tier's color paler at lower intensity levels.
+function mixHex(hex, toHex, ratio) {
+  const parse = (h) => {
+    const full = h.replace('#', '')
+    const n = parseInt(full.length === 3 ? full.split('').map(c => c + c).join('') : full, 16)
+    return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff]
+  }
+  const [ar, ag, ab] = parse(hex)
+  const [br, bg, bb] = parse(toHex)
+  const mix = (a, b) => Math.round(a + (b - a) * ratio)
+  const r = mix(ar, br), g = mix(ag, bg), b = mix(ab, bb)
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+}
+
+const LEVELS = [1, 2, 3, 4]
+const RANK_GRADIENT_ID = (tierId, level) => `missvfit-rank-${tierId}-${level}`
+// level defaults to 4 (full-strength) for callers that just want "this tier's
+// color" with no intensity concept (e.g. the Pro per-body-part rank view).
+export const RANK_FILL = (tierId, level = 4) => `url(#${RANK_GRADIENT_ID(tierId, Math.min(4, Math.max(1, level)))})`
+
+function ensureRankGradients(svgEl) {
+  const svgNS = 'http://www.w3.org/2000/svg'
+  let defs = svgEl.querySelector('defs')
+  if (!defs) {
+    defs = document.createElementNS(svgNS, 'defs')
+    svgEl.insertBefore(defs, svgEl.firstChild)
+  }
+  RANKS.forEach(tier => {
+    LEVELS.forEach(level => {
+      const id = RANK_GRADIENT_ID(tier.id, level)
+      if (svgEl.querySelector(`#${id}`)) return
+
+      if (tier.id === 'goddess') {
+        // Goddess always shows its full iridescent sweep regardless of level —
+        // "light iridescent" isn't a meaningful idea, and it's the top tier.
+        const grad = document.createElementNS(svgNS, 'linearGradient')
+        grad.setAttribute('id', id)
+        grad.setAttribute('x1', '0%'); grad.setAttribute('y1', '0%')
+        grad.setAttribute('x2', '100%'); grad.setAttribute('y2', '100%')
+        ;[[0, '#0B0B10'], [22, '#C9A9FF'], [42, '#FFD1EC'], [58, '#BFE3FF'], [72, '#EAFBEF'], [100, '#0B0B10']]
+          .forEach(([offset, color]) => {
+            const stop = document.createElementNS(svgNS, 'stop')
+            stop.setAttribute('offset', `${offset}%`); stop.setAttribute('stop-color', color)
+            grad.appendChild(stop)
+          })
+        defs.appendChild(grad)
+        return
+      }
+
+      // Every other tier: a soft radial glow (a light source, not a hard
+      // diagonal shine band) fading from a bright center into the tier's own
+      // base tone, so it reads as a gentle sheen rather than a sharp streak.
+      const fade = (4 - level) * 0.22 // level 4 = 0% (pure tier color), level 1 = 66% toward white
+      const base = fade > 0 ? mixHex(tier.bg, '#FFFFFF', fade) : tier.bg
+      const glow = lightenHex(base, 90)
+      const grad = document.createElementNS(svgNS, 'radialGradient')
+      grad.setAttribute('id', id)
+      grad.setAttribute('cx', '35%'); grad.setAttribute('cy', '28%'); grad.setAttribute('r', '85%')
+      ;[[0, glow], [55, base], [100, base]].forEach(([offset, color]) => {
+        const stop = document.createElementNS(svgNS, 'stop')
+        stop.setAttribute('offset', `${offset}%`); stop.setAttribute('stop-color', color)
+        grad.appendChild(stop)
+      })
+      defs.appendChild(grad)
+    })
+  })
+}
+
 function colorGroup(el, color) {
   // Set on the group itself — covers paths that inherit fill from parent
   el.style.fill = color
@@ -153,6 +239,7 @@ export default function MuscleSVG({ url, muscleColors = {}, onMuscleClick, focus
         svgEl.style.width = '100%'
         svgEl.style.height = '100%'
         ensureProGradient(svgEl)
+        ensureRankGradients(svgEl)
       }
       setReady(true)
     }

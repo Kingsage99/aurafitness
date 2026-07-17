@@ -8,6 +8,26 @@ export function isPushSupported() {
   return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window
 }
 
+// iOS only exposes the Push API to an installed (Add to Home Screen) PWA —
+// a regular Safari tab never satisfies isPushSupported(). Used to give a
+// specific, actionable message instead of a silent no-op.
+export function isIOSDevice() {
+  return typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+}
+
+// Whether a real, currently-active push subscription exists right now —
+// distinct from the stored `notificationsEnabled` preference, which can say
+// "on" for an account that's never actually completed the browser permission
+// prompt (e.g. a brand-new user who's simply never touched the toggle, since
+// the preference defaults to on).
+export async function hasActiveSubscription() {
+  if (!isPushSupported()) return false
+  const registration = await navigator.serviceWorker.getRegistration('/sw.js')
+  if (!registration) return false
+  const subscription = await registration.pushManager.getSubscription()
+  return !!subscription
+}
+
 export async function registerServiceWorker() {
   if (!isPushSupported()) return null
   await navigator.serviceWorker.register('/sw.js')

@@ -1,18 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
+import BottomSheet from '../components/BottomSheet'
 import MuscleSVG, { MUSCLE_SVG_IDS } from '../components/MuscleSVG'
 import { fetchWorkoutHistory } from '../lib/social'
 import { GROUP_LABELS, groupOf } from '../utils/muscleGroups'
-import { NB, NB_INTENSITY_RAMP, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { RANKS, getMuscleRankInfo, MUSCLE_RANK_MIN_WORKOUTS } from '../utils/gamification'
+import { bestGroupRankInfo, buildRankColors, buildIntensityRankColors, tierForGroup } from '../utils/muscleRankColors'
+import { NB, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, NB_PRO_GRADIENT } from '../styles/neoBrutalism'
+import { LockIcon, CrownIcon } from '../components/Icons'
 
-const VOLUME_COLORS = [null, NB_INTENSITY_RAMP[1], NB_INTENSITY_RAMP[2], NB_INTENSITY_RAMP[3], NB_INTENSITY_RAMP[4]]
-
-const LEGEND = [
-  { color: NB_INTENSITY_RAMP[1], label: 'Light' },
-  { color: NB_INTENSITY_RAMP[2], label: 'Moderate' },
-  { color: NB_INTENSITY_RAMP[3], label: 'High' },
-  { color: NB_INTENSITY_RAMP[4], label: 'Max' },
+// Intensity levels used for the neutral (tier-less) legend swatches — the
+// real per-muscle color always comes from that muscle's own rank tier
+// (bronze glutes glow pale-to-rich bronze, platinum core pale-to-rich
+// platinum, etc.), so the legend can't show one fixed color per level.
+const LEGEND_LEVELS = [
+  { level: 1, label: 'Light' },
+  { level: 2, label: 'Moderate' },
+  { level: 3, label: 'High' },
+  { level: 4, label: 'Max' },
 ]
 
 // Exercise-count → 0–4 volume scale. Week thresholds are tighter than month.
@@ -46,16 +52,6 @@ function buildVolumes(history, period) {
   }))
 }
 
-function buildColors(groups, side) {
-  const colors = {}
-  groups.forEach(({ id, volume }) => {
-    const color = VOLUME_COLORS[volume]
-    if (!color) return
-    MUSCLE_SVG_IDS[id]?.[side]?.forEach(svgId => { colors[svgId] = color })
-  })
-  return colors
-}
-
 function recoveryTip(groups, period) {
   const maxed = groups.filter(g => g.volume >= 4).map(g => g.label)
   const idle  = groups.filter(g => g.volume === 0).map(g => g.label)
@@ -72,12 +68,14 @@ function recoveryTip(groups, period) {
   return `Training volume looks balanced this ${period}. Keep recovery in mind as you add sessions.`
 }
 
-export default function MuscleMap({ session, onNavigate }) {
+export default function MuscleMap({ session, gamification = {}, isProUser = false, onNavigate }) {
   const [period, setPeriod] = useState('week')
   const [selected, setSelected] = useState(null)
   const [view, setView] = useState('front')
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
+  const [rankSheetOpen, setRankSheetOpen] = useState(false)
+  const [rankSelected, setRankSelected] = useState(null)
 
   useEffect(() => {
     if (!session?.user?.id) { setLoading(false); return }
@@ -87,12 +85,20 @@ export default function MuscleMap({ session, onNavigate }) {
     })
   }, [session])
 
-  const groups      = useMemo(() => buildVolumes(history, period), [history, period])
-  const frontColors = useMemo(() => buildColors(groups, 'front'), [groups])
-  const backColors  = useMemo(() => buildColors(groups, 'back'), [groups])
+  const groups = useMemo(() => buildVolumes(history, period), [history, period])
+  const counts = useMemo(() => Object.fromEntries(groups.map(g => [g.id, g.count])), [groups])
+  const frontColors = useMemo(() => buildIntensityRankColors(counts, gamification, 'front', c => countToVolume(c, period)), [counts, gamification, period])
+  const backColors  = useMemo(() => buildIntensityRankColors(counts, gamification, 'back',  c => countToVolume(c, period)), [counts, gamification, period])
+  const rankFrontColors = useMemo(() => buildRankColors(gamification, 'front'), [gamification])
+  const rankBackColors  = useMemo(() => buildRankColors(gamification, 'back'), [gamification])
+
+  const ranksUnlocked = (gamification.totalWorkouts || 0) >= MUSCLE_RANK_MIN_WORKOUTS
 
   const selectedGroup = groups.find(g => g.id === selected)
-  const selectedColor = selectedGroup ? (VOLUME_COLORS[selectedGroup.volume] || NB.ink) : null
+  const selectedTier = selectedGroup ? tierForGroup(gamification, selectedGroup.id) : null
+  const selectedColor = selectedGroup && selectedGroup.volume > 0 ? (selectedTier?.bgGradient || selectedTier?.bg) : null
+  const rankSelectedInfo = rankSelected ? bestGroupRankInfo(gamification, rankSelected) : null
+  const rankSelectedLabel = GROUP_LABELS[rankSelected]
 
   return (
     <>
@@ -120,19 +126,33 @@ export default function MuscleMap({ session, onNavigate }) {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
 
-        {/* Front / Back toggle */}
-        <div style={{ display: 'flex', border: `2px solid ${NB.ink}`, borderRadius: 12, overflow: 'hidden', marginBottom: 14 }}>
-          {['front', 'back'].map(v => (
-            <button key={v} onClick={() => setView(v)} style={{
-              flex: 1, padding: '8px 0',
-              background: view === v ? NB.magenta : NB.white,
-              border: 'none', fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase',
-              color: view === v ? NB.white : NB.ink,
-              cursor: 'pointer',
-            }}>
-              {v.charAt(0).toUpperCase() + v.slice(1)}
-            </button>
-          ))}
+        {/* Front / Back toggle + Rank colors button */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <div style={{ flex: 1, display: 'flex', border: `2px solid ${NB.ink}`, borderRadius: 12, overflow: 'hidden' }}>
+            {['front', 'back'].map(v => (
+              <button key={v} onClick={() => setView(v)} style={{
+                flex: 1, padding: '8px 0',
+                background: view === v ? NB.magenta : NB.white,
+                border: 'none', fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, textTransform: 'uppercase',
+                color: view === v ? NB.white : NB.ink,
+                cursor: 'pointer',
+              }}>
+                {v.charAt(0).toUpperCase() + v.slice(1)}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => isProUser ? setRankSheetOpen(true) : onNavigate('proUpsell')}
+            style={{
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '0 14px',
+              border: `2px solid ${NB.ink}`, borderRadius: 12,
+              background: isProUser ? NB_PRO_GRADIENT : NB.white,
+              fontFamily: NB.fontDisplay, fontSize: 12, fontWeight: 800, textTransform: 'uppercase',
+              color: isProUser ? NB.white : NB.ink, cursor: 'pointer',
+            }}
+          >
+            {!isProUser && <LockIcon size={11} />} Rank colors
+          </button>
         </div>
 
         {/* SVG body diagram */}
@@ -148,11 +168,13 @@ export default function MuscleMap({ session, onNavigate }) {
           )}
         </div>
 
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-          {LEGEND.map(l => (
+        {/* Legend — intensity is shown as shade, not a fixed color per level;
+            each muscle chip below already carries its own rank-tier hue. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, color: '#777', fontWeight: 600 }}>Shade = intensity, color = rank:</span>
+          {LEGEND_LEVELS.map(l => (
             <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: l.color }} />
+              <div style={{ width: 12, height: 12, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: NB.ink, opacity: 0.2 + l.level * 0.2 }} />
               <span style={{ fontSize: 11, color: '#555', fontWeight: 600 }}>{l.label}</span>
             </div>
           ))}
@@ -161,18 +183,20 @@ export default function MuscleMap({ session, onNavigate }) {
         {/* Muscle chips */}
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 14, scrollbarWidth: 'none' }}>
           {groups.map(m => {
-            const color = VOLUME_COLORS[m.volume] || NB.white
+            const tier = tierForGroup(gamification, m.id)
+            const tierColor = tier.bgGradient || tier.bg
+            const shade = m.volume > 0 ? 0.35 + m.volume * 0.1625 : 0.3
             const isSelected = selected === m.id
             return (
               <button key={m.id} onClick={() => setSelected(isSelected ? null : m.id)} style={{
                 flexShrink: 0, padding: '8px 14px', border: `2px solid ${NB.ink}`, borderRadius: 10,
-                background: isSelected ? color : NB.white,
+                background: isSelected ? tierColor : NB.white,
                 fontSize: 12, fontWeight: 700,
                 color: NB.ink,
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6,
               }}>
-                <span style={{ width: 9, height: 9, borderRadius: 3, background: color, border: `1.5px solid ${NB.ink}` }} />
+                <span style={{ width: 9, height: 9, borderRadius: 3, background: tierColor, opacity: shade, border: `1.5px solid ${NB.ink}` }} />
                 {m.label}
               </button>
             )
@@ -220,6 +244,83 @@ export default function MuscleMap({ session, onNavigate }) {
       </div>
 
       <BottomNav active="workout" onNavigate={onNavigate} />
+
+      {/* Pro perk: per-body-part rank colors, tucked away in a sheet instead
+          of permanently cluttering the main screen with a 9-tier legend. */}
+      <BottomSheet open={rankSheetOpen} onClose={() => { setRankSheetOpen(false); setRankSelected(null) }} title="Rank colors">
+        <div style={{ width: '100%', aspectRatio: '9/16', overflow: 'hidden', marginBottom: 14, ...nbCardStyle(NB.cream, 4), border: `3px solid ${NB.white}`, borderRadius: 18 }}>
+          <MuscleSVG url={`/muscle_map_${view}.svg`} muscleColors={view === 'front' ? rankFrontColors : rankBackColors} />
+        </div>
+
+        {!ranksUnlocked ? (
+          <div style={{ ...nbCardStyle(NB.cream, 3), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '14px 16px', marginBottom: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: NB.ink, display: 'flex', alignItems: 'center', gap: 5 }}><LockIcon size={13} /> Unlock body-part ranks</span>
+              <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink }}>{Math.min(gamification.totalWorkouts || 0, MUSCLE_RANK_MIN_WORKOUTS)} / {MUSCLE_RANK_MIN_WORKOUTS}</span>
+            </div>
+            <div style={{ height: 10, border: `2px solid ${NB.ink}`, borderRadius: 6, background: NB.white, overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, ((gamification.totalWorkouts || 0) / MUSCLE_RANK_MIN_WORKOUTS) * 100)}%`, height: '100%', background: NB.magenta }} />
+            </div>
+            <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>
+              {Math.max(0, MUSCLE_RANK_MIN_WORKOUTS - (gamification.totalWorkouts || 0))} more workout{MUSCLE_RANK_MIN_WORKOUTS - (gamification.totalWorkouts || 0) === 1 ? '' : 's'} to go.
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 12, scrollbarWidth: 'none' }}>
+              {Object.keys(GROUP_LABELS).map(id => {
+                const info = bestGroupRankInfo(gamification, id)
+                const color = info ? (info.tier.bgGradient || info.tier.bg) : '#eee'
+                const isSelected = rankSelected === id
+                return (
+                  <button key={id} onClick={() => setRankSelected(isSelected ? null : id)} style={{
+                    flexShrink: 0, padding: '8px 14px', border: `2px solid ${NB.ink}`, borderRadius: 10,
+                    background: isSelected ? color : NB.white,
+                    fontSize: 12, fontWeight: 700, color: NB.ink, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                  }}>
+                    <span style={{ width: 9, height: 9, borderRadius: 3, background: color, border: `1.5px solid ${NB.ink}` }} />
+                    {GROUP_LABELS[id]}
+                  </button>
+                )
+              })}
+            </div>
+
+            {rankSelected && (
+              <div style={{ ...nbCardStyle(rankSelectedInfo ? (rankSelectedInfo.tier.bgGradient || rankSelectedInfo.tier.bg) : NB.lavenderMist, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px', marginBottom: 4 }}>
+                {rankSelectedInfo ? (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <img src={rankSelectedInfo.tier.image} alt="" style={{ width: 56, height: 56, objectFit: 'contain' }} />
+                      <div>
+                        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 18, textTransform: 'uppercase', color: rankSelectedInfo.tier.color }}>
+                          {rankSelectedInfo.tier.label}{rankSelectedInfo.subLevelLabel ? ` ${rankSelectedInfo.subLevelLabel}` : ''}
+                        </div>
+                        <div style={{ fontSize: 12, color: rankSelectedInfo.tier.color === '#fff' ? 'rgba(255,255,255,.85)' : NB.ink, fontWeight: 700 }}>{rankSelectedLabel}</div>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 12, color: rankSelectedInfo.tier.color === '#fff' ? '#fff' : NB.ink, margin: '10px 0 0', lineHeight: 1.5 }}>
+                      {rankSelectedInfo.isTop ? `${rankSelectedInfo.rankPoints} pts — top tier reached!` : `${rankSelectedInfo.rankPoints}/100 pts to the next sub-level.`}
+                    </p>
+                  </>
+                ) : (
+                  <p style={{ fontSize: 12, color: NB.ink, margin: 0, lineHeight: 1.5 }}>{rankSelectedLabel} hasn't earned a rank yet — train it to get started.</p>
+                )}
+              </div>
+            )}
+
+            {/* 9-tier legend lives here, in the sheet, instead of the main screen */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+              {RANKS.map(tier => (
+                <div key={tier.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: tier.bgGradient || tier.bg }} />
+                  <span style={{ fontSize: 11, color: '#555', fontWeight: 600 }}>{tier.label}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </BottomSheet>
     </>
   )
 }

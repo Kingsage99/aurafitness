@@ -6,7 +6,7 @@ import { STORE_BORDERS } from './StoreScreen'
 import ProBorderRing from '../components/ProBorderRing'
 import { HeartIcon, FireIcon, GemIcon, StarIcon, ToolsIcon, SpaIcon, renderIcon } from '../components/Icons'
 import { getDailyQuests, getMissFlags, xpProgress } from '../utils/gamification'
-import { getPrimaryMuscles } from '../utils/workoutBuilder'
+import { getPrimaryMuscles, dateKeyFor } from '../utils/workoutBuilder'
 import { fetchFriendsFeed, timeAgo } from '../lib/social'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
 
@@ -26,7 +26,7 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
   const streak = gamification.workoutStreak ?? 0
   const lives = gamification.lives ?? 3
   // Mark today as done if user worked out today
-  const today = new Date().toISOString().slice(0, 10)
+  const today = dateKeyFor()
   const todayDayIdx = (new Date().getDay() + 6) % 7 // 0=Mon … 6=Sun
   const todayStr = today
   const dailyQuests = getDailyQuests(todayStr)
@@ -63,7 +63,7 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
             style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', minWidth: 0 }}
           >
             <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0, zIndex: 0 }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', border: equippedBorder?.id === 'frame_pro' ? 'none' : NB_BORDER, background: NB.lavender, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', border: equippedBorder?.id === 'frame_pro' && isProUser ? 'none' : NB_BORDER, background: NB.lavender, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Avatar url={userProfile?.avatarUrl} height={44} color={NB.ink} />
               </div>
               {borderImage && (

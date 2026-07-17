@@ -66,7 +66,7 @@ function BigAvatar({ profile }) {
   const scale = AVATAR_SIZE / 46
   return (
     <div style={{ position: 'relative', width: AVATAR_SIZE, height: AVATAR_SIZE, flexShrink: 0, zIndex: 0 }}>
-      <div style={{ width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: '50%', border: border?.id === 'frame_pro' ? 'none' : `3px solid ${NB.white}`, background: NB.lavender, overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: '50%', border: border?.id === 'frame_pro' && isPro(profile) ? 'none' : `3px solid ${NB.white}`, background: NB.lavender, overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Avatar url={profile?.profile_data?.avatarUrl} height={AVATAR_SIZE} color={NB.ink} />
       </div>
       {border?.image && off && (
@@ -161,7 +161,7 @@ export default function UserProfileView({ userId, session, onNavigate }) {
           <div style={{ padding: '18px 22px 24px' }}>
             {/* Rank + streak */}
             <div style={{ display: 'flex', gap: 10 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: rank.bg, color: rank.color, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '5px 12px', fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: rank.bgGradient || rank.bg, color: rank.color, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '5px 12px', fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800 }}>
                 <img src={rank.image} alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />{rank.label}
               </span>
               <span style={{ background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '5px 12px', fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink }}>🔥 {streak} day streak</span>

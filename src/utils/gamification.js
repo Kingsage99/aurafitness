@@ -1,6 +1,8 @@
 // ─── Gamification Engine ─────────────────────────────────────────────────────
 // Pure functions — no React, no side effects.
 
+import { dateKeyFor } from './workoutBuilder'
+
 export const DEFAULT_GAMIFICATION = {
   gems: 0,
   weeklyGemsEarned: 0,    // gems earned this week — resets Monday, used for penalty calc
@@ -20,6 +22,7 @@ export const DEFAULT_GAMIFICATION = {
   badges: [],
   title: 'Beginner',
   frame: 'default',
+  frameManual: false,     // true once the user has explicitly picked or bought a frame — stops getHighestFrame() from auto-overwriting it
   aura: 'basic',
   rank: 'rookie',
   rankPoints: 0,
@@ -81,15 +84,21 @@ export const TIER_COLORS = {
 
 // 9-tier ladder with badge art in public/ranks/. Top tier (Goddess) is uncapped.
 export const RANKS = [
-  { id: 'rookie',   label: 'Rookie',   color: '#1A1A1A', bg: '#F7F4E6', image: '/ranks/rookie.png',   minWorkouts: 0   },
+  { id: 'rookie',   label: 'Rookie',   color: '#fff',    bg: '#4A4A4A', image: '/ranks/rookie.png',   minWorkouts: 0   },
   { id: 'bronze',   label: 'Bronze',   color: '#fff',    bg: '#CD7F32', image: '/ranks/bronze.png',   minWorkouts: 5   },
   { id: 'silver',   label: 'Silver',   color: '#1A1A1A', bg: '#B8C0CC', image: '/ranks/silver.png',   minWorkouts: 12  },
   { id: 'gold',     label: 'Gold',     color: '#1A1A1A', bg: '#FFC93C', image: '/ranks/gold.png',     minWorkouts: 20  },
   { id: 'platinum', label: 'Platinum', color: '#1A1A1A', bg: '#C9F3EB', image: '/ranks/platinum.png', minWorkouts: 30  },
   { id: 'diamond',  label: 'Diamond',  color: '#1A1A1A', bg: '#7FE6D0', image: '/ranks/diamond.png',  minWorkouts: 45  },
-  { id: 'queen',    label: 'Queen',    color: '#1A1A1A', bg: '#E7DCFB', image: '/ranks/queen.png',    minWorkouts: 65  },
-  { id: 'empress',  label: 'Empress',  color: '#1A1A1A', bg: '#B48CF2', image: '/ranks/empress.png',  minWorkouts: 90  },
-  { id: 'goddess',  label: 'Goddess',  color: '#fff',    bg: '#9366E6', image: '/ranks/goddess.png',  minWorkouts: 120 },
+  { id: 'queen',    label: 'Queen',    color: '#fff',    bg: '#E5484D', image: '/ranks/queen.png',    minWorkouts: 65  },
+  { id: 'empress',  label: 'Empress',  color: '#fff',    bg: '#9366E6', image: '/ranks/empress.png',  minWorkouts: 90  },
+  // goddess: `bg` stays a flat hex (a few call sites do hex math on tier.bg —
+  // shade() in neoBrutalism.js, lightenHex() in MuscleSVG.jsx — that would
+  // break on a gradient string); `bgGradient` is the iridescent look, used
+  // preferentially wherever a call site just sets `background:` directly.
+  { id: 'goddess',  label: 'Goddess',  color: '#fff',    bg: '#171519',
+    bgGradient: 'linear-gradient(120deg, #0B0B10 0%, #C9A9FF 22%, #FFD1EC 42%, #BFE3FF 58%, #EAFBEF 72%, #0B0B10 100%)',
+    image: '/ranks/goddess.png',  minWorkouts: 120 },
 ]
 // Points needed per sub-level. Each tier (except the uncapped top tier) has 3 sub-levels: III (entry) -> I (about to promote).
 export const RANK_UP_AT = 100
@@ -200,6 +209,7 @@ export function claimWeeklyChallenge(g, challengeId) {
 
 export const SHOP_ITEMS = [
   { id: 'extra_life',    label: 'Extra Life',    cost: 50,  icon: '❤️',  desc: 'Restore 1 life immediately',  type: 'consumable' },
+  { id: 'revive_pet',    label: 'Revive Pet',    cost: 120, icon: '💖',  desc: 'Bring your pet back to life', type: 'consumable' },
   { id: 'streak_freeze', label: 'Streak Freeze', cost: 75,  icon: '🧊',  desc: 'Protect streak for 1 miss',   type: 'consumable' },
   { id: 'frame_flame',   label: 'Flame Frame',   cost: 150, icon: '🔥',  desc: 'Unlock Flame avatar frame',   type: 'cosmetic'   },
   { id: 'frame_gold',    label: 'Gold Frame',    cost: 300, icon: '✨',  desc: 'Unlock Gold avatar frame',    type: 'cosmetic'   },
@@ -226,18 +236,29 @@ export const AURAS = [
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
+// Parses a bare "YYYY-MM-DD" key as a LOCAL calendar date — new Date(str)
+// on a date-only string parses as UTC midnight per spec, which silently
+// shifts a day for any negative-UTC-offset user once you start doing local
+// calendar arithmetic (setDate/getDate) on it.
+function parseLocalDateKey(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
 function getMondayDate(dateStr) {
+  // dateStr here is a full ISO datetime (e.g. new Date().toISOString()), not
+  // a bare date key, so new Date(dateStr) parses the real instant correctly.
   const d = new Date(dateStr || new Date())
   const day = d.getDay()
   const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   d.setDate(diff)
-  return d.toISOString().slice(0, 10)
+  return dateKeyFor(d)
 }
 
 function getYesterday(todayStr) {
-  const d = new Date(todayStr)
+  const d = parseLocalDateKey(todayStr)
   d.setDate(d.getDate() - 1)
-  return d.toISOString().slice(0, 10)
+  return dateKeyFor(d)
 }
 
 function getHighestTitle(g) {
@@ -369,8 +390,12 @@ export function checkBadges(g, events = {}) {
 
   updated = { ...updated, badges: [...existing] }
   updated.title = getHighestTitle(updated)
-  updated.frame = getHighestFrame(updated)
-  updated.aura  = getHighestAura(updated)
+  // Only auto-suggest a frame for users who've never explicitly picked or
+  // bought one — otherwise this runs on every workout/meal log and silently
+  // reverts any manual choice (including the Pro ring, which getHighestFrame
+  // doesn't even know about) back to whatever it computes.
+  if (!updated.frameManual) updated.frame = getHighestFrame(updated)
+  updated.aura = getHighestAura(updated)
 
   return { updatedG: updated, newBadges }
 }
@@ -503,12 +528,15 @@ export function purchaseItem(g, itemId, costOverride) {
 
   if (itemId === 'extra_life') {
     updated = { ...updated, lives: Math.min(3, updated.lives + 1) }
-  } else if (itemId === 'life_refill') {
+  } else if (itemId === 'life_refill' || itemId === 'revive_pet') {
     updated = { ...updated, lives: 3 }
   } else if (itemId === 'streak_freeze') {
     updated = { ...updated, inventory: { ...(updated.inventory || {}), streakFreezes: (updated.inventory?.streakFreezes || 0) + 1 } }
   } else if (itemId.startsWith('frame_')) {
+    // A purchase is as much an explicit choice as manually equipping — mark
+    // it manual too so checkBadges() doesn't immediately re-sync over it.
     updated.frame = getHighestFrame(updated)
+    updated.frameManual = true
   } else if (itemId.startsWith('banner_')) {
     updated = { ...updated, activeBanner: itemId }
   } else if (itemId.startsWith('theme_')) {
@@ -523,14 +551,13 @@ export function purchaseItem(g, itemId, costOverride) {
 // Re-equips an already-owned (or free) cosmetic — no gem cost, unlike
 // purchaseItem. Covers pets, banners, themes and borders (frame_ ids map to
 // the short id FRAMES/getHighestFrame use internally).
-// Note: a future purchase or badge unlock can still re-sync `frame` to the
-// highest eligible tier (see getHighestFrame) — a manual pick here holds
-// until the next such event.
+// frameManual:true means this choice sticks — checkBadges() won't auto-sync
+// over it anymore (see there); only picking or buying another frame changes it.
 export function equipCosmetic(g, itemId) {
   if (itemId.startsWith('pet_'))    return { ...g, activePet: itemId }
   if (itemId.startsWith('banner_')) return { ...g, activeBanner: itemId }
   if (itemId.startsWith('theme_'))  return { ...g, activeTheme: itemId }
-  if (itemId.startsWith('frame_'))  return { ...g, frame: itemId.replace('frame_', '') }
+  if (itemId.startsWith('frame_'))  return { ...g, frame: itemId.replace('frame_', ''), frameManual: true }
   return g
 }
 
@@ -602,7 +629,7 @@ export function checkCaloriePenalty(g, yesterdayStr, dailyCalorieTarget, yesterd
 // Returns { showWorkoutMiss, showCalorieMiss, missedWorkoutEntry }
 export function getMissFlags(missState, gamification = {}, loggedMacros = { calories: 0 }) {
   if (!missState) return { showWorkoutMiss: false, showCalorieMiss: false, missedWorkoutEntry: null }
-  const todayKey = new Date().toISOString().slice(0, 10)
+  const todayKey = dateKeyFor()
   const showWorkoutMiss = !!missState.workoutMissedYesterday && gamification.lastMakeupDate !== todayKey
   const showCalorieMiss = !!missState.calorieMissedYesterday && !((loggedMacros.calories || 0) > 0) && gamification.lastCalorieSkipDate !== todayKey
   return {
