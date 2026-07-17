@@ -384,3 +384,16 @@ export async function deletePushSubscription(userId, endpoint) {
     .eq('endpoint', endpoint)
   if (error) console.error('deletePushSubscription error:', error.message)
 }
+
+// Sends a real push to the CALLING user's own device(s) right now, for an
+// event their own client just witnessed (e.g. their pet just died). Uses
+// the notify-user Edge Function, authenticated with the caller's own
+// session — there's no way to target anyone else. Fire-and-forget: never
+// throws, since a failed push shouldn't block whatever gameplay action
+// triggered it.
+export async function notifySelf({ title, body, url, category }) {
+  const { error } = await supabase.functions.invoke('notify-user', {
+    body: { title, body, url, category },
+  })
+  if (error) console.error('notifySelf error:', error.message)
+}

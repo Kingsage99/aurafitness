@@ -31,7 +31,7 @@ import Settings from './screens/Settings'
 import LegalDoc from './screens/LegalDoc'
 import { buildWeeklyPlan, buildCustomWeeklyPlan, getWeekdayIndex, dateKeyFor } from './utils/workoutBuilder'
 import { supabase } from './lib/supabase'
-import { saveWorkoutHistory, fetchPendingRequests, setUsername, logNutrition } from './lib/social'
+import { saveWorkoutHistory, fetchPendingRequests, setUsername, logNutrition, notifySelf } from './lib/social'
 import {
   DEFAULT_GAMIFICATION, resetWeeklyIfNeeded, awardGems, awardXP,
   updateStreak, checkBadges, checkCaloriePenalty, calorieGoalStatus,
@@ -218,6 +218,14 @@ export default function App() {
           if (lifeLost) {
             if (penaltyApplied > 0) pushNotification(`❤️ Life lost — missed calorie goal. -${penaltyApplied} 💎 penalty`)
             else pushNotification('❤️ Life lost — calorie goal missed yesterday')
+            if (checkedG.lives === 0) {
+              notifySelf({
+                title: '💀 Your pet has died',
+                body: 'Your pet ran out of lives — revive it in the Store to bring it back.',
+                url: '/',
+                category: 'petCare',
+              })
+            }
           } else if (goalHit) {
             pushNotification('+20 💎  Yesterday\'s calorie goal achieved!')
           }
