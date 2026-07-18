@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { PETS } from '../data/pets'
-import { GemIcon, HeartIcon, StarIcon, renderIcon } from '../components/Icons'
+import { GemIcon, HeartIcon, StarIcon, LockIcon, renderIcon } from '../components/Icons'
 import ProBorderRing from '../components/ProBorderRing'
+import { startGemCheckout, GEM_STRIPE_PRICES } from '../lib/stripe'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL_SHADOW, NB_PRO_GRADIENT } from '../styles/neoBrutalism'
 
 export const STORE_BORDERS = [
@@ -82,10 +83,6 @@ export const STORE_THEMES = [
   { id: 'theme_rose',    label: 'Rose',      cost: 150, icon: '🌸', desc: 'Soft rose pink' },
   { id: 'theme_ocean',   label: 'Ocean',     cost: 175, icon: '🔵', desc: 'Ocean blue palette' },
 ]
-
-// Teaser slots for themes still in development — mirrors the Pets tab's
-// "???" mystery cards so the tab doesn't look finished/static.
-const UPCOMING_THEMES = [{ id: 'theme_teaser_1' }, { id: 'theme_teaser_2' }]
 
 const THEME_GRADIENTS = {
   theme_default: `linear-gradient(155deg, ${NB.magenta}, ${NB.purpleDeep})`,
@@ -202,9 +199,10 @@ const statusBadge = (text, bg) => (
   </span>
 )
 
-export default function StoreScreen({ gamification = {}, isProUser = false, onShopPurchase, onEquipPet, onNavigate }) {
+export default function StoreScreen({ gamification = {}, isProUser = false, onShopPurchase, onEquipPet, onNavigate, onNotify }) {
   const g = gamification
   const [subTab, setSubTab] = useState('pets')
+  const [buyingGemPkg, setBuyingGemPkg] = useState(null)
   const owned = new Set(g.purchasedItems || [])
 
   const subTabs = [{ id: 'pets', label: 'Pets' }, { id: 'borders', label: 'Borders' }, { id: 'banners', label: 'Banners' }, { id: 'designs', label: 'Designs' }, { id: 'gems', label: 'Gems' }, { id: 'lives', label: 'Lives' }]
@@ -332,17 +330,34 @@ export default function StoreScreen({ gamification = {}, isProUser = false, onSh
     )
   }
 
-  const GemCard = ({ pkg }) => (
-    <GridCard
-      bg={`linear-gradient(160deg, ${NB.yellow}, ${NB.roseGold})`}
-      labelColor={NB.ink}
-      preview={<GemIcon size={87} />}
-      label={pkg.label}
-      corner={pkg.tag && <span style={{ fontSize: 9, fontWeight: 800, color: NB.white, background: NB.magenta, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '3px 7px', whiteSpace: 'nowrap' }}>{pkg.tag}</span>}
-      badge={<span style={{ display: 'inline-block', background: NB.white, border: `2px solid ${NB.ink}`, borderRadius: 10, padding: '4px 10px', fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, color: NB.ink, boxShadow: hardShadow(2) }}>{pkg.price}</span>}
-      onClick={() => {}}
-    />
-  )
+  const handleBuyGems = async (pkg) => {
+    const priceId = GEM_STRIPE_PRICES[pkg.id]
+    if (!priceId) { onNotify?.("This gem package isn't set up yet — check back soon."); return }
+    setBuyingGemPkg(pkg.id)
+    try {
+      await startGemCheckout(priceId)
+    } catch (err) {
+      onNotify?.(err.message || 'Could not start checkout')
+      setBuyingGemPkg(null)
+    }
+  }
+
+  const GemCard = ({ pkg }) => {
+    const busy = buyingGemPkg === pkg.id
+    return (
+      <GridCard
+        bg={`linear-gradient(160deg, ${NB.yellow}, ${NB.roseGold})`}
+        labelColor={NB.ink}
+        preview={<GemIcon size={87} />}
+        label={pkg.label}
+        corner={pkg.tag && <span style={{ fontSize: 9, fontWeight: 800, color: NB.white, background: NB.magenta, border: `1.5px solid ${NB.ink}`, borderRadius: 6, padding: '3px 7px', whiteSpace: 'nowrap' }}>{pkg.tag}</span>}
+        badge={<span style={{ display: 'inline-block', background: NB.white, border: `2px solid ${NB.ink}`, borderRadius: 10, padding: '4px 10px', fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, color: NB.ink, boxShadow: hardShadow(2) }}>{busy ? '…' : pkg.price}</span>}
+        dim={busy}
+        disabled={busy || !!buyingGemPkg}
+        onClick={() => handleBuyGems(pkg)}
+      />
+    )
+  }
 
   const LifeCard = ({ item }) => {
     const canAfford = (g.gems ?? 0) >= item.cost
@@ -411,7 +426,8 @@ export default function StoreScreen({ gamification = {}, isProUser = false, onSh
 
         <div style={{ display: 'flex', overflowX: 'auto', gap: 6, marginBottom: 16, paddingBottom: 2 }}>
           {subTabs.map(t => (
-            <button key={t.id} onClick={() => setSubTab(t.id)} style={{ flexShrink: 0, height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: subTab === t.id ? NB.teal : NB.white, color: NB.ink, fontWeight: subTab === t.id ? 800 : 700, fontSize: 12, cursor: 'pointer' }}>
+            <button key={t.id} onClick={() => setSubTab(t.id)} style={{ flexShrink: 0, height: 36, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: subTab === t.id ? NB.teal : NB.white, color: NB.ink, fontWeight: subTab === t.id ? 800 : 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+              {t.id === 'designs' && <LockIcon size={11} />}
               {t.label}
             </button>
           ))}
@@ -430,22 +446,10 @@ export default function StoreScreen({ gamification = {}, isProUser = false, onSh
         {subTab === 'borders' && grid(STORE_BORDERS.map(item => <CosmeticCard key={item.id} item={item} category="borders" />))}
         {subTab === 'banners' && grid(STORE_BANNERS.map(item => <CosmeticCard key={item.id} item={item} category="banners" />))}
         {subTab === 'designs' && (
-          <div>
-            {grid(STORE_THEMES.map(item => <CosmeticCard key={item.id} item={item} category="designs" />))}
-            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 15, textTransform: 'uppercase', color: NB.ink, margin: '20px 2px 10px' }}>Upcoming</div>
-            {grid(UPCOMING_THEMES.map(t => (
-              <GridCard
-                key={t.id}
-                bg={NB.lavenderMist}
-                labelColor={NB.ink}
-                preview={<span style={{ fontSize: 78 }}>❓</span>}
-                label="???"
-                badge={statusBadge('Soon', NB.lavender)}
-                dim
-                disabled
-                onClick={() => {}}
-              />
-            )))}
+          <div style={{ ...nbCardStyle(NB.cream, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '40px 24px', textAlign: 'center' }}>
+            <div style={{ fontSize: 40, marginBottom: 14 }}>🚧</div>
+            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 18, textTransform: 'uppercase', color: NB.ink, marginBottom: 8 }}>Designs — coming soon</div>
+            <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5 }}>This section is still being built. Check back soon!</div>
           </div>
         )}
 

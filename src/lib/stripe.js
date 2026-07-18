@@ -21,6 +21,30 @@ export async function startCheckout(priceId, trialDays = 7) {
   window.location.href = data.url
 }
 
+// Store's Gems tab price IDs, created once in the Stripe Dashboard as
+// one-time Prices (Products → MissVfit Gems). Swap in the real IDs after
+// creating them — the gem amount each one credits is fixed server-side in
+// stripe-create-checkout's GEM_PRICE_MAP, not read from here.
+export const GEM_STRIPE_PRICES = {
+  gems_100: import.meta.env.VITE_STRIPE_PRICE_GEMS_100 || '',
+  gems_500: import.meta.env.VITE_STRIPE_PRICE_GEMS_500 || '',
+  gems_1200: import.meta.env.VITE_STRIPE_PRICE_GEMS_1200 || '',
+  gems_2500: import.meta.env.VITE_STRIPE_PRICE_GEMS_2500 || '',
+}
+
+// Redirects to a one-time-payment Stripe Checkout session for a gem package.
+// Gems are credited by stripe-webhook once payment completes — this call
+// only starts the redirect.
+export async function startGemCheckout(priceId) {
+  const { data, error } = await supabase.functions.invoke('stripe-create-checkout', {
+    body: { priceId, type: 'gems' },
+  })
+  if (error || !data?.url) {
+    throw new Error(error?.message || 'Could not start checkout')
+  }
+  window.location.href = data.url
+}
+
 // Redirects to Stripe's hosted Customer Portal so a subscriber can update
 // payment method, switch plan, or cancel — no custom billing UI needed.
 export async function openBillingPortal() {
