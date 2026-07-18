@@ -4,10 +4,12 @@ import BottomNav from '../components/BottomNav'
 import { Avatar } from '../components/AvatarSilhouette'
 import { STORE_BORDERS } from './StoreScreen'
 import ProBorderRing from '../components/ProBorderRing'
+import AuthorAvatar from '../components/AuthorAvatar'
 import { HeartIcon, FireIcon, GemIcon, StarIcon, ToolsIcon, SpaIcon, renderIcon } from '../components/Icons'
+import { SkeletonBox } from '../components/Skeleton'
 import { getDailyQuests, getMissFlags, xpProgress } from '../utils/gamification'
 import { getPrimaryMuscles, dateKeyFor } from '../utils/workoutBuilder'
-import { fetchFriendsFeed, timeAgo } from '../lib/social'
+import { fetchFriendsFeed, fetchProfilesByIds, timeAgo } from '../lib/social'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
 
 function describeActivity(post) {
@@ -16,7 +18,7 @@ function describeActivity(post) {
   return `logged ${c.name || 'a meal'}`
 }
 
-export default function Home({ userProfile, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, todayWorkout = null, gamification = {}, isProUser = false, missState = null, session, onStartMakeup, onSkipMakeup, onSkipCalorieMiss, onQuestComplete, onNavigate }) {
+export default function Home({ userProfile, loggedMacros = { calories: 0, protein: 0, carbs: 0, fat: 0 }, todayWorkout = null, gamification = {}, isProUser = false, missState = null, session, onStartMakeup, onSkipMakeup, onSkipCalorieMiss, onNavigate }) {
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
   // Image-based ring frame — same equipped cosmetic as Profile.jsx, shown
   // anywhere else the real avatar photo appears.
@@ -31,16 +33,19 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
   const todayStr = today
   const dailyQuests = getDailyQuests(todayStr)
   const completedQuests = gamification.dailyQuests?.date === todayStr ? (gamification.dailyQuests.completed || []) : []
+  const claimedQuests = gamification.dailyQuests?.date === todayStr ? (gamification.dailyQuests.claimed || []) : []
 
   const [dismissed, setDismissed] = useState({ workout: false, calorie: false })
   const [squadActivity, setSquadActivity] = useState([])
+  const [squadAuthors, setSquadAuthors] = useState({})
   const [squadLoading, setSquadLoading] = useState(true)
 
   useEffect(() => {
     const userId = session?.user?.id
     if (!userId) { setSquadLoading(false); return }
-    fetchFriendsFeed(userId, 2).then(posts => {
+    fetchFriendsFeed(userId, 2).then(async posts => {
       setSquadActivity(posts)
+      if (posts.length > 0) setSquadAuthors(await fetchProfilesByIds(posts.map(p => p.user_id)))
       setSquadLoading(false)
     })
   }, [session?.user?.id])
@@ -266,20 +271,27 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
           return (
             <button
               onClick={() => onNavigate('meals')}
-              style={{ ...nbCardStyle(NB.tealLight, 5, NB.teal), border: `3px solid ${NB.white}`, borderRadius: 20, padding: 14, display: 'flex', alignItems: 'center', gap: 14, width: '100%', marginBottom: 16, cursor: 'pointer', textAlign: 'left' }}
+              style={{ ...nbCardStyle(NB.tealLight, 5, NB.teal), border: `3px solid ${NB.white}`, borderRadius: 20, padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 16, cursor: 'pointer', textAlign: 'left' }}
             >
-              <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
-                <svg width="52" height="52" viewBox="0 0 54 54">
-                  <circle cx="27" cy="27" r="22" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="8"/>
-                  <circle cx="27" cy="27" r="22" fill="none" stroke={NB.ink} strokeWidth="8" strokeDasharray={circ} strokeDashoffset={offset} transform="rotate(-90 27 27)"/>
-                </svg>
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, color: NB.ink, lineHeight: 1 }}>{consumed}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+                  <svg width="52" height="52" viewBox="0 0 54 54">
+                    <circle cx="27" cy="27" r="22" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="8"/>
+                    <circle cx="27" cy="27" r="22" fill="none" stroke={NB.ink} strokeWidth="8" strokeDasharray={circ} strokeDashoffset={offset} transform="rotate(-90 27 27)"/>
+                  </svg>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontFamily: NB.fontDisplay, fontSize: 13, fontWeight: 800, color: NB.ink, lineHeight: 1 }}>{consumed}</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontFamily: NB.fontDisplay, fontSize: 26, fontWeight: 900, color: NB.ink, lineHeight: 1.1 }}>
+                    {Math.max(0, Math.round(target - loggedMacros.calories)).toLocaleString()}
+                  </div>
+                  <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 700, color: NB.ink, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    kcal left
+                  </div>
                 </div>
               </div>
-              <span style={{ flex: 1, fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700 }}>
-                {Math.max(0, Math.round(target - loggedMacros.calories))} kcal left · P {Math.round(loggedMacros.protein)} C {Math.round(loggedMacros.carbs)} F {Math.round(loggedMacros.fat)}
-              </span>
               <span style={{ width: 36, height: 36, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
               </span>
@@ -299,20 +311,29 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
           <div style={{ ...nbCardStyle(NB.lavender, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {dailyQuests.map(quest => {
               const isDone = completedQuests.includes(quest.id)
+              const isClaimed = claimedQuests.includes(quest.id)
+              const readyToClaim = isDone && !isClaimed
               return (
                 <div
                   key={quest.id}
                   style={{
-                    background: NB.lavenderMist, border: 'none', borderRadius: 14, padding: '12px 14px',
+                    position: 'relative', background: NB.lavenderMist, border: 'none', borderRadius: 14, padding: '12px 14px',
                     display: 'flex', alignItems: 'center', gap: 12, width: '100%',
                   }}
                 >
-                  <div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${NB.ink}`, background: isDone ? NB.ink : NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {isDone && (
+                  {readyToClaim && (
+                    <div style={{
+                      position: 'absolute', top: -4, right: -4,
+                      width: 14, height: 14, borderRadius: 5, border: `2px solid ${NB.ink}`,
+                      background: NB.red,
+                    }} />
+                  )}
+                  <div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${NB.ink}`, background: isClaimed ? NB.ink : NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {isClaimed && (
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
                     )}
                   </div>
-                  <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: NB.ink, textDecoration: isDone ? 'line-through' : 'none' }}>{quest.label}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: NB.ink, textDecoration: isClaimed ? 'line-through' : 'none' }}>{quest.label}</span>
                   <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink, background: NB.yellow, borderRadius: 8, padding: '3px 9px', flexShrink: 0 }}>+{quest.reward}</span>
                 </div>
               )
@@ -342,7 +363,14 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
             <button onClick={() => onNavigate('discovery')} style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', border: 'none', background: 'none', cursor: 'pointer' }}>See all</button>
           </div>
           {squadLoading ? (
-            <div style={{ fontSize: 13, color: '#777', padding: '4px 0' }}>Loading…</div>
+            <div>
+              {[1, 2].map(i => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i === 2 ? 0 : 10 }}>
+                  <SkeletonBox width={36} height={36} borderRadius={11} style={{ flexShrink: 0 }} />
+                  <SkeletonBox height={13} borderRadius={4} style={{ flex: 1 }} />
+                </div>
+              ))}
+            </div>
           ) : squadActivity.length === 0 ? (
             <div style={{ fontSize: 13, color: '#777', lineHeight: 1.5 }}>
               No squad activity yet — add friends in Discover to see their workouts and meals here.
@@ -350,9 +378,7 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
           ) : (
             squadActivity.map((post, i) => (
               <div key={post.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i === squadActivity.length - 1 ? 0 : 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 11, border: `2px solid ${NB.ink}`, background: post.type === 'workout' ? NB.magenta : NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, color: post.type === 'workout' ? NB.white : NB.ink }}>{(post.display_name || 'U')[0].toUpperCase()}</span>
-                </div>
+                <AuthorAvatar author={squadAuthors[post.user_id]} size={36} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{post.display_name || 'MissVfit user'} </span>
                   <span style={{ fontSize: 13, color: '#444' }}>{describeActivity(post)}</span>

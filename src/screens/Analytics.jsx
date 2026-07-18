@@ -9,6 +9,7 @@ import { fetchWorkoutHistory, fetchNutritionLog, fetchBodyWeightLog } from '../l
 import { getDailyTargets, MACRO_META } from '../utils/nutrition'
 import { xpProgress, RANKS, normalizeRankId } from '../utils/gamification'
 import { renderIcon, MedalIcon } from '../components/Icons'
+import { SkeletonBox } from '../components/Skeleton'
 import { GROUP_LABELS, exerciseCountsByGroup } from '../utils/muscleGroups'
 import { dateKeyFor } from '../utils/workoutBuilder'
 import { toDisplayWeight, weightUnitLabel } from '../utils/units'
@@ -149,7 +150,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
 
         <div style={{ padding: '4px 16px 24px' }}>
           {loading ? (
-            <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: '#555' }}>Loading…</div>
+            <AnalyticsSkeleton />
           ) : tab === 'training' ? (
             <>
               {/* T1 — overview stats */}
@@ -478,6 +479,23 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
 
       <BottomNav active="analytics" onNavigate={onNavigate} />
     </>
+  )
+}
+
+function AnalyticsSkeleton() {
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 2, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '14px 16px' }}>
+            <SkeletonBox height={11} borderRadius={4} style={{ width: '55%', marginBottom: 8 }} />
+            <SkeletonBox height={22} borderRadius={4} style={{ width: '35%', border: 'none' }} />
+          </div>
+        ))}
+      </div>
+      <SkeletonBox height={160} borderRadius={16} style={{ marginBottom: 16 }} />
+      <SkeletonBox height={120} borderRadius={16} />
+    </div>
   )
 }
 

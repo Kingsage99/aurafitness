@@ -9,14 +9,14 @@ import {
   uploadSticker,
 } from '../lib/social'
 import { isPro } from '../lib/stripe'
-import { getMissFlags, RANKS, normalizeRankId, SUB_LEVEL_ROMAN, SUB_LEVELS_PER_TIER } from '../utils/gamification'
+import { getMissFlags, RANKS, normalizeRankId, SUB_LEVEL_ROMAN, SUB_LEVELS_PER_TIER, updateReactionStreak } from '../utils/gamification'
+import { dateKeyFor } from '../utils/workoutBuilder'
 import { groupOf } from '../utils/muscleGroups'
 import { tierForGroup } from '../utils/muscleRankColors'
-import { Avatar } from '../components/AvatarSilhouette'
 import { FireIcon } from '../components/Icons'
-import { STORE_BORDERS } from './StoreScreen'
 import ImageCropSheet from '../components/ImageCropSheet'
-import ProBorderRing from '../components/ProBorderRing'
+import AuthorAvatar from '../components/AuthorAvatar'
+import { SkeletonBox } from '../components/Skeleton'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
 
 // The four stock stickers in public/sticker/ — the fallback set a brand-new
@@ -143,6 +143,15 @@ export default function Discovery({ session, userProfile, gamification = {}, onG
       // Lifetime usage count, never decremented on un-react, so the picker's
       // "most used" ranking survives toggling a reaction back off.
       onGamificationChange?.(g => ({ ...g, stickerUsage: { ...(g.stickerUsage || {}), [stickerUrl]: ((g.stickerUsage || {})[stickerUrl] || 0) + 1 } }))
+      // Distinct-posts-reacted-to-today count (post_or_react quest) + the
+      // independent day-continuity reaction streak (react_streak_7 challenge)
+      // — both keyed off this being a NEW reaction, not a toggle-off.
+      const today = dateKeyFor()
+      onGamificationChange?.(g => {
+        const rt = g.reactionsToday?.date === today ? g.reactionsToday : { date: today, postIds: [] }
+        const postIds = rt.postIds.includes(post.id) ? rt.postIds : [...rt.postIds, post.id]
+        return { ...updateReactionStreak(g, today), reactionsToday: { date: today, postIds } }
+      })
     }
   }
 
@@ -346,26 +355,6 @@ function DiscoveryLock({ showWorkoutMiss, showCalorieMiss, missedWorkoutEntry, o
 
 // ── Post Card ─────────────────────────────────────────────────────────────────
 
-// Small avatar + equipped ring-border block for a post author — mirrors the
-// Home/Profile avatar treatment so borders show in the feed.
-function AuthorAvatar({ author, size = 42 }) {
-  const frameId = author?.gamification?.frame
-  const equippedBorder = frameId ? STORE_BORDERS.find(b => b.id === `frame_${frameId}`) : null
-  const off = equippedBorder?.frameOffset
-  const scale = size / 46 // frameOffsets are calibrated for a 46px avatar
-  return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0, zIndex: 0 }}>
-      <div style={{ width: size, height: size, borderRadius: '50%', border: equippedBorder?.id === 'frame_pro' && isPro(author) ? 'none' : `2px solid ${NB.ink}`, background: NB.lavender, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Avatar url={author?.profile_data?.avatarUrl} height={size} color={NB.ink} />
-      </div>
-      {equippedBorder?.image && off && (
-        <img src={equippedBorder.image} alt="" style={{ position: 'absolute', top: off.top * scale, left: off.left * scale, width: off.size * scale, height: off.size * scale, pointerEvents: 'none' }} />
-      )}
-      {equippedBorder?.id === 'frame_pro' && isPro(author) && <ProBorderRing size={size} />}
-    </div>
-  )
-}
-
 // A compact labelled stat block used under the post author row.
 function Stat({ label, value }) {
   return (
@@ -549,14 +538,6 @@ function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, 
                   </div>
                 ))}
               </div>
-              {content.ingredients?.length > 0 && (
-                <div style={{ marginTop: 15, width: '100%' }}>
-                  <div style={{ fontFamily: NB.fontMono, fontSize: 15, fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Ingredients</div>
-                  {content.ingredients.slice(0, 2).map((ing, i) => (
-                    <div key={i} style={{ fontSize: 18, color: NB.ink, padding: '4.5px 0', borderBottom: `1px solid ${NB.ink}30`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ing}</div>
-                  ))}
-                </div>
-              )}
             </>
           )}
         </div>
@@ -573,13 +554,13 @@ function SkeletonFeed() {
       {[1, 2].map(i => (
         <div key={i} style={{ marginBottom: 22 }}>
           <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 11, border: `1.5px solid ${NB.ink}`, background: NB.cream, flexShrink: 0 }} />
+            <SkeletonBox width={40} height={40} borderRadius={11} style={{ flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
-              <div style={{ height: 13, background: NB.cream, border: `1px solid ${NB.ink}`, borderRadius: 4, width: '40%', marginBottom: 6 }} />
-              <div style={{ height: 11, background: NB.cream, width: '25%' }} />
+              <SkeletonBox height={13} borderRadius={4} style={{ width: '40%', marginBottom: 6 }} />
+              <SkeletonBox height={11} borderRadius={4} style={{ width: '25%', border: 'none' }} />
             </div>
           </div>
-          <div style={{ height: 300, background: NB.cream, border: 'none', borderRadius: 18 }} />
+          <SkeletonBox height={300} borderRadius={18} style={{ border: 'none' }} />
         </div>
       ))}
     </div>

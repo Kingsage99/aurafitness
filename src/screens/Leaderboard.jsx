@@ -259,11 +259,10 @@ export default function Leaderboard({ session, userProfile, gamification, isProU
     let cancelled = false
     if (scope === 'regional' && !country) { setRows([]); setLoading(false); return }
     setLoading(true)
-    fetchLeaderboardProfiles({ scope, userId, country }).then(data => {
-      if (cancelled) return
-      setRows(data)
-      setLoading(false)
-    })
+    fetchLeaderboardProfiles({ scope, userId, country })
+      .then(data => { if (!cancelled) setRows(data) })
+      .catch(err => { console.error('fetchLeaderboardProfiles failed:', err.message); if (!cancelled) setRows([]) })
+      .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [scope, userId, country])
 
@@ -331,9 +330,7 @@ export default function Leaderboard({ session, userProfile, gamification, isProU
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px 20px' }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: '#555' }}>Loading…</div>
-        ) : scope === 'regional' && !country ? (
+        {loading ? null : scope === 'regional' && !country ? (
           <div style={{ ...nbCardStyle(NB.cream, 3), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '18px 16px', textAlign: 'center' }}>
             <div style={{ fontSize: 13, color: NB.ink, fontWeight: 700, marginBottom: 10 }}>Pick your country to see regional rankings.</div>
             <button onClick={() => setCountrySheetOpen(true)} style={{ height: 38, padding: '0 18px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.teal, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', color: NB.ink, cursor: 'pointer' }}>Choose country</button>
