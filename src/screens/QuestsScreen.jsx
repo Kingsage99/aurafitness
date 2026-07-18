@@ -38,7 +38,7 @@ export default function QuestsScreen({ gamification = {}, onClaimQuest, onClaimC
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 18px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '20px 18px' }}>
         {/* Daily quests */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <span style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Daily Quests</span>

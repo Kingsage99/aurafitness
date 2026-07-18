@@ -40,7 +40,7 @@ export default function WhyAura({ userProfile = {}, weeklyPlan = null, onContinu
   return (
     <>
       <StatusBar />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px 0', display: 'flex', flexDirection: 'column' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '16px 22px 0', display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', margin: '14px 0 6px' }}>
           <div style={{ fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', color: '#555' }}>Your path to</div>

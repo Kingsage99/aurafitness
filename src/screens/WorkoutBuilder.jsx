@@ -421,7 +421,7 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate, postSaveScre
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 22px 20px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '0 22px 20px' }}>
 
         {/* Muscle group picker */}
         {builderStage !== 'review' && (

@@ -86,7 +86,7 @@ export default function Auth() {
     return (
       <>
         <StatusBar />
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 26px 0' }}>
+        <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '24px 26px 0' }}>
           {/* Back + title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32, marginTop: 8 }}>
             <button onClick={() => { setMode(null); setError('') }}

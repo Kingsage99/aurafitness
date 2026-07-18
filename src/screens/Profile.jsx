@@ -217,7 +217,7 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
     <>
       <StatusBar />
 
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto' }}>
         {/* Header */}
         <div style={{ background: NB.lavender, padding: '14px 18px 22px' }}>
           <input ref={avatarFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />

@@ -41,7 +41,7 @@ export default function ProUpsell({ subscription = {}, onContinue }) {
   return (
     <>
       <StatusBar />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px 0' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '20px 22px 0' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{ width: 64, height: 64, borderRadius: 18, border: NB_BORDER, boxShadow: hardShadow(4), background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
             <StarIcon size={30} />

@@ -125,7 +125,7 @@ export default function WorkoutDetail({ activeWorkout, userProfile = {}, setActi
       </div>
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto' }}>
 
         {/* Target Muscles row */}
         {usage.length > 0 && (

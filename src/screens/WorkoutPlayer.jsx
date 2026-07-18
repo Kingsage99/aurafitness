@@ -143,7 +143,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
           </div>
         )}
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
+        <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
 
           {/* Muscles today */}
           <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '12px 16px', marginBottom: 14 }}>
@@ -249,7 +249,7 @@ export default function WorkoutPlayer({ workout, userProfile, onSwapExercise, on
         </div>
       </div>
 
-      <div style={{ padding: '14px 22px 0', flex: 1, overflowY: 'auto' }}>
+      <div className="scroll-fade-bottom" style={{ padding: '14px 22px 0', flex: 1, overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>{exercise.sets} sets · {exercise.reps} reps</span>
           <span style={{ fontSize: 12, color: '#555', fontWeight: 600 }}>{exercise.target}</span>

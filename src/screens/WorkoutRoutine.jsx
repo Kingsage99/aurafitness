@@ -34,7 +34,7 @@ function DayDetailPanel({ dateKey, assigned, availableWorkouts, onAssign, onClos
   const showPicker = !assigned || picking
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '0 22px 20px' }}>
+    <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '0 22px 20px' }}>
 
       {/* Panel header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>

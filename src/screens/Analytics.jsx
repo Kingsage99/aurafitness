@@ -123,7 +123,7 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
     <>
       <StatusBar />
 
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto' }}>
         {/* Header */}
         <div style={{ padding: '10px 22px 8px' }}>
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink }}>Analytics</div>

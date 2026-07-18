@@ -26,10 +26,9 @@ export default function PhoneFrame({ children, hideStatus }) {
 
   if (isMobile) {
     return (
-      <div style={{
+      <div className="phone-viewport" style={{
         position: 'relative',
         width: '100%',
-        height: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',

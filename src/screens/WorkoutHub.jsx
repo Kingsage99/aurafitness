@@ -80,7 +80,7 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
         <UnitToggle units={userProfile?.units} onUpdateProfile={onUpdateProfile} />
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 22px 16px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '6px 22px 16px' }}>
 
         {/* ── Resume unfinished workout (autosaved draft) ──────────── */}
         {draft && (

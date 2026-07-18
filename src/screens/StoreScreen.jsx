@@ -396,7 +396,7 @@ export default function StoreScreen({ gamification = {}, isProUser = false, onSh
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px 20px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '16px 18px 20px' }}>
 
         {/* Pro promo banner — the store's premium centerpiece, hidden once you already are Pro */}
         {!isProUser && (

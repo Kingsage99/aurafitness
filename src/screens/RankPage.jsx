@@ -70,7 +70,7 @@ export default function RankPage({ gamification = {}, onNavigate }) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px 24px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '16px 18px 24px' }}>
         {/* Overall ladder */}
         <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, marginBottom: 10 }}>All Ranks</div>
         <RankLadder unlocked rank={rank.id} rankPoints={g.rankPoints || 0} subLevelLabel={roman} isTop={isTop} />

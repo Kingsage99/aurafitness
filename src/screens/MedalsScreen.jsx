@@ -64,7 +64,7 @@ export default function MedalsScreen({ gamification = {}, onNavigate }) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 18px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '20px 18px' }}>
         {/* Badge grid grouped by tier */}
         {['gold', 'silver', 'bronze'].map(tier => {
           const tierBadges = BADGES.filter(b => b.tier === tier)

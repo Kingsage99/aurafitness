@@ -124,7 +124,7 @@ export default function MuscleMap({ session, gamification = {}, isProUser = fals
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
 
         {/* Front / Back toggle + Rank colors button */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>

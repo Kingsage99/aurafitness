@@ -54,7 +54,7 @@ export default function LegalDoc({ doc = 'terms', onBack }) {
         <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink }}>{title}</div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 22px 32px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '10px 22px 32px' }}>
         <div style={{ fontSize: 12, color: '#555', marginBottom: 18 }}>Effective {EFFECTIVE_DATE}</div>
         {sections.map(({ h, body }) => (
           <div key={h} style={{ marginBottom: 20 }}>

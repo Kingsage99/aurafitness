@@ -295,7 +295,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>What should we call you?</div>
             <div style={stepSub}>This is how MissVfit will greet you every day.</div>
           </div>
-          <div style={content}>
+          <div className="scroll-fade-bottom" style={content}>
             <div style={{ border: `2.5px solid ${usernameError ? NB.red : NB.ink}`, borderRadius: 16, boxShadow: hardShadow(4), background: NB.white, padding: '18px 20px', marginBottom: 16 }}>
               <input
                 value={username}
@@ -326,7 +326,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>What's your main goal?</div>
             <div style={stepSub}>We'll build your entire plan around this.</div>
           </div>
-          <div style={content}>
+          <div className="scroll-fade-bottom" style={content}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {FITNESS_GOALS.map(g => {
                 const sel = fitnessGoal === g.id
@@ -358,7 +358,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>How active are you right now?</div>
             <div style={stepSub}>No judgement — we meet you where you are.</div>
           </div>
-          <div style={{ flex: 1, padding: '14px 22px 0', display: 'flex', flexDirection: 'column', gap: 13, overflowY: 'auto' }}>
+          <div className="scroll-fade-bottom" style={{ flex: 1, padding: '14px 22px 0', display: 'flex', flexDirection: 'column', gap: 13, overflowY: 'auto' }}>
             {EXPERIENCE.map(e => {
               const sel = experience === e.id
               return (
@@ -388,7 +388,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>How do you want to train?</div>
             <div style={stepSub}>You can always switch or add your own workouts later.</div>
           </div>
-          <div style={{ flex: 1, padding: '14px 22px 0', display: 'flex', flexDirection: 'column', gap: 13, overflowY: 'auto' }}>
+          <div className="scroll-fade-bottom" style={{ flex: 1, padding: '14px 22px 0', display: 'flex', flexDirection: 'column', gap: 13, overflowY: 'auto' }}>
             {PLANNING_MODES.map(m => {
               const sel = planningMode === m.id
               return (
@@ -422,7 +422,7 @@ export default function Onboarding({ onComplete, session }) {
                 : 'Pick at least 2 days. MissVfit will schedule your sessions around these.'}
             </div>
           </div>
-          <div style={content}>
+          <div className="scroll-fade-bottom" style={content}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6, marginBottom: 16 }}>
               {WEEK_DAYS.map(day => {
                 const sel = trainingDays.has(day.id)
@@ -577,7 +577,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>What do you have access to?</div>
             <div style={stepSub}>Select all that apply.</div>
           </div>
-          <div style={{ flex: 1, padding: '16px 22px 0', overflowY: 'auto' }}>
+          <div className="scroll-fade-bottom" style={{ flex: 1, padding: '16px 22px 0', overflowY: 'auto' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 13 }}>
               {EQUIPMENT.map(eq => {
                 const sel = equipment.has(eq.id)
@@ -610,7 +610,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>Any areas you want to focus on?</div>
             <div style={stepSub}>Tap the body or use the chips — we'll shape your focus.</div>
           </div>
-          <div style={{ flex: 1, padding: '8px 22px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, overflowY: 'auto' }}>
+          <div className="scroll-fade-bottom" style={{ flex: 1, padding: '8px 22px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, overflowY: 'auto' }}>
 
             {/* Side-by-side muscle map */}
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
@@ -651,7 +651,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>Any dietary preferences?</div>
             <div style={stepSub}>We'll tailor your meal suggestions.</div>
           </div>
-          <div style={{ flex: 1, padding: '16px 22px 0', overflowY: 'auto' }}>
+          <div className="scroll-fade-bottom" style={{ flex: 1, padding: '16px 22px 0', overflowY: 'auto' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {DIETARY.map(d => <Chip key={d} label={d} selected={dietary.has(d)} onToggle={() => toggleExclusive(setDietary, d, 'No preference')} />)}
             </div>
@@ -671,7 +671,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>Any food allergies?</div>
             <div style={stepSub}>We'll keep these out of your meal plan.</div>
           </div>
-          <div style={{ flex: 1, padding: '16px 22px 0', overflowY: 'auto' }}>
+          <div className="scroll-fade-bottom" style={{ flex: 1, padding: '16px 22px 0', overflowY: 'auto' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {ALLERGIES.map(a => <Chip key={a} label={a} selected={allergies.has(a)} onToggle={() => toggleExclusive(setAllergies, a, 'None')} />)}
             </div>
@@ -695,7 +695,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>Where are you based?</div>
             <div style={stepSub}>Food differs by country — this makes your calorie & macro estimates accurate for your region.</div>
           </div>
-          <div style={content}>
+          <div className="scroll-fade-bottom" style={content}>
             <button onClick={() => setCountrySheet(true)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '18px 20px', ...nbCardStyle(NB_CARD_NEUTRAL, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, cursor: 'pointer', textAlign: 'left', marginBottom: 16 }}>
               {selectedCountry?.flag ? <span style={{ fontSize: 34 }}>{selectedCountry.flag}</span> : <GlobeIcon size={34} />}
               <div style={{ flex: 1 }}>
@@ -728,7 +728,7 @@ export default function Onboarding({ onComplete, session }) {
           ? [{ label: 'Conservative', offset: -250 }, { label: 'Moderate', offset: -500 }, { label: 'Aggressive', offset: -750 }]
           : isBuilding
             ? [{ label: 'Conservative', offset: 150 }, { label: 'Moderate', offset: 300 }, { label: 'Aggressive', offset: 500 }]
-            : [{ label: 'âˆ’100 kcal', offset: -100 }, { label: 'Maintenance', offset: 0 }, { label: '+100 kcal', offset: 100 }]
+            : [{ label: '−100 kcal', offset: -100 }, { label: 'Maintenance', offset: 0 }, { label: '+100 kcal', offset: 100 }]
 
         return (
           <>
@@ -737,7 +737,7 @@ export default function Onboarding({ onComplete, session }) {
               <div style={stepTitle}>Your nutrition target</div>
               <div style={stepSub}>Based on your body & goal — adjust to your comfort.</div>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 22px 0' }}>
+            <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '10px 22px 0' }}>
               <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '14px 16px', marginBottom: 14 }}>
                 <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>Your maintenance (TDEE)</div>
                 <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 28, color: NB.ink, lineHeight: 1.1 }}>{tdeeData?.tdee?.toLocaleString() ?? '—'} <span style={{ fontFamily: NB.fontMono, fontSize: 14, color: '#555', fontWeight: 700 }}>kcal/day</span></div>
@@ -747,7 +747,7 @@ export default function Onboarding({ onComplete, session }) {
               <div style={{ ...nbCardStyle(NB.teal, 4), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '16px', marginBottom: 14 }}>
                 <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Your daily target</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                  <button onClick={() => setDailyCalorieTarget(t => Math.max(800, (t ?? 1500) - 50))} style={{ width: 48, height: 48, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: NB.white, fontSize: 22, fontWeight: 800, color: NB.ink, cursor: 'pointer', flexShrink: 0 }}>âˆ’</button>
+                  <button onClick={() => setDailyCalorieTarget(t => Math.max(800, (t ?? 1500) - 50))} style={{ width: 48, height: 48, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: NB.white, fontSize: 22, fontWeight: 800, color: NB.ink, cursor: 'pointer', flexShrink: 0 }}>−</button>
                   <div style={{ textAlign: 'center', flex: 1 }}>
                     <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 42, color: NB.ink, lineHeight: 1 }}>{dailyCalorieTarget?.toLocaleString() ?? '—'}</div>
                     <div style={{ fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700 }}>kcal / day</div>
@@ -797,7 +797,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>Turn on notifications</div>
             <div style={stepSub}>Get nudged about missed workouts, calorie goals, and your pet — even when the app is closed.</div>
           </div>
-          <div style={content}>
+          <div className="scroll-fade-bottom" style={content}>
             <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '22px 18px', marginTop: 10, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>🔔</div>
               <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, color: NB.ink, marginBottom: 6, textTransform: 'uppercase' }}>Stay on track</div>

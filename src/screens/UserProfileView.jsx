@@ -130,7 +130,7 @@ export default function UserProfileView({ userId, session, onNavigate }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <StatusBar />
 
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto' }}>
         {/* Banner — art-rect-cropped image (gradient fallback), avatar + name
             laid directly on top of it in the bottom-left, matching the
             reference layout instead of stacking identity below the banner. */}

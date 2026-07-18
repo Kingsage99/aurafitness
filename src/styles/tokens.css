@@ -29,6 +29,30 @@
   box-sizing: border-box;
 }
 
+/* Full-viewport height on real devices. React inline styles can't express a
+   CSS fallback cascade, so this lives here instead: 100vh is the safe value
+   on browsers/WebViews that don't understand 100dvh (older Android WebView,
+   iOS < 15.4) — an unsupported dvh value is simply invalid and dropped, not
+   substituted, so without this fallback line the height collapses entirely
+   on those devices. 100dvh (when supported) then correctly accounts for the
+   mobile browser chrome (address bar) instead of overshooting/undershooting
+   the real visible area. */
+.phone-viewport {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Fades the bottom ~28px of a scrollable region so a partially-cut-off item
+   (e.g. the last option in a list, on a short-viewport phone) reads as "more
+   below, scroll" instead of looking like the list simply ends there. Applied
+   to the scrollable div itself, not a wrapper -- mask-image is relative to
+   the element's own box, so this fades the visible viewport edge regardless
+   of exact content height, with no JS scroll-position tracking needed. */
+.scroll-fade-bottom {
+  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+}
+
 body {
   margin: 0;
   background-color: var(--color-bg);

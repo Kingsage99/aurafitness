@@ -74,7 +74,7 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
         <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink, flex: 1 }}>Share Meal</div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 22px 24px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '0 22px 24px' }}>
 
         {/* Media picker */}
         <input ref={fileRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handlePickMedia} />

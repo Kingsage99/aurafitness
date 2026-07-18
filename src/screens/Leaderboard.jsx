@@ -329,7 +329,7 @@ export default function Leaderboard({ session, userProfile, gamification, isProU
         )}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px 20px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '14px 18px 20px' }}>
         {loading ? null : scope === 'regional' && !country ? (
           <div style={{ ...nbCardStyle(NB.cream, 3), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '18px 16px', textAlign: 'center' }}>
             <div style={{ fontSize: 13, color: NB.ink, fontWeight: 700, marginBottom: 10 }}>Pick your country to see regional rankings.</div>

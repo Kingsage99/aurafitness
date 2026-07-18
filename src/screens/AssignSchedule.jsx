@@ -37,7 +37,7 @@ export default function AssignSchedule({ trainingDays = [], userWorkouts = [], c
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 22px 20px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '10px 22px 20px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
           {sortedDays.map(dayId => {
             const assigned = customSchedule[dayId]

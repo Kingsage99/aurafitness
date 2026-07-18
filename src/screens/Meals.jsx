@@ -1231,7 +1231,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1 }}>Meals</div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
+        <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
           {/* ── Today's free AI uses (progress bars) ────────────────────── */}
           <AiUsageCard isProUser={isProUser} gamification={gamification} onNavigate={onNavigate} />
 
@@ -1435,7 +1435,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
           )}
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 24px' }}>
+        <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 24px' }}>
           {eatenLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', gap: 16 }}>
               <div style={{ width: 56, height: 56, borderRadius: '50%', border: `4px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.8s linear infinite' }} />
@@ -1502,7 +1502,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
           </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 0' }}>
+        <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 0' }}>
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 24, textTransform: 'uppercase', color: NB.ink, marginBottom: 16 }}>
             {isFullDay ? 'Plan your full day' : 'How many meals today?'}
           </div>
@@ -1662,7 +1662,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
           <span style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, color: NB.ink }}>{totalGenerated} kcal</span>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 24px' }}>
+        <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 24px' }}>
           {generating ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', gap: 16 }}>
               <div style={{ width: 56, height: 56, borderRadius: '50%', border: `4px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.8s linear infinite' }} />
@@ -1745,7 +1745,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink }}>Cookbook</span>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
         <div style={{ position: 'relative', marginBottom: 14 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }}>
             <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />

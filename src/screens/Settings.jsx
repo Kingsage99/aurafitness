@@ -157,7 +157,7 @@ export default function Settings({ userProfile, session, subscription, isProUser
         <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 24, textTransform: 'uppercase', color: NB.ink }}>Settings</div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 20px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '14px 22px 20px' }}>
 
         {/* MissVfit Pro */}
         <div style={{ marginBottom: 24 }}>

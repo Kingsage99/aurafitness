@@ -60,7 +60,7 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
   return (
     <>
       <StatusBar />
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px 0' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 20px 0' }}>
         {/* Top bar: profile widget, gems, notifications */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <button

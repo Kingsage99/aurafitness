@@ -242,7 +242,7 @@ export default function Discovery({ session, userProfile, gamification = {}, onG
       </div>
 
       {/* Feed */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0 90px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 0 90px' }}>
 
         {/* Friends tab */}
         {activeTab === 'friends' && (

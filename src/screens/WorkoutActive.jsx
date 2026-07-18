@@ -297,7 +297,7 @@ export default function WorkoutActive({ activeWorkout, userProfile, session, onW
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 22px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '0 22px' }}>
 
         {/* Exercise name + badge */}
         <div style={{ marginBottom: 14 }}>

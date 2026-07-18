@@ -59,7 +59,7 @@ export default function WorkoutComplete({ sessionData, gamification, userProfile
     <>
       <StatusBar />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 22px 20px' }}>
+      <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '0 22px 20px' }}>
 
         {/* Celebration header */}
         <div style={{ textAlign: 'center', padding: '24px 0 20px' }}>
