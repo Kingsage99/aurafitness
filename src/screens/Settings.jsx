@@ -126,6 +126,11 @@ export default function Settings({ userProfile, session, subscription, isProUser
         if (endpoint) await deletePushSubscription(userId, endpoint)
         setSubscriptionActive(false)
       }
+    } catch (err) {
+      console.error('[push] toggle notifications failed:', err)
+      setPushError(
+        `Couldn't enable notifications (${err?.message || 'unknown error'}). If you're on Brave, check brave://settings/privacy → "Use Google Services for Push Messaging" is on, then try again.`
+      )
     } finally {
       setPushBusy(false)
     }

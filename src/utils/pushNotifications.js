@@ -59,10 +59,21 @@ export async function subscribeToPush() {
   const existing = await registration.pushManager.getSubscription()
   if (existing) return existing
 
-  return registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-  })
+  try {
+    return await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    })
+  } catch (err) {
+    // subscribe() throwing (rather than returning null) means permission and
+    // the service worker were both fine but the browser's underlying push
+    // service rejected the request — most commonly Brave, which ships its
+    // Google push service OFF by default (Settings > Privacy > "Use Google
+    // Services for Push Messaging"). Logged + rethrown with the real message
+    // so callers can show something more specific than "denied/unavailable".
+    console.error('[push] pushManager.subscribe() failed:', err)
+    throw err
+  }
 }
 
 // Returns the endpoint that was unsubscribed (so the caller can delete the

@@ -263,8 +263,11 @@ export default function Onboarding({ onComplete, session }) {
       }
       if (session?.user?.id) await savePushSubscription(session.user.id, subscription)
       next()
-    } catch {
-      setPushError('Notifications permission was denied or unavailable.')
+    } catch (err) {
+      console.error('[push] enable notifications failed:', err)
+      setPushError(
+        `Couldn't enable notifications (${err?.message || 'unknown error'}). If you're on Brave, check brave://settings/privacy → "Use Google Services for Push Messaging" is on, then try again.`
+      )
     } finally {
       setPushBusy(false)
     }
