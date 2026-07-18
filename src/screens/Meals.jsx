@@ -3,9 +3,13 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { suggestMeal, adjustMeal, identifyEatenFood, lookupFood } from '../utils/claudeApi'
 import { getDailyTargets, MACRO_META, MACRO_DAILY_REF, MACRO_KEYS } from '../utils/nutrition'
+import { AI_DAILY_LIMITS, getAiUsesRemaining, recordAiUsage } from '../utils/gamification'
+import { diffMeal } from '../utils/mealDiff'
+import { dateKeyFor } from '../utils/workoutBuilder'
 import { COUNTRIES } from '../data/countries'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
-import { PancakesIcon, LunchIcon, DinnerIcon, SnackIcon } from '../components/Icons'
+import { PancakesIcon, LunchIcon, DinnerIcon, SnackIcon, LockIcon } from '../components/Icons'
+import MacroRing from '../components/MacroRing'
 
 const CRAVING_TAGS = ['Pasta', 'Light & fresh', 'Sweet', 'Spicy', 'High-protein', 'Comfort food']
 
@@ -183,23 +187,6 @@ function CalorieSplitBar({ slots, remaining, onSlotsChange }) {
 
 // ─── Components ──────────────────────────────────────────────────────────────
 
-// Conic-gradient macro-composition donut (Protein/Carbs/Fat proportional segments,
-// total calories in the center) — matches the Fitness UI Kit v2 Nutrition section.
-function MacroRing({ protein = 0, carbs = 0, fat = 0, calories = 0, size = 130 }) {
-  const total = Math.max(1, protein + carbs + fat)
-  const pPct = (protein / total) * 100
-  const cPct = (carbs / total) * 100
-  const gradient = `conic-gradient(${NB.magenta} 0 ${pPct}%, ${NB.yellow} 0 ${pPct + cPct}%, ${NB.pink} 0 100%)`
-  return (
-    <div style={{ width: size, height: size, borderRadius: '50%', border: `2.5px solid ${NB.ink}`, background: gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-      <div style={{ width: size * 0.54, height: size * 0.54, borderRadius: '50%', border: `2.5px solid ${NB.ink}`, background: NB.white, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: size * 0.14, color: NB.ink, lineHeight: 1 }}>{Math.round(calories).toLocaleString()}</span>
-        <span style={{ fontFamily: NB.fontMono, fontSize: size * 0.07, fontWeight: 700, color: '#555' }}>kcal</span>
-      </div>
-    </div>
-  )
-}
-
 // Daily totals card — page 1 is the classic Macro Ring, page 2 shows all 10
 // tracked macros against the user's daily targets. Swipe left to switch.
 function DailyMacroCard({ macros = {}, targets = {} }) {
@@ -375,9 +362,12 @@ function SaveToCookbookSheet({ defaultType, collections, onCreateCollection, onC
 // how much a meal-detail view shows at a glance without losing either list.
 // Shared by the cookbook item sheet and the generated-meal detail card so
 // both flows look and behave the same way.
-function RecipeTabs({ ingredients, instructions }) {
+function RecipeTabs({ ingredients, instructions, diff = null }) {
   const hasMethod = instructions?.length > 0
   const [tab, setTab] = useState('ingredients')
+  const ingDiff = diff?.ingredients
+  const stepDiff = diff?.instructions
+  const hasAnyDiff = !!(ingDiff?.added?.length || ingDiff?.removed?.length || stepDiff?.added?.length || stepDiff?.removed?.length)
   return (
     <div>
       <div style={{ display: 'flex', border: `2.5px solid ${NB.ink}`, borderRadius: 12, overflow: 'hidden', marginBottom: 14 }}>
@@ -397,25 +387,62 @@ function RecipeTabs({ ingredients, instructions }) {
         )}
       </div>
 
+      {hasAnyDiff && (
+        <div style={{ display: 'flex', gap: 12, marginBottom: 10, fontSize: 11, color: '#555' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 10, height: 10, background: NB.yellow, borderRadius: 3, display: 'inline-block' }} /> Changed
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 10, height: 10, border: '1.5px dashed #999', borderRadius: 3, display: 'inline-block' }} /> Removed
+          </span>
+        </div>
+      )}
+
       {tab === 'ingredients' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {ingredients.map((ing, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, border: `2.5px solid ${NB.ink}`, borderRadius: 12, padding: '9px 12px' }}>
-              <span style={{ width: 22, height: 22, border: `2.5px solid ${NB.ink}`, borderRadius: 6, background: NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6"/></svg>
-              </span>
-              <span style={{ fontWeight: 700, fontSize: 14, color: NB.ink }}>{ing}</span>
-            </div>
-          ))}
+          {ingredients.map((ing, i) => {
+            const changed = ingDiff?.added?.includes(ing)
+            return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, border: `2.5px solid ${NB.ink}`, borderRadius: 12, padding: '9px 12px', background: changed ? NB.yellow : 'transparent' }}>
+                <span style={{ width: 22, height: 22, border: `2.5px solid ${NB.ink}`, borderRadius: 6, background: NB.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+                </span>
+                <span style={{ fontWeight: 700, fontSize: 14, color: NB.ink }}>{ing}</span>
+              </div>
+            )
+          })}
+          {ingDiff?.removed?.length > 0 && (
+            <>
+              <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: '#888', textTransform: 'uppercase', marginTop: 4 }}>Removed</div>
+              {ingDiff.removed.map((ing, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, border: '1.5px dashed #999', borderRadius: 12, padding: '9px 12px' }}>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: '#999', textDecoration: 'line-through' }}>{ing}</span>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {instructions.map((step, i) => (
-            <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <span style={{ width: 28, height: 28, border: `2.5px solid ${NB.ink}`, borderRadius: 9, background: NB.lavender, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 14, color: NB.ink, flexShrink: 0 }}>{i + 1}</span>
-              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, paddingTop: 2, color: NB.ink }}>{step}</p>
-            </div>
-          ))}
+          {instructions.map((step, i) => {
+            const changed = stepDiff?.added?.includes(step)
+            return (
+              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', background: changed ? NB.yellow : 'transparent', borderRadius: 10, padding: changed ? '6px 8px' : 0 }}>
+                <span style={{ width: 28, height: 28, border: `2.5px solid ${NB.ink}`, borderRadius: 9, background: NB.lavender, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 14, color: NB.ink, flexShrink: 0 }}>{i + 1}</span>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, paddingTop: 2, color: NB.ink }}>{step}</p>
+              </div>
+            )
+          })}
+          {stepDiff?.removed?.length > 0 && (
+            <>
+              <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: '#888', textTransform: 'uppercase', marginTop: 4 }}>Removed</div>
+              {stepDiff.removed.map((step, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', border: '1.5px dashed #999', borderRadius: 10, padding: '6px 8px' }}>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: '#999', textDecoration: 'line-through' }}>{step}</p>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>
@@ -534,12 +561,61 @@ function MacroPageGrid({ macros = {}, targets }) {
   )
 }
 
+// Card with a labeled progress bar per free-tier AI quota — matches the
+// existing "Calories" bar style in DailyMacroCard (pill track + fill).
+// Pro users see a plain "unlimited" banner instead. This is a display-only
+// mirror of the real, server-enforced quota (see gamification.js's
+// getAiUsesRemaining/AI_DAILY_LIMITS).
+function AiUsageCard({ isProUser, gamification, onNavigate }) {
+  if (isProUser) {
+    return (
+      <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px 18px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 20 }}>⭐</span>
+        <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink }}>MissVfit Pro — Unlimited AI</span>
+      </div>
+    )
+  }
+  const todayKey = dateKeyFor()
+  const lookupsLeft = getAiUsesRemaining(gamification, 'lookups', todayKey)
+  const mealGensLeft = getAiUsesRemaining(gamification, 'mealGens', todayKey)
+  const depleted = lookupsLeft <= 0 && mealGensLeft <= 0
+  const rows = [
+    ['Meal Generations', AI_DAILY_LIMITS.mealGens - mealGensLeft, AI_DAILY_LIMITS.mealGens, mealGensLeft, NB.magenta],
+    ['Food Lookups', AI_DAILY_LIMITS.lookups - lookupsLeft, AI_DAILY_LIMITS.lookups, lookupsLeft, NB.teal],
+  ]
+  return (
+    <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px 18px', marginBottom: 14 }}>
+      <div style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: NB.ink, marginBottom: 14 }}>Today's Free AI Uses</div>
+      {rows.map(([label, used, cap, left, color], i) => {
+        const pct = Math.min(100, Math.round((used / cap) * 100))
+        return (
+          <div key={label} style={{ marginBottom: i === rows.length - 1 ? 0 : 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+              <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, color: NB.ink }}>{label}</span>
+              <span style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, color: left <= 0 ? NB.red : '#666' }}>{left} of {cap} left</span>
+            </div>
+            <div style={{ border: 'none', borderRadius: 999, background: NB.lavenderMist, height: 16, padding: 3, boxSizing: 'border-box' }}>
+              <div style={{ height: '100%', width: `${pct}%`, borderRadius: 999, background: color, transition: 'width 0.5s ease' }} />
+            </div>
+          </div>
+        )
+      })}
+      {depleted && (
+        <button onClick={() => onNavigate?.('proUpsell')} style={{ marginTop: 16, width: '100%', height: 42, border: 'none', borderRadius: 12, background: NB.ink, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>
+          Go Pro for Unlimited
+        </button>
+      )}
+    </div>
+  )
+}
+
 // Unified meal detail card — used for generated meals, adjusted meals, and "already ate" results.
 // Matches the Fitness UI Kit v2 Meal Detail section 1:1: three separate cards (header photo/name,
 // swipeable macro grid, ingredients/method) — Adjust/Log live outside in <MealActionBar>.
-function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEditNameStart, onNameChange, onSaveToCookbook, onViewCookbook, saved, targets, showIngredients = true }) {
+function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEditNameStart, onNameChange, onSaveToCookbook, onViewCookbook, saved, targets, showIngredients = true, diff = null }) {
   const color = MEAL_COLORS[mealType] || NB.teal
   const nameInputRef = useRef()
+  const recipeCardRef = useRef()
   // Pre-highlight a sensible default in the save sheet: the meal's own type, else lunch.
   const defaultType = ['breakfast', 'lunch', 'dinner', 'snack'].includes(mealType)
     ? mealType
@@ -548,6 +624,13 @@ function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEd
   useEffect(() => {
     if (isEditingName) nameInputRef.current?.focus()
   }, [isEditingName])
+
+  // A diff only ever appears right after an adjustment — scroll it into view
+  // so the highlighted/struck-through changes are actually seen instead of
+  // sitting below the photo header + macro grid, unnoticed.
+  useEffect(() => {
+    if (diff) recipeCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [diff])
 
   const subtitleParts = [
     meal.macros?.calories ? `${Math.round(meal.macros.calories)} kcal` : null,
@@ -621,8 +704,8 @@ function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEd
 
       {/* Card 3: ingredients + method, tabbed so only one list shows at a time */}
       {(hasIngredients || hasMethod) && (
-        <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 6, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '18px 20px' }}>
-          <RecipeTabs ingredients={hasIngredients ? meal.ingredients : []} instructions={hasMethod ? meal.instructions : null} />
+        <div ref={recipeCardRef} style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 6, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '18px 20px' }}>
+          <RecipeTabs ingredients={hasIngredients ? meal.ingredients : []} instructions={hasMethod ? meal.instructions : null} diff={diff} />
         </div>
       )}
     </div>
@@ -689,7 +772,7 @@ function AdjustSheet({ onClose, onSubmit }) {
 }
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
-export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMacros, cookbook = [], onUpdateCookbook, onUpdateProfile, onMealLogged, onNotify, onNavigate }) {
+export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMacros, cookbook = [], onUpdateCookbook, onUpdateProfile, onMealLogged, onNotify, onNavigate, gamification = {}, onGamificationChange, isProUser = false }) {
   const {
     physique = 'lean_toned', dietary = [], allergies = [], name = 'Maya',
     dailyCalorieTarget = null, fitnessGoal = 'tone_recomp', country = '',
@@ -748,19 +831,38 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
   const [loggedTypes, setLoggedTypes] = useState(new Set())
   const [savedTypes, setSavedTypes] = useState(new Set())
   const [adjustingMeal, setAdjustingMeal] = useState(null)
+  const [preAdjustMeals, setPreAdjustMeals] = useState({}) // { [type]: meal } — pre-adjust snapshot, for the diff view only
 
   // ── Craving preview debounce ────────────────────────────────────────────────
+  // gamification/isProUser are deliberately NOT in the dep array — this effect
+  // already recreates on every keystroke, and adding a frequently-changing prop
+  // would restart the debounce timer on unrelated gamification writes. The
+  // callback reads the latest closed-over value at fire time, accurate enough
+  // for a 700ms window.
   useEffect(() => {
     if (mealMode !== 'craving' || !craving.trim()) { setCravingPreview(null); setCravingPreviewLoading(false); setCravingPreviewError(''); return }
     setCravingPreviewLoading(true)
     setCravingPreviewError('')
     const t = setTimeout(async () => {
+      const todayKey = dateKeyFor()
+      if (!isProUser && getAiUsesRemaining(gamification, 'lookups', todayKey) <= 0) {
+        setCravingPreview(null)
+        setCravingPreviewError(`Daily calorie-lookup limit reached (${AI_DAILY_LIMITS.lookups}/day) — go Pro for unlimited.`)
+        setCravingPreviewLoading(false)
+        return
+      }
       try {
         const result = await lookupFood(craving, { countryName })
         setCravingPreview(result)
+        if (!isProUser) onGamificationChange?.(g => recordAiUsage(g, 'lookups', todayKey))
       } catch (err) {
         setCravingPreview(null)
-        setCravingPreviewError(err?.code === 'PRO_REQUIRED' ? 'Upgrade to MissVfit Pro to estimate calories' : 'Could not estimate calories — try again')
+        if (err?.code === 'QUOTA_EXCEEDED') {
+          setCravingPreviewError(`Daily calorie-lookup limit reached (${AI_DAILY_LIMITS.lookups}/day) — go Pro for unlimited.`)
+          if (!isProUser) onGamificationChange?.(g => ({ ...g, aiUsageToday: { date: todayKey, ...g.aiUsageToday, lookups: AI_DAILY_LIMITS.lookups } }))
+        } else {
+          setCravingPreviewError(err?.code === 'PRO_REQUIRED' ? 'Upgrade to MissVfit Pro to estimate calories' : 'Could not estimate calories — try again')
+        }
       } finally {
         setCravingPreviewLoading(false)
       }
@@ -793,6 +895,25 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
     const effectiveCraving = quickCraving !== null ? quickCraving : craving
     if (quickCraving !== null) setCraving(quickCraving)
 
+    const isFullDayGen = builderMode === 'fullday' && quickCount === null
+    const slotCount = isFullDayGen ? mealSlots.length : (quickCount ?? mealCount)
+    const todayKey = dateKeyFor()
+
+    if (!isProUser) {
+      if (isFullDayGen) {
+        // Defensive backstop -- the "Build my full day" entry point on Home is
+        // Pro-gated, so this should be unreachable for a free user, but guard
+        // here too in case builderMode is ever set another way.
+        onNotify?.('⭐ Build My Full Day is a MissVfit Pro feature')
+        onNavigate?.('proUpsell')
+        return
+      }
+      if (getAiUsesRemaining(gamification, 'mealGens', todayKey) < slotCount) {
+        onNotify?.(`You have ${getAiUsesRemaining(gamification, 'mealGens', todayKey)} of today's ${AI_DAILY_LIMITS.mealGens} free meal generations left — reduce your meal count, or go Pro for unlimited.`)
+        return
+      }
+    }
+
     setGenerating(true)
     setView('generated')
     try {
@@ -807,6 +928,35 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
       prepTimeMinutes: 0,
       instructions: ['The AI could not build this recipe. Tap Adjust to retry.'],
     })
+
+    // Wraps suggestMeal so a mid-batch quota/Pro rejection on one slot (e.g.
+    // client/server drift) shows a clear inline message on just that slot
+    // instead of throwing and discarding the whole Promise.all batch.
+    const safeSuggestMeal = async (params, calTarget, pTarget, cTarget, fTarget) => {
+      try {
+        return await suggestMeal(params)
+      } catch (err) {
+        if (err?.code === 'QUOTA_EXCEEDED') {
+          return {
+            name: '⚠️ Daily limit reached',
+            ingredients: [],
+            macros: { calories: calTarget, protein: pTarget, carbs: cTarget, fat: fTarget },
+            prepTimeMinutes: 0,
+            instructions: [`You've used today's ${AI_DAILY_LIMITS.mealGens} free generations — resets tomorrow, or go Pro for unlimited.`],
+          }
+        }
+        if (err?.code === 'PRO_REQUIRED') {
+          return {
+            name: '⭐ MissVfit Pro required',
+            ingredients: [],
+            macros: { calories: calTarget, protein: pTarget, carbs: cTarget, fat: fTarget },
+            prepTimeMinutes: 0,
+            instructions: ['Upgrade to MissVfit Pro to generate this meal.'],
+          }
+        }
+        return null // falls through to errorFallback below, same as a parse failure
+      }
+    }
 
     let orderedTypes = []
 
@@ -825,13 +975,13 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         const cTarget = isSnack ? 15 : Math.round(remainingCarbs * ratio)
         const fTarget = isSnack ? 5 : Math.round(remainingFat * ratio)
 
-        const meal = await suggestMeal({
+        const meal = await safeSuggestMeal({
           mealType: isSnack ? 'snack' : slot.type,
           targetCalories: calTarget, targetProtein: pTarget, targetCarbs: cTarget, targetFat: fTarget,
           dietary, allergies, physique,
           craving: slot.craving || '',
           countryName,
-        })
+        }, calTarget, pTarget, cTarget, fTarget)
 
         results[slot.type] = meal || errorFallback(slot.type, calTarget, pTarget, cTarget, fTarget)
         mealCravingsMap[slot.type] = slot.craving
@@ -864,13 +1014,13 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
           ? (cravingPreview ? cravingPreview.fat : Math.round(targets.fat / 3))
           : Math.round(remainingFat / effectiveCount)
 
-        const meal = await suggestMeal({
+        const meal = await safeSuggestMeal({
           mealType: type, targetCalories: calTarget, targetProtein: pTarget,
           targetCarbs: cTarget, targetFat: fTarget,
           dietary, allergies, physique, craving: effectiveCraving,
           cravingOnly: isSingleCraving,
           countryName,
-        })
+        }, calTarget, pTarget, cTarget, fTarget)
 
         results[type] = meal || errorFallback(type, calTarget, pTarget, cTarget, fTarget)
         mealCravingsMap[type] = effectiveCraving
@@ -887,6 +1037,8 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
       setGeneratedFrom(quickCount !== null ? 'home' : 'builder')
       setLoggedTypes(new Set())
       setSavedTypes(new Set())
+      setPreAdjustMeals({})
+      if (!isProUser) onGamificationChange?.(g => recordAiUsage(g, 'mealGens', todayKey, slotCount))
     } catch (err) {
       notifyAiError(err)
       setView('builder')
@@ -898,9 +1050,15 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
   const handleAdjustMeal = async (type, instruction) => {
     const meal = generatedMeals?.[type]
     if (!meal) return
+    if (!isProUser) {
+      onNotify?.('⭐ Meal adjustments are a MissVfit Pro feature')
+      onNavigate?.('proUpsell')
+      throw new Error('PRO_REQUIRED') // AdjustSheet's catch keeps the sheet open, same as a failed adjust
+    }
     try {
       const updated = await adjustMeal({ meal, instruction, dietary, allergies, countryName })
       if (updated) {
+        setPreAdjustMeals(prev => ({ ...prev, [type]: meal })) // diff snapshot -- see mealDiff.js
         setGeneratedMeals(prev => ({ ...prev, [type]: updated }))
         setMealNames(prev => ({ ...prev, [type]: updated.name }))
       }
@@ -947,6 +1105,12 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
   // ── Already-ate handlers ─────────────────────────────────────────────────────
   const handleIdentifyEaten = async () => {
     if (!eatenText.trim()) return
+    const todayKey = dateKeyFor()
+    if (!isProUser && getAiUsesRemaining(gamification, 'eatenLookups', todayKey) <= 0) {
+      setView('eaten')
+      setEatenResult({ error: true, message: `Daily "already ate" limit reached (${AI_DAILY_LIMITS.eatenLookups}/day) — go Pro for unlimited.` })
+      return
+    }
     setView('eaten')
     setEatenResult(null)
     setEatenLogged(false)
@@ -954,20 +1118,31 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
     try {
       const result = await identifyEatenFood(eatenText.trim(), { countryName, countryCode: country })
       setEatenResult(result)
+      if (!isProUser) onGamificationChange?.(g => recordAiUsage(g, 'eatenLookups', todayKey))
     } catch (err) {
-      setEatenResult({ error: true, message: err?.code === 'PRO_REQUIRED' ? 'Upgrade to MissVfit Pro to identify meals' : undefined })
+      if (err?.code === 'QUOTA_EXCEEDED') {
+        setEatenResult({ error: true, message: `Daily "already ate" limit reached (${AI_DAILY_LIMITS.eatenLookups}/day) — go Pro for unlimited.` })
+      } else {
+        setEatenResult({ error: true, message: err?.code === 'PRO_REQUIRED' ? 'Upgrade to MissVfit Pro to identify meals' : undefined })
+      }
     } finally {
       setEatenLoading(false)
     }
   }
 
   const handleAdjustEaten = async (instruction) => {
+    const todayKey = dateKeyFor()
+    if (!isProUser && getAiUsesRemaining(gamification, 'eatenLookups', todayKey) <= 0) {
+      onNotify?.(`Daily "already ate" limit reached (${AI_DAILY_LIMITS.eatenLookups}/day) — go Pro for unlimited.`)
+      return
+    }
     const combined = `${eatenText.trim()}. Correction: ${instruction}`
     try {
       const result = await identifyEatenFood(combined, { countryName, countryCode: country })
       if (result) {
         setEatenResult(result)
         setEatenText(combined)
+        if (!isProUser) onGamificationChange?.(g => recordAiUsage(g, 'eatenLookups', todayKey))
       }
     } catch (err) {
       notifyAiError(err)
@@ -1057,6 +1232,9 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
+          {/* ── Today's free AI uses (progress bars) ────────────────────── */}
+          <AiUsageCard isProUser={isProUser} gamification={gamification} onNavigate={onNavigate} />
+
           {/* ── Daily macros card (swipe for all 10 macros vs targets) ────── */}
           <DailyMacroCard macros={safeLoggedMacros} targets={targets} />
 
@@ -1175,19 +1353,25 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
             )}
           </div>
 
-          {/* Build full day card */}
+          {/* Build full day card — Pro-exclusive */}
           <button onClick={() => {
+            if (!isProUser) { onNavigate?.('proUpsell'); return }
             const slots = buildMealSlots(mealCount, snackCount, [], remaining)
             setMealSlots(slots)
             setBuilderMode('fullday')
             setView('builder')
           }} style={{ width: '100%', ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '16px 18px', cursor: 'pointer', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, border: `2px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
+              {isProUser
+                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
+                : <LockIcon size={20} />}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Build my full day</div>
-              <div style={{ fontSize: 12, color: '#555' }}>Plan all your meals + snacks for today</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Build my full day</span>
+                {!isProUser && <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.white, background: NB.ink, borderRadius: 5, padding: '2px 6px', textTransform: 'uppercase' }}>Pro</span>}
+              </div>
+              <div style={{ fontSize: 12, color: '#555' }}>{isProUser ? 'Plan all your meals + snacks for today' : 'Unlock full-day meal planning with MissVfit Pro'}</div>
             </div>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
@@ -1502,6 +1686,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
                     onViewCookbook={() => setView('cookbook')}
                     saved={savedTypes.has(type)}
                     targets={targets}
+                    diff={preAdjustMeals[type] ? diffMeal(preAdjustMeals[type], generatedMeals[type]) : null}
                   />
                   <MealActionBar onAdjust={() => setAdjustingMeal(type)} onLog={() => handleLogOneMeal(type)} logged={loggedTypes.has(type)} />
                 </div>

@@ -26,7 +26,7 @@ export const DEFAULT_GAMIFICATION = {
   aura: 'basic',
   rank: 'rookie',
   rankPoints: 0,
-  dailyQuests: { date: '', completed: [] },
+  dailyQuests: { date: '', completed: [], claimed: [] },
   mealsToday: { date: '', types: [] },           // meal-kind buckets logged today, for auto-quests
   weeklyChallenges: { week: '', claimed: [] },   // week = Monday "YYYY-MM-DD"
   purchasedItems: [],
@@ -37,6 +37,34 @@ export const DEFAULT_GAMIFICATION = {
   activePet: 'pet_greycube', // equipped pet — see src/data/pets.js
   muscleRanks: {},          // { [muscleId]: { rank: 'rookie', rankPoints: 0, subLevel: 0 } }
   stickerUsage: {},         // { [stickerId]: count } — lifetime react counts, survives un-reacting, ranks the sticker picker
+  lastPostDate: '',         // "YYYY-MM-DD" last date a workout/meal was posted to Discovery
+  reactionsToday: { date: '', postIds: [] }, // distinct posts reacted to today, for the post_or_react quest
+  reactionStreak: 0,        // consecutive days with at least one reaction — independent of workoutStreak
+  lastReactionDate: '',     // "YYYY-MM-DD"
+  aiUsageToday: { date: '', mealGens: 0, lookups: 0, eatenLookups: 0 }, // client-side display mirror of the server-enforced daily AI quota — see getAiUsesRemaining/recordAiUsage below
+}
+
+// ─── AI usage quotas (client-side display only — the real gate is server-side
+// in the claude-proxy Edge Function via the ai_usage_daily table) ──────────────
+// Free-tier daily caps. adjustMeal and "Build my full day" aren't in this map
+// at all — they're Pro-exclusive with zero free uses, enforced entirely by the
+// proxy returning 402 PRO_REQUIRED, no client-side counter needed for those.
+export const AI_DAILY_LIMITS = { mealGens: 3, lookups: 10, eatenLookups: 10 }
+
+function todaysAiUsage(g, dateStr) {
+  const u = g.aiUsageToday
+  return u?.date === dateStr ? u : { date: dateStr, mealGens: 0, lookups: 0, eatenLookups: 0 }
+}
+
+// kind: 'mealGens' | 'lookups' | 'eatenLookups'
+export function getAiUsesRemaining(g, kind, dateStr) {
+  const u = todaysAiUsage(g, dateStr)
+  return Math.max(0, AI_DAILY_LIMITS[kind] - (u[kind] || 0))
+}
+
+export function recordAiUsage(g, kind, dateStr, count = 1) {
+  const u = todaysAiUsage(g, dateStr)
+  return { ...g, aiUsageToday: { ...u, [kind]: (u[kind] || 0) + count } }
 }
 
 // Cumulative XP to reach each level (index = level - 1)
@@ -128,6 +156,7 @@ export const QUEST_POOL = [
   { id: 'log_3_meals',      label: 'Log 3 meals today',        reward: 20, icon: '🍱' },
   { id: 'maintain_streak',  label: 'Keep your streak alive',   reward: 10, icon: '🔥' },
   { id: 'hit_protein',      label: 'Hit your protein goal',    reward: 15, icon: '💯' },
+  { id: 'post_or_react',    label: 'Post a workout/meal or react to 10 posts', reward: 20, icon: '📸' },
 ]
 
 // Pick 3 quests deterministically for a given date string (YYYY-MM-DD)
@@ -144,7 +173,7 @@ export function getDailyQuests(dateStr) {
 }
 
 // Each quest auto-completes when its predicate over a `signals` object is true.
-// signals: { workoutDoneToday, caloriesHit, proteinHit, mealTypes:Set, mealCount }
+// signals: { workoutDoneToday, caloriesHit, proteinHit, mealTypes:Set, mealCount, postedToday, reactionsToday }
 export const QUEST_CONDITIONS = {
   complete_workout: s => !!s.workoutDoneToday,
   maintain_streak:  s => !!s.workoutDoneToday,
@@ -154,37 +183,51 @@ export const QUEST_CONDITIONS = {
   hit_calories:     s => !!s.caloriesHit,
   log_3_meals:      s => (s.mealCount || 0) >= 3,
   hit_protein:      s => !!s.proteinHit,
+  post_or_react:    s => !!s.postedToday || (s.reactionsToday || 0) >= 10,
 }
 
-// Auto-completes any of today's 3 quests whose condition is now met, awarding
-// gems for each newly-completed one. Idempotent — already-completed quests are
+// Marks any of today's 3 quests whose condition is now met as `completed` —
+// no gems are awarded here; the reward is paid out separately by claimQuest()
+// once the user taps to collect it. Idempotent — already-completed quests are
 // skipped, so re-running with unchanged progress returns the same g and no
 // newlyCompleted (safe to call from a state-driven effect without looping).
 export function evaluateDailyQuests(g, signals, dateStr) {
-  const dq = g.dailyQuests || { date: '', completed: [] }
+  const dq = g.dailyQuests || { date: '', completed: [], claimed: [] }
   const completed = dq.date === dateStr ? [...dq.completed] : []
+  const claimed = dq.date === dateStr ? dq.claimed : []
   const newlyCompleted = []
-  let updated = g
   for (const quest of getDailyQuests(dateStr)) {
     if (completed.includes(quest.id)) continue
     const cond = QUEST_CONDITIONS[quest.id]
     if (cond && cond(signals)) {
-      updated = awardGems(updated, quest.reward)
       completed.push(quest.id)
       newlyCompleted.push(quest)
     }
   }
   if (newlyCompleted.length === 0) return { g, newlyCompleted: [] }
-  return { g: { ...updated, dailyQuests: { date: dateStr, completed } }, newlyCompleted }
+  return { g: { ...g, dailyQuests: { date: dateStr, completed, claimed } }, newlyCompleted }
+}
+
+// Returns { g, awarded } — pays out a daily quest's reward only if it's
+// completed and not already claimed. Mirrors claimWeeklyChallenge below.
+export function claimQuest(g, questId, dateStr) {
+  const dq = g.dailyQuests || { date: '', completed: [], claimed: [] }
+  if (dq.date !== dateStr) return { g, awarded: 0 }
+  if (!dq.completed.includes(questId) || dq.claimed.includes(questId)) return { g, awarded: 0 }
+  const quest = QUEST_POOL.find(q => q.id === questId)
+  if (!quest) return { g, awarded: 0 }
+  const paid = awardGems(g, quest.reward)
+  return { g: { ...paid, dailyQuests: { date: dateStr, completed: dq.completed, claimed: [...dq.claimed, questId] } }, awarded: quest.reward }
 }
 
 // ─── Weekly Challenges ────────────────────────────────────────────────────────
 // Progress is derived from already-tracked weekly counters — no manual completion.
 
 export const WEEKLY_CHALLENGES = [
-  { id: 'workouts_3', label: 'Complete 3 workouts',  icon: '🏋️', reward: 60, target: 3,   progress: g => g.weeklyWorkoutsDone || 0 },
-  { id: 'gems_100',   label: 'Earn 100 gems',        icon: '💎', reward: 50, target: 100, progress: g => g.weeklyGemsEarned || 0 },
-  { id: 'streak_7',   label: 'Reach a 7-day streak', icon: '🔥', reward: 80, target: 7,   progress: g => g.workoutStreak || 0 },
+  { id: 'workouts_3',   label: 'Complete 3 workouts',    icon: '🏋️', reward: 60, target: 3,   progress: g => g.weeklyWorkoutsDone || 0 },
+  { id: 'gems_100',     label: 'Earn 100 gems',          icon: '💎', reward: 50, target: 100, progress: g => g.weeklyGemsEarned || 0 },
+  { id: 'streak_7',     label: 'Reach a 7-day streak',   icon: '🔥', reward: 80, target: 7,   progress: g => g.workoutStreak || 0 },
+  { id: 'react_streak_7', label: 'React to a post every day', icon: '❤️', reward: 70, target: 7, progress: g => g.reactionStreak || 0 },
 ]
 
 // Current-week claim state, self-invalidating when a new Monday starts
@@ -353,6 +396,18 @@ export function updateStreak(g, today) {
   return { ...g, workoutStreak: 1, longestStreak: Math.max(g.longestStreak, 1), lastWorkoutDate: today }
 }
 
+// Independent day-continuity streak for reacting to posts — same shape as
+// updateStreak but its own field, so it doesn't interact with workoutStreak
+// or consume streak-freeze inventory.
+export function updateReactionStreak(g, today) {
+  if (g.lastReactionDate === today) return g
+  const yd = getYesterday(today)
+  if (g.lastReactionDate === yd) {
+    return { ...g, reactionStreak: (g.reactionStreak || 0) + 1, lastReactionDate: today }
+  }
+  return { ...g, reactionStreak: 1, lastReactionDate: today }
+}
+
 // events: { onboardingCompleted, workoutCompleted, mealLogged, cookbookCount, weeklyTarget, allWeekDone }
 // Returns { updatedG, newBadges }
 export function checkBadges(g, events = {}) {
@@ -496,20 +551,6 @@ export function getMuscleRankInfo(g, muscleId) {
     isTop,
     score,
   }
-}
-
-// Returns { g, alreadyDone } — marks quest complete and awards gems
-export function completeQuest(g, questId, dateStr) {
-  const dq = g.dailyQuests || { date: '', completed: [] }
-  const completed = dq.date === dateStr ? dq.completed : []
-  if (completed.includes(questId)) return { g, alreadyDone: true }
-
-  const quest = QUEST_POOL.find(q => q.id === questId)
-  if (!quest) return { g, alreadyDone: false }
-
-  let updated = awardGems(g, quest.reward)
-  updated = { ...updated, dailyQuests: { date: dateStr, completed: [...completed, questId] } }
-  return { g: updated, alreadyDone: false }
 }
 
 // Returns { g, success, reason } — deducts gems, applies item effect

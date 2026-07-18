@@ -189,7 +189,7 @@ export default function Settings({ userProfile, session, subscription, isProUser
             <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '14px 16px' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink, marginBottom: 2 }}>Unlock unlimited AI nutrition coaching</div>
               <div style={{ fontSize: 11, color: '#555', marginBottom: 12 }}>
-                Meal suggestions, food lookup, and the AI coach — {trialEligible ? 'free for 7 days, then from $8.33/mo.' : 'from $8.33/mo.'}
+                Unlimited meal suggestions, food lookup, and meal adjustments — {trialEligible ? 'free for 7 days, then from $8.33/mo.' : 'from $8.33/mo.'}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button

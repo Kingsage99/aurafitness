@@ -56,19 +56,26 @@ const RECONCILE = `Accuracy method: list each ingredient with an explicit quanti
 // webSearch=true asks the proxy to attach the web_search tool (used only on the
 // "already ate" path for authoritative regional branded nutrition). countryCode
 // (ISO alpha-2) scopes the search. outputConfig carries structured-output format.
-async function anthropicRequest({ system, messages, maxTokens = 512, webSearch = false, countryCode = '', outputConfig = null }) {
+async function anthropicRequest({ system, messages, maxTokens = 512, webSearch = false, countryCode = '', outputConfig = null, kind = '' }) {
   if (!proxyUnavailable) {
     const body = { system, messages, max_tokens: maxTokens }
     if (webSearch) { body.webSearch = true; if (countryCode) body.country = countryCode }
     if (outputConfig) body.output_config = outputConfig
+    if (kind) body.kind = kind
     const { data, error } = await supabase.functions.invoke('claude-proxy', { body })
     if (!error && data?.content) return data
-    // A Pro-gated rejection is never a "proxy is down" situation — surface it
-    // distinctly instead of falling back to a direct (paywall-bypassing) call.
+    // A Pro-gated or quota-exceeded rejection is never a "proxy is down"
+    // situation — surface it distinctly instead of falling back to a direct
+    // (paywall-bypassing) call.
     if (error?.context?.status === 402) {
       const proErr = new Error('MissVfit Pro required')
       proErr.code = 'PRO_REQUIRED'
       throw proErr
+    }
+    if (error?.context?.status === 429) {
+      const quotaErr = new Error('Daily AI limit reached')
+      quotaErr.code = 'QUOTA_EXCEEDED'
+      throw quotaErr
     }
     if (!API_KEY) throw new Error(error?.message || 'Claude proxy error')
     proxyUnavailable = true
@@ -117,11 +124,11 @@ function extractText(data) {
   return blocks.filter(b => b?.type === 'text').map(b => b.text).join('\n').trim()
 }
 
-async function callClaude(systemPrompt, userMessage, { maxTokens = 512, webSearch = false, countryCode = '', outputConfig = null } = {}) {
+async function callClaude(systemPrompt, userMessage, { maxTokens = 512, webSearch = false, countryCode = '', outputConfig = null, kind = '' } = {}) {
   const data = await anthropicRequest({
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
-    maxTokens, webSearch, countryCode, outputConfig,
+    maxTokens, webSearch, countryCode, outputConfig, kind,
   })
   return extractText(data)
 }
@@ -145,7 +152,7 @@ async function callClaudeJson(system, userMessage, opts, tag) {
     try {
       raw = await callClaude(system, userMessage, opts)
     } catch (err) {
-      if (err?.code === 'PRO_REQUIRED') throw err
+      if (err?.code === 'PRO_REQUIRED' || err?.code === 'QUOTA_EXCEEDED') throw err
       console.error(`[${tag}] request failed`, err?.message)
       return null
     }
@@ -178,7 +185,7 @@ All macros are in grams. Calories are kcal. Use standard serving sizes for the u
 If you cannot identify the food, return { "error": "not found" }.
 Return ONLY the JSON object — no explanation, no markdown.`
 
-  const json = await callClaudeJson(system, query, { maxTokens: 250 }, 'lookupFood')
+  const json = await callClaudeJson(system, query, { maxTokens: 250, kind: 'lookupFood' }, 'lookupFood')
   if (!json || json.error) return null
   return coerceMacros(json)
 }
@@ -231,6 +238,7 @@ No markdown, no explanation — just the JSON.`
   const json = await callClaudeJson(system, `Suggest a ${mealType} for today.`, {
     maxTokens: 1100,
     outputConfig: USE_STRUCTURED_OUTPUT ? MEAL_FORMAT : null,
+    kind: 'suggestMeal',
   }, 'suggestMeal')
   if (!json) return null
   if (json.macros) json.macros = coerceMacros(json.macros)
@@ -258,6 +266,7 @@ No markdown, no explanation — just the JSON.`
   const json = await callClaudeJson(system, 'Apply the change.', {
     maxTokens: 1100,
     outputConfig: USE_STRUCTURED_OUTPUT ? MEAL_FORMAT : null,
+    kind: 'adjustMeal',
   }, 'adjustMeal')
   if (!json) return null
   if (json.macros) json.macros = coerceMacros(json.macros)
@@ -282,33 +291,9 @@ Return ONLY valid JSON with these exact keys:
 If you cannot identify anything food-related, return { "error": "not found" }.
 Return ONLY the JSON object — no explanation, no markdown.`
 
-  const json = await callClaudeJson(system, description, { maxTokens: 1200, webSearch: true, countryCode }, 'identifyEatenFood')
+  const json = await callClaudeJson(system, description, { maxTokens: 1200, webSearch: true, countryCode, kind: 'identifyEatenFood' }, 'identifyEatenFood')
   if (!json) return null
   if (json.error) return { error: json.error }
   if (json.macros) json.macros = coerceMacros(json.macros)
   return json
-}
-
-// --- Chat Coach ---
-// Sends a conversation message and returns the reply string
-export async function chatWithCoach(userMessage, userProfile, conversationHistory = []) {
-  const { physique, experience, equipment, name } = userProfile || {}
-
-  const system = `You are the MissVfit coach, a warm and supportive AI fitness coach for women.
-User profile: name=${name || 'there'}, physique goal=${physique || 'lean_toned'}, experience=${experience || 'some'}, equipment=${(equipment || ['gym']).join(', ')}.
-Answer workout form questions, suggest meal swaps, give motivation, explain exercises.
-Never give medical advice. Keep responses under 120 words. Be warm, specific, science-backed.`
-
-  const messages = [
-    ...conversationHistory.map(m => ({ role: m.role, content: m.content })),
-    { role: 'user', content: userMessage },
-  ]
-
-  try {
-    const data = await anthropicRequest({ system, messages, maxTokens: 300 })
-    return extractText(data)
-  } catch (err) {
-    if (err?.code === 'PRO_REQUIRED') return "I'm a MissVfit Pro feature! Upgrade in Settings to chat with me. ⭐"
-    return "Sorry, I couldn't connect right now. Try again in a moment!"
-  }
 }

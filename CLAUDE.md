@@ -121,7 +121,6 @@ All nutrition AI lives in `src/utils/claudeApi.js` — there is **no Edamam inte
 - `suggestMeal({...targets, dietary, allergies, physique, craving})` — full recipe generation (name, ingredients, method, full 10-field macros: calories/protein/carbs/fat/fiber/sugar/saturatedFat/sodium/cholesterol/potassium)
 - `adjustMeal({meal, instruction, dietary, allergies})` — free-text recipe adjustment ("make it dairy free")
 - `identifyEatenFood(description)` — "already ate" mode: identifies a described meal and estimates macros
-- `chatWithCoach(message, userProfile, history)` — the floating AI coach (Home, Meals, workout screens)
 
 Model: `claude-haiku-4-5-20251001`, via the Anthropic Messages API. All prompts are inline in `claudeApi.js` (there is no `claudePrompts.js`).
 

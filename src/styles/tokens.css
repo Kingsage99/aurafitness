@@ -42,9 +42,22 @@ button {
   background: none;
   padding: 0;
   cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+/* Subtle tap feedback app-wide. A button that sets its own inline `transform`
+   keeps that behavior instead — inline styles win the cascade, so this just
+   doesn't layer onto those few buttons. */
+button:active {
+  transform: scale(0.96);
 }
 
 ::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
 }

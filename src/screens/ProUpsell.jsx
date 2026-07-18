@@ -5,10 +5,13 @@ import { StarIcon, renderIcon } from '../components/Icons'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
 
 const FEATURES = [
-  { icon: '🥗', label: 'AI meal suggestions & food lookup', desc: 'Personalised recipes that fit your dietary needs and allergies' },
-  { icon: '💬', label: 'AI coach chat', desc: 'Ask anything about your workout or nutrition, any time' },
+  { icon: '🍽️', label: 'Unlimited AI meal generation', desc: 'No daily limit on meal suggestions, food lookup, or "already ate" scans' },
+  { icon: '🪄', label: 'AI meal adjustments', desc: 'Request changes to any recipe — more protein, no dairy — a Pro-only feature' },
+  { icon: '📅', label: 'Build my full day', desc: 'Auto-plan every meal and snack for the whole day in one tap' },
   { icon: '✨', label: 'Shiny Pro name & muscle map', desc: 'Your name and workout stats shine blue-purple everywhere' },
+  { icon: '🏆', label: 'True rank colors on your muscle map', desc: "Real bronze-to-goddess muscle coloring once you've logged 5 workouts" },
   { icon: '👑', label: 'Exclusive Pro avatar border', desc: 'A crowned gradient ring only Pro members can equip' },
+  { icon: '🐾', label: 'Every Legendary pet, free', desc: 'All Legendary pets in the Store are automatically unlocked for you' },
 ]
 
 // One-time paywall shown right after WhyAura, only during first-time

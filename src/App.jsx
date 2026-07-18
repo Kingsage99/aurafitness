@@ -35,7 +35,7 @@ import { saveWorkoutHistory, fetchPendingRequests, setUsername, logNutrition, no
 import {
   DEFAULT_GAMIFICATION, resetWeeklyIfNeeded, awardGems, awardXP,
   updateStreak, checkBadges, checkCaloriePenalty, calorieGoalStatus,
-  awardRankPoints, awardMuscleRankPoints, completeQuest, purchaseItem, equipCosmetic, QUEST_POOL, SHOP_ITEMS,
+  awardRankPoints, awardMuscleRankPoints, claimQuest, purchaseItem, equipCosmetic, QUEST_POOL, SHOP_ITEMS,
   MUSCLE_RANK_MIN_WORKOUTS, claimWeeklyChallenge, evaluateDailyQuests,
 } from './utils/gamification'
 import { getDailyTargets } from './utils/nutrition'
@@ -265,7 +265,8 @@ export default function App() {
     const params = new URLSearchParams(window.location.search)
     const checkout = params.get('checkout')
     if (!checkout) return
-    if (checkout === 'success') pushNotification('🎉 Welcome to MissVfit Pro!')
+    if (checkout === 'success' && params.get('type') === 'gems') pushNotification('💎 Gems added to your balance!')
+    else if (checkout === 'success') pushNotification('🎉 Welcome to MissVfit Pro!')
     else if (checkout === 'cancel') pushNotification('Checkout canceled')
     params.delete('checkout')
     const query = params.toString()
@@ -316,20 +317,23 @@ export default function App() {
     const todayKey = dateKeyFor()
     const targets = getDailyTargets(userProfile)
     const mealsToday = gamification.mealsToday?.date === todayKey ? gamification.mealsToday.types : []
+    const reactionsToday = gamification.reactionsToday?.date === todayKey ? gamification.reactionsToday.postIds.length : 0
     const signals = {
       workoutDoneToday: (gamification.workoutDates || []).includes(todayKey) || gamification.lastWorkoutDate === todayKey,
       caloriesHit: (loggedMacros.calories || 0) >= (targets.calories || 0) * 0.9,
       proteinHit: (loggedMacros.protein || 0) >= (targets.protein || 0) * 0.9,
       mealTypes: new Set(mealsToday),
       mealCount: mealsToday.length,
+      postedToday: gamification.lastPostDate === todayKey,
+      reactionsToday,
     }
     const { g: updated, newlyCompleted } = evaluateDailyQuests(gamification, signals, todayKey)
     if (newlyCompleted.length > 0) {
       setGamification(updated)
-      newlyCompleted.forEach(q => pushNotification(`Quest complete! +${q.reward} 💎`))
+      newlyCompleted.forEach(() => pushNotification('Quest ready to claim! 🎁'))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loggedMacros, gamification.mealsToday, gamification.lastWorkoutDate, gamification.workoutDates, userProfile.dailyCalorieTarget])
+  }, [loggedMacros, gamification.mealsToday, gamification.lastWorkoutDate, gamification.workoutDates, gamification.lastPostDate, gamification.reactionsToday, userProfile.dailyCalorieTarget])
 
   // Auto-save user-built workouts to Supabase (debounced 1.5s)
   useEffect(() => {
@@ -580,13 +584,12 @@ export default function App() {
     setRoutine(updatedRoutine)
   }
 
-  const handleQuestComplete = (questId) => {
+  const handleClaimQuest = (questId) => {
     const today = dateKeyFor()
-    const { g: updated, alreadyDone } = completeQuest(gamification, questId, today)
-    if (!alreadyDone) {
+    const { g: updated, awarded } = claimQuest(gamification, questId, today)
+    if (awarded > 0) {
       setGamification(updated)
-      const q = QUEST_POOL.find(q => q.id === questId)
-      if (q) pushNotification(`Quest complete! +${q.reward} 💎`)
+      pushNotification(`+${awarded} 💎`)
     }
   }
 
@@ -679,7 +682,7 @@ export default function App() {
   const renderScreen = () => {
     switch (screen) {
       case 'onboarding':
-        return <Onboarding onComplete={handleOnboardingComplete} />
+        return <Onboarding onComplete={handleOnboardingComplete} session={session} />
       case 'whyaura':
         return (
           <WhyAura
@@ -691,7 +694,7 @@ export default function App() {
       case 'proUpsell':
         return <ProUpsell subscription={subscription} onContinue={() => navigate('home')} />
       case 'home':
-        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} isProUser={isProUser} missState={missState} session={session} onStartMakeup={handleStartMakeup} onSkipMakeup={handleSkipMakeup} onSkipCalorieMiss={handleSkipCalorieMiss} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} isProUser={isProUser} missState={missState} session={session} onStartMakeup={handleStartMakeup} onSkipMakeup={handleSkipMakeup} onSkipCalorieMiss={handleSkipCalorieMiss} onNavigate={navigate} />
 
       // ── Workout section ──────────────────────────────────────────────────────
       case 'workout':
@@ -732,9 +735,9 @@ export default function App() {
       case 'workoutComplete':
         return <WorkoutComplete sessionData={workoutSession} gamification={gamification} userProfile={userProfile} isProUser={isProUser} onNavigate={navigate} />
       case 'workoutPost':
-        return <WorkoutPost sessionData={workoutSession} userProfile={userProfile} session={session} gamification={gamification} isProUser={isProUser} onNavigate={navigate} />
+        return <WorkoutPost sessionData={workoutSession} userProfile={userProfile} session={session} gamification={gamification} isProUser={isProUser} onGamificationChange={setGamification} onNavigate={navigate} />
       case 'mealPost':
-        return <MealPost mealData={mealPostData} userProfile={userProfile} session={session} onNavigate={navigate} />
+        return <MealPost mealData={mealPostData} userProfile={userProfile} session={session} onGamificationChange={setGamification} onNavigate={navigate} />
       case 'workoutBuilder':
         return (
           <WorkoutBuilder
@@ -788,6 +791,9 @@ export default function App() {
             onMealLogged={handleMealLogged}
             onNotify={pushNotification}
             onNavigate={navigate}
+            gamification={gamification}
+            onGamificationChange={setGamification}
+            isProUser={isProUser}
           />
         )
       case 'profile':
@@ -805,7 +811,7 @@ export default function App() {
           />
         )
       case 'store':
-        return <StoreScreen gamification={gamification} isProUser={isProUser} onShopPurchase={handleShopPurchase} onEquipPet={handleEquipCosmetic} onNavigate={navigate} />
+        return <StoreScreen gamification={gamification} isProUser={isProUser} onShopPurchase={handleShopPurchase} onEquipPet={handleEquipCosmetic} onNavigate={navigate} onNotify={pushNotification} />
       case 'settings':
         return (
           <Settings
@@ -825,7 +831,7 @@ export default function App() {
       case 'medals':
         return <MedalsScreen gamification={gamification} onNavigate={navigate} />
       case 'quests':
-        return <QuestsScreen gamification={gamification} onQuestComplete={handleQuestComplete} onClaimChallenge={handleClaimChallenge} onNavigate={navigate} />
+        return <QuestsScreen gamification={gamification} onClaimQuest={handleClaimQuest} onClaimChallenge={handleClaimChallenge} onNavigate={navigate} />
       case 'discovery':
         return (
           <Discovery
@@ -862,7 +868,7 @@ export default function App() {
           />
         )
       default:
-        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} isProUser={isProUser} session={session} onQuestComplete={handleQuestComplete} onNavigate={navigate} />
+        return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} isProUser={isProUser} session={session} onNavigate={navigate} />
     }
   }
 
@@ -870,8 +876,14 @@ export default function App() {
   if (!session) return <PhoneFrame hideStatus={true}><Auth /></PhoneFrame>
   if (profileLoading) return <PhoneFrame hideStatus={true}><Spinner /></PhoneFrame>
 
+  const todayKeyForBadge = dateKeyFor()
+  const dq = gamification.dailyQuests
+  const questsReady = dq?.date === todayKeyForBadge
+    ? (dq.completed || []).filter(id => !(dq.claimed || []).includes(id)).length
+    : 0
+
   return (
-    <NavBadgeContext.Provider value={pendingRequests.length}>
+    <NavBadgeContext.Provider value={{ pendingRequests: pendingRequests.length, questsReady }}>
       <PhoneFrame hideStatus={true}>
         {renderScreen()}
         <RewardToast notifications={notifications} />
