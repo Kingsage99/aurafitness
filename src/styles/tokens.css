@@ -40,6 +40,17 @@
 .phone-viewport {
   height: 100vh;
   height: 100dvh;
+  /* index.html declares viewport-fit=cover, which lets web content extend
+     under notches, camera cutouts, and the bottom gesture-navigation bar/
+     home indicator on real devices. Without this padding, anything pinned
+     to the bottom of the screen (footer action buttons on every step) ends
+     up rendered UNDER that system UI -- visually cropped and unreliable to
+     tap, exactly the bug reported on a real phone. env() falls back to 0 on
+     devices without a cutout/gesture bar, so this is a no-op there. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Fades the bottom ~28px of a scrollable region so a partially-cut-off item
