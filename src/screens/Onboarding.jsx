@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react'
+﻿import React, { useState, useEffect, useMemo } from 'react'
 import ProgressBar from '../components/ProgressBar'
 import { StatusBar } from '../components/PhoneFrame'
 import AvatarSilhouette from '../components/AvatarSilhouette'
 import RulerSlider from '../components/RulerSlider'
-import ArcDial from '../components/ArcDial'
 import MuscleSVG, { TARGET_AREA_SVG, SVG_TO_TARGET_AREA } from '../components/MuscleSVG'
 import CountrySheet from '../components/CountrySheet'
 import { COUNTRIES } from '../data/countries'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 import { GlobeIcon } from '../components/Icons'
+import { subscribeToPush, isPushSupported, isIOSDevice } from '../utils/pushNotifications'
+import { savePushSubscription } from '../lib/social'
 
 const ftInToCm = (ft, inches) => Math.round(parseInt(ft || 0) * 30.48 + parseFloat(inches || 0) * 2.54)
 const lbsToKg = (lbs) => Math.round(parseFloat(lbs) / 2.2046 * 10) / 10
@@ -114,8 +115,12 @@ const CheckIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const ArrowRight = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
 const ArrowLeft = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
 
-export default function Onboarding({ onComplete }) {
+export default function Onboarding({ onComplete, session }) {
   const [step, setStep] = useState(1)
+
+  // Step 15 — Notifications
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushError, setPushError] = useState('')
 
   // Step 1
   const [username, setUsername] = useState('')
@@ -164,12 +169,12 @@ export default function Onboarding({ onComplete }) {
   // Step 9 — muscle map colors derived from selected target areas
   const step9FrontColors = useMemo(() => {
     const colors = {}
-    targetAreas.forEach(area => { TARGET_AREA_SVG[area]?.front?.forEach(id => { colors[id] = NB.ink }) })
+    targetAreas.forEach(area => { TARGET_AREA_SVG[area]?.front?.forEach(id => { colors[id] = NB.purpleDeep }) })
     return colors
   }, [targetAreas])
   const step9BackColors = useMemo(() => {
     const colors = {}
-    targetAreas.forEach(area => { TARGET_AREA_SVG[area]?.back?.forEach(id => { colors[id] = NB.ink }) })
+    targetAreas.forEach(area => { TARGET_AREA_SVG[area]?.back?.forEach(id => { colors[id] = NB.purpleDeep }) })
     return colors
   }, [targetAreas])
 
@@ -211,7 +216,7 @@ export default function Onboarding({ onComplete }) {
     if (step === 1 && !username.trim()) { setUsernameError('Please enter your name.'); return }
     if (step === 5 && trainingDays.size < 2) { setDayError('Select at least 2 training days.'); return }
     // Steps 6–8 (height / weight / age) are slider-driven and always valid.
-    if (step < 14) { setStep(s => s + 1) } else {
+    if (step < 15) { setStep(s => s + 1) } else {
       onComplete({
         name: username.trim(),
         physique: PHYSIQUE_MAP[physique] || 'lean_toned',
@@ -239,6 +244,32 @@ export default function Onboarding({ onComplete }) {
 
   const back = () => setStep(s => s - 1)
 
+  const handleEnableNotifications = async () => {
+    setPushError('')
+    if (!isPushSupported()) {
+      setPushError(
+        isIOSDevice()
+          ? 'Needs MissVfit added to your Home Screen first — tap Share, then "Add to Home Screen", and enable notifications from there.'
+          : "Push notifications aren't supported in this browser — try Chrome or Edge."
+      )
+      return
+    }
+    setPushBusy(true)
+    try {
+      const subscription = await subscribeToPush()
+      if (!subscription) {
+        setPushError('Notifications permission was denied or unavailable.')
+        return
+      }
+      if (session?.user?.id) await savePushSubscription(session.user.id, subscription)
+      next()
+    } catch {
+      setPushError('Notifications permission was denied or unavailable.')
+    } finally {
+      setPushBusy(false)
+    }
+  }
+
   const headerStyle = { padding: '14px 22px 6px', flexShrink: 0 }
   const stepLabel = { fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase' }
   const stepTitle = { fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 25, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.12, marginTop: 4 }
@@ -254,13 +285,13 @@ export default function Onboarding({ onComplete }) {
   return (
     <>
       <StatusBar />
-      <ProgressBar step={step} total={14} />
+      <ProgressBar step={step} total={15} />
 
       {/* ── STEP 1: Username ─────────────────────────────────────────────────── */}
       {step === 1 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 1 OF 14</div>
+            <div style={stepLabel}>STEP 1 OF 15</div>
             <div style={stepTitle}>What should we call you?</div>
             <div style={stepSub}>This is how MissVfit will greet you every day.</div>
           </div>
@@ -291,7 +322,7 @@ export default function Onboarding({ onComplete }) {
       {step === 2 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 2 OF 14</div>
+            <div style={stepLabel}>STEP 2 OF 15</div>
             <div style={stepTitle}>What's your main goal?</div>
             <div style={stepSub}>We'll build your entire plan around this.</div>
           </div>
@@ -323,7 +354,7 @@ export default function Onboarding({ onComplete }) {
       {step === 3 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 3 OF 14</div>
+            <div style={stepLabel}>STEP 3 OF 15</div>
             <div style={stepTitle}>How active are you right now?</div>
             <div style={stepSub}>No judgement — we meet you where you are.</div>
           </div>
@@ -353,7 +384,7 @@ export default function Onboarding({ onComplete }) {
       {step === 4 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 4 OF 14</div>
+            <div style={stepLabel}>STEP 4 OF 15</div>
             <div style={stepTitle}>How do you want to train?</div>
             <div style={stepSub}>You can always switch or add your own workouts later.</div>
           </div>
@@ -383,7 +414,7 @@ export default function Onboarding({ onComplete }) {
       {step === 5 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 5 OF 14</div>
+            <div style={stepLabel}>STEP 5 OF 15</div>
             <div style={stepTitle}>Which days will you train?</div>
             <div style={stepSub}>
               {planningMode === 'custom'
@@ -433,7 +464,7 @@ export default function Onboarding({ onComplete }) {
       {step === 6 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 6 OF 14</div>
+            <div style={stepLabel}>STEP 6 OF 15</div>
             <div style={stepTitle}>Your height</div>
             <div style={stepSub}>Drag the ruler to set your height.</div>
           </div>
@@ -462,7 +493,7 @@ export default function Onboarding({ onComplete }) {
                   : <img src={MEASURE_AVATAR} onError={() => setAvatarFailed(true)} alt="Your avatar" style={{ width: 235, height: 'auto', objectFit: 'contain', flexShrink: 0, transform: 'translateY(10%)' }} />}
               </div>
               <div style={{ alignSelf: 'center' }}>
-                <RulerSlider orientation="vertical" min={120} max={220} value={Math.round(+heightCm)} onChange={v => setHeightCm(String(v))} length={600} thickness={54} pxPerUnit={7.4} />
+                <RulerSlider orientation="vertical" min={120} max={220} value={Math.round(+heightCm)} onChange={v => setHeightCm(String(v))} length={600} thickness={54} pxPerUnit={7.4} formatLabel={v => heightUnit === 'ftin' ? cmToFtIn(v) : v} />
               </div>
             </div>
 
@@ -479,31 +510,28 @@ export default function Onboarding({ onComplete }) {
       {step === 7 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 7 OF 14</div>
+            <div style={stepLabel}>STEP 7 OF 15</div>
             <div style={stepTitle}>Your weight</div>
-            <div style={stepSub}>Drag the dial to set your weight.</div>
+            <div style={stepSub}>Drag the ruler to set your weight.</div>
           </div>
           <div style={{ flex: 1, padding: '10px 22px 0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <UnitToggle options={['kg', 'lbs']} active={weightUnit} onToggle={u => toggleWeightUnit(u)} />
             </div>
-            {/* Avatar shown whole (no crop from a box). A scale-platform plate
-                sits under the dial — domed/round on top, straight rectangle
-                sides that run down to the floor to fully cover the feet.
-                Slightly darker than the page background so it reads as a
-                distinct surface rather than blending in completely. */}
-            <div style={{ position: 'relative', height: 470, marginTop: 6, flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+            {/* Identical layout to the Age step: same avatar size/position,
+                same number spacing, same straight ruler (not a curved dial) —
+                just a different unit-aware value/formatLabel. */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
               {avatarFailed
-                ? <AvatarSilhouette height={380} color={NB.ink} />
-                : <img src={MEASURE_AVATAR} onError={() => setAvatarFailed(true)} alt="Your avatar" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />}
-              <div style={{ position: 'absolute', left: '50%', bottom: 0, transform: 'translateX(-50%)', width: 380, height: 95, borderTopLeftRadius: 190, borderTopRightRadius: 190, background: '#E6DEEE', zIndex: 1 }} />
-              <div style={{ position: 'absolute', left: '50%', bottom: 52, transform: 'translateX(-50%)', zIndex: 2 }}>
-                <ArcDial min={30} max={200} value={Math.round(+weightKg)} onChange={v => setWeightKg(String(v))} width={344} height={86} />
-              </div>
+                ? <AvatarSilhouette height={300} color={NB.ink} />
+                : <img src={MEASURE_AVATAR} onError={() => setAvatarFailed(true)} alt="Your avatar" style={{ height: 400, maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />}
             </div>
-            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 40, color: NB.ink, lineHeight: 1, textAlign: 'center', marginTop: 4 }}>
+            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 40, color: NB.ink, lineHeight: 1, textAlign: 'center', marginTop: 10 }}>
               {weightUnit === 'kg' ? Math.round(+weightKg) : kgToLbs(+weightKg)}
               <span style={{ fontSize: 18, fontWeight: 700, color: '#888', marginLeft: 4 }}>{weightUnit}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14, marginBottom: 24 }}>
+              <RulerSlider orientation="horizontal" min={30} max={200} value={Math.round(+weightKg)} onChange={v => setWeightKg(String(v))} length={350} thickness={60} pxPerUnit={11} majorEvery={5} labelEvery={5} formatLabel={v => weightUnit === 'lbs' ? kgToLbs(v) : v} />
             </div>
           </div>
           <div style={footer}>
@@ -517,21 +545,21 @@ export default function Onboarding({ onComplete }) {
       {step === 8 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 8 OF 14</div>
+            <div style={stepLabel}>STEP 8 OF 15</div>
             <div style={stepTitle}>Your age</div>
             <div style={stepSub}>Drag the ruler to set your age.</div>
           </div>
           <div style={{ flex: 1, padding: '10px 22px 0', display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
               {avatarFailed
-                ? <AvatarSilhouette height={340} color={NB.ink} />
-                : <img src={MEASURE_AVATAR} onError={() => setAvatarFailed(true)} alt="Your avatar" style={{ height: 460, maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />}
+                ? <AvatarSilhouette height={300} color={NB.ink} />
+                : <img src={MEASURE_AVATAR} onError={() => setAvatarFailed(true)} alt="Your avatar" style={{ height: 400, maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 6 }}>
-              <RulerSlider orientation="horizontal" min={14} max={80} value={Math.round(+age)} onChange={v => setAge(String(v))} length={330} thickness={44} pxPerUnit={11} majorEvery={5} labelEvery={5} />
-            </div>
-            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 40, color: NB.ink, lineHeight: 1, textAlign: 'center', marginTop: 6 }}>
+            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 40, color: NB.ink, lineHeight: 1, textAlign: 'center', marginTop: 10 }}>
               {Math.round(+age)}<span style={{ fontSize: 18, fontWeight: 700, color: '#888', marginLeft: 4 }}>yrs</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14, marginBottom: 24 }}>
+              <RulerSlider orientation="horizontal" min={14} max={80} value={Math.round(+age)} onChange={v => setAge(String(v))} length={350} thickness={60} pxPerUnit={11} majorEvery={5} labelEvery={5} />
             </div>
           </div>
           <div style={footer}>
@@ -545,7 +573,7 @@ export default function Onboarding({ onComplete }) {
       {step === 9 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 9 OF 14</div>
+            <div style={stepLabel}>STEP 9 OF 15</div>
             <div style={stepTitle}>What do you have access to?</div>
             <div style={stepSub}>Select all that apply.</div>
           </div>
@@ -578,7 +606,7 @@ export default function Onboarding({ onComplete }) {
       {step === 10 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 10 OF 14</div>
+            <div style={stepLabel}>STEP 10 OF 15</div>
             <div style={stepTitle}>Any areas you want to focus on?</div>
             <div style={stepSub}>Tap the body or use the chips — we'll shape your focus.</div>
           </div>
@@ -619,7 +647,7 @@ export default function Onboarding({ onComplete }) {
       {step === 11 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 11 OF 14</div>
+            <div style={stepLabel}>STEP 11 OF 15</div>
             <div style={stepTitle}>Any dietary preferences?</div>
             <div style={stepSub}>We'll tailor your meal suggestions.</div>
           </div>
@@ -639,7 +667,7 @@ export default function Onboarding({ onComplete }) {
       {step === 12 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 12 OF 14</div>
+            <div style={stepLabel}>STEP 12 OF 15</div>
             <div style={stepTitle}>Any food allergies?</div>
             <div style={stepSub}>We'll keep these out of your meal plan.</div>
           </div>
@@ -663,7 +691,7 @@ export default function Onboarding({ onComplete }) {
       {step === 13 && (
         <>
           <div style={headerStyle}>
-            <div style={stepLabel}>STEP 13 OF 14</div>
+            <div style={stepLabel}>STEP 13 OF 15</div>
             <div style={stepTitle}>Where are you based?</div>
             <div style={stepSub}>Food differs by country — this makes your calorie & macro estimates accurate for your region.</div>
           </div>
@@ -700,12 +728,12 @@ export default function Onboarding({ onComplete }) {
           ? [{ label: 'Conservative', offset: -250 }, { label: 'Moderate', offset: -500 }, { label: 'Aggressive', offset: -750 }]
           : isBuilding
             ? [{ label: 'Conservative', offset: 150 }, { label: 'Moderate', offset: 300 }, { label: 'Aggressive', offset: 500 }]
-            : [{ label: '−100 kcal', offset: -100 }, { label: 'Maintenance', offset: 0 }, { label: '+100 kcal', offset: 100 }]
+            : [{ label: 'âˆ’100 kcal', offset: -100 }, { label: 'Maintenance', offset: 0 }, { label: '+100 kcal', offset: 100 }]
 
         return (
           <>
             <div style={headerStyle}>
-              <div style={stepLabel}>STEP 14 OF 14</div>
+              <div style={stepLabel}>STEP 14 OF 15</div>
               <div style={stepTitle}>Your nutrition target</div>
               <div style={stepSub}>Based on your body & goal — adjust to your comfort.</div>
             </div>
@@ -719,7 +747,7 @@ export default function Onboarding({ onComplete }) {
               <div style={{ ...nbCardStyle(NB.teal, 4), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '16px', marginBottom: 14 }}>
                 <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Your daily target</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                  <button onClick={() => setDailyCalorieTarget(t => Math.max(800, (t ?? 1500) - 50))} style={{ width: 48, height: 48, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: NB.white, fontSize: 22, fontWeight: 800, color: NB.ink, cursor: 'pointer', flexShrink: 0 }}>−</button>
+                  <button onClick={() => setDailyCalorieTarget(t => Math.max(800, (t ?? 1500) - 50))} style={{ width: 48, height: 48, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: NB.white, fontSize: 22, fontWeight: 800, color: NB.ink, cursor: 'pointer', flexShrink: 0 }}>âˆ’</button>
                   <div style={{ textAlign: 'center', flex: 1 }}>
                     <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 42, color: NB.ink, lineHeight: 1 }}>{dailyCalorieTarget?.toLocaleString() ?? '—'}</div>
                     <div style={{ fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700 }}>kcal / day</div>
@@ -760,6 +788,52 @@ export default function Onboarding({ onComplete }) {
           </>
         )
       })()}
+
+      {/* ── STEP 15: Notifications ──────────────────────────────────────────── */}
+      {step === 15 && (
+        <>
+          <div style={headerStyle}>
+            <div style={stepLabel}>STEP 15 OF 15</div>
+            <div style={stepTitle}>Turn on notifications</div>
+            <div style={stepSub}>Get nudged about missed workouts, calorie goals, and your pet — even when the app is closed.</div>
+          </div>
+          <div style={content}>
+            <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '22px 18px', marginTop: 10, textAlign: 'center' }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🔔</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, color: NB.ink, marginBottom: 6, textTransform: 'uppercase' }}>Stay on track</div>
+              <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5 }}>
+                {isPushSupported()
+                  ? "We'll only notify you about things that matter — no spam."
+                  : isIOSDevice()
+                    ? 'On iPhone, add MissVfit to your Home Screen first (Share → "Add to Home Screen"), then you can turn this on from Settings any time.'
+                    : "This browser doesn't support push notifications — you can still get in-app reminders, and can revisit this from Settings any time."}
+              </div>
+            </div>
+            {pushError && (
+              <div style={{ marginTop: 14, padding: '10px 14px', ...nbCardStyle(NB.red, 3), border: `3px solid ${NB.white}`, borderRadius: 12 }}>
+                <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{pushError}</span>
+              </div>
+            )}
+          </div>
+          <div style={{ ...footer, flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+              <button style={backBtn} onClick={back}><ArrowLeft /></button>
+              {isPushSupported() ? (
+                <button onClick={handleEnableNotifications} disabled={pushBusy} style={{ ...nextBtn, background: NB.magenta, color: NB.white, opacity: pushBusy ? 0.7 : 1, cursor: pushBusy ? 'default' : 'pointer' }}>
+                  {pushBusy ? 'Requesting…' : 'Enable Notifications'}
+                </button>
+              ) : (
+                <button onClick={next} style={{ ...nextBtn, background: NB.magenta, color: NB.white }}>Finish</button>
+              )}
+            </div>
+            {isPushSupported() && (
+              <button onClick={next} disabled={pushBusy} style={{ background: 'none', border: 'none', fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, color: '#555', textDecoration: 'underline', cursor: pushBusy ? 'default' : 'pointer', padding: 4 }}>
+                Skip for now
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
       {countrySheet && (
         <CountrySheet

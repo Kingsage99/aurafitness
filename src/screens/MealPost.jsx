@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { createPost, uploadPostMedia } from '../lib/social'
+import { dateKeyFor } from '../utils/workoutBuilder'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 import { SaladIcon } from '../components/Icons'
 
-export default function MealPost({ mealData, userProfile, session, onNavigate }) {
+export default function MealPost({ mealData, userProfile, session, onGamificationChange, onNavigate }) {
   const name        = mealData?.name || 'Meal'
   const macros      = mealData?.macros || {}
   const ingredients = mealData?.ingredients || []
@@ -49,6 +50,7 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
       { name, macros, ingredients: ingredients.slice(0, 10) },
       { caption: caption.trim(), mediaUrl, mediaType }
     )
+    onGamificationChange?.(g => ({ ...g, lastPostDate: dateKeyFor() }))
     setPosting(false)
     onNavigate('meals')
   }
@@ -133,7 +135,10 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
           </div>
         )}
 
-        {/* Buttons */}
+      </div>
+
+      {/* Pinned footer — stays on screen while the content above scrolls */}
+      <div style={{ flexShrink: 0, padding: '10px 22px 20px' }}>
         <button
           onClick={handlePost}
           disabled={posting}
@@ -147,7 +152,6 @@ export default function MealPost({ mealData, userProfile, session, onNavigate })
         >
           Skip
         </button>
-
       </div>
     </>
   )

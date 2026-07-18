@@ -176,7 +176,10 @@ export default function WorkoutComplete({ sessionData, gamification, userProfile
           <StatItem value={fmt(elapsed)} label="Duration" />
         </div>
 
-        {/* Buttons */}
+      </div>
+
+      {/* Pinned footer — stays on screen while the content above scrolls */}
+      <div style={{ flexShrink: 0, padding: '10px 22px 20px' }}>
         <button
           onClick={() => onNavigate('workoutPost')}
           style={{ width: '100%', padding: '15px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', marginBottom: 12 }}
@@ -189,7 +192,6 @@ export default function WorkoutComplete({ sessionData, gamification, userProfile
         >
           Back to Home
         </button>
-
       </div>
 
       {ladderMuscle && (

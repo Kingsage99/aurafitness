@@ -5,11 +5,14 @@ import { dateKeyFor } from '../utils/workoutBuilder'
 import { renderIcon, GemIcon } from '../components/Icons'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
-export default function QuestsScreen({ gamification = {}, onQuestComplete, onClaimChallenge, onNavigate }) {
+export default function QuestsScreen({ gamification = {}, onClaimQuest, onClaimChallenge, onNavigate }) {
   const todayStr = dateKeyFor()
   const quests = getDailyQuests(todayStr)
   const completedToday = gamification.dailyQuests?.date === todayStr
     ? (gamification.dailyQuests.completed || [])
+    : []
+  const claimedToday = gamification.dailyQuests?.date === todayStr
+    ? (gamification.dailyQuests.claimed || [])
     : []
   const claimedThisWeek = getWeeklyChallengeState(gamification).claimed
 
@@ -45,23 +48,43 @@ export default function QuestsScreen({ gamification = {}, onQuestComplete, onCla
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
           {quests.map(quest => {
             const done = completedToday.includes(quest.id)
+            const claimed = claimedToday.includes(quest.id)
+            const readyToClaim = done && !claimed
             return (
               <div
                 key={quest.id}
-                style={{ ...nbCardStyle(done ? NB.green : NB_CARD_NEUTRAL, 3, done ? undefined : NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '18px 18px' }}
+                style={{ position: 'relative', ...nbCardStyle(claimed ? NB.green : NB_CARD_NEUTRAL, 3, claimed ? undefined : NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '18px 18px' }}
               >
+                {readyToClaim && (
+                  <div style={{
+                    position: 'absolute', top: -6, right: -6,
+                    width: 18, height: 18, borderRadius: 6, border: `2px solid ${NB.ink}`,
+                    background: NB.red,
+                  }} />
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ width: 52, height: 52, borderRadius: 14, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>{renderIcon(quest.icon, 28)}</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink, textDecoration: done ? 'line-through' : 'none', marginBottom: 4 }}>{quest.label}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink, textDecoration: claimed ? 'line-through' : 'none', marginBottom: 4 }}>{quest.label}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <GemIcon size={12} />
                       <span style={{ fontSize: 12, fontWeight: 700, color: NB.ink }}>+{quest.reward} gems</span>
                     </div>
                   </div>
-                  <div style={{ width: 36, height: 36, borderRadius: 11, border: `2px solid ${NB.ink}`, background: done ? NB.ink : NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {done && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12"/></svg>}
-                  </div>
+                  {claimed ? (
+                    <div style={{ width: 36, height: 36, borderRadius: 11, border: `2px solid ${NB.ink}`, background: NB.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+                    </div>
+                  ) : readyToClaim ? (
+                    <button
+                      onClick={() => onClaimQuest?.(quest.id)}
+                      style={{ height: 38, padding: '0 14px', border: `2px solid ${NB.ink}`, borderRadius: 11, background: NB.yellow, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', boxShadow: hardShadow(2), flexShrink: 0 }}
+                    >
+                      Claim
+                    </button>
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: 11, border: `2px solid ${NB.ink}`, background: NB.white, flexShrink: 0 }} />
+                  )}
                 </div>
               </div>
             )

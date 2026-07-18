@@ -29,6 +29,10 @@ const SECTIONS = [
 
 export default function Profile({ userProfile, session, gamification = {}, isProUser = false, onNavigate, onUpdateProfile, onEquipCosmetic, onShopPurchase }) {
   const g = gamification
+  const todayStrForQuests = dateKeyFor()
+  const questsReadyCount = g.dailyQuests?.date === todayStrForQuests
+    ? (g.dailyQuests.completed || []).filter(id => !(g.dailyQuests.claimed || []).includes(id)).length
+    : 0
   const [openSheet, setOpenSheet] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [petVideoFailed, setPetVideoFailed] = useState(false)
@@ -371,8 +375,15 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
                 onClick={() => handleSectionTap(section)}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
               >
-                <div style={{ width: 58, height: 58, borderRadius: 16, ...nbCardStyle(section.bg === NB.white ? NB_CARD_NEUTRAL : section.bg, 3, section.bg === NB.white ? NB_CARD_NEUTRAL_SHADOW : undefined), border: `3px solid ${NB.white}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>
+                <div style={{ position: 'relative', width: 58, height: 58, borderRadius: 16, ...nbCardStyle(section.bg === NB.white ? NB_CARD_NEUTRAL : section.bg, 3, section.bg === NB.white ? NB_CARD_NEUTRAL_SHADOW : undefined), border: `3px solid ${NB.white}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>
                   {renderIcon(section.icon, 40)}
+                  {section.id === 'quests' && questsReadyCount > 0 && (
+                    <div style={{
+                      position: 'absolute', top: -6, right: -6,
+                      width: 18, height: 18, borderRadius: 6, border: `2px solid ${NB.ink}`,
+                      background: NB.red,
+                    }} />
+                  )}
                 </div>
                 <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', color: NB.ink }}>{section.label}</span>
               </button>

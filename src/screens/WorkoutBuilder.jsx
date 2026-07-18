@@ -15,13 +15,13 @@ import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRA
 const MUSCLE_GROUPS = [
   { id: 'glutes',     label: 'Glutes',     url: '/muscle_map_back.svg',  side: 'back',  focusViewBox: '640 470 640 380' },
   { id: 'hamstrings', label: 'Hamstrings', url: '/muscle_map_back.svg',  side: 'back',  focusViewBox: '640 550 640 350' },
-  { id: 'quads',      label: 'Quads',      url: '/muscle_map_front.svg', side: 'front', focusViewBox: '640 550 640 350' },
-  { id: 'adductors',  label: 'Adductors',  url: '/muscle_map_front.svg', side: 'front', focusViewBox: '640 550 640 350' },
+  { id: 'quads',      label: 'Quads',      url: '/muscle_map_front.svg', side: 'front', focusViewBox: '640 520 640 350' },
+  { id: 'adductors',  label: 'Adductors',  url: '/muscle_map_front.svg', side: 'front', focusViewBox: '640 520 640 350' },
   { id: 'abductors',  label: 'Abductors',  url: '/muscle_map_front.svg', side: 'front', focusViewBox: '640 500 640 350' },
-  { id: 'calves',     label: 'Calves',     url: '/muscle_map_back.svg',  side: 'back',  focusViewBox: '640 800 640 280' },
+  { id: 'calves',     label: 'Calves',     url: '/muscle_map_back.svg',  side: 'back',  focusViewBox: '640 710 640 280' },
   { id: 'core',       label: 'Core',       url: '/muscle_map_front.svg', side: 'front', focusViewBox: '640 300 640 380' },
   { id: 'chest',      label: 'Chest',      url: '/muscle_map_front.svg', side: 'front', focusViewBox: '640 170 640 340' },
-  { id: 'trap',       label: 'Trap',       url: '/muscle_map_back.svg',  side: 'back',  focusViewBox: '640 100 640 300' },
+  { id: 'trap',       label: 'Trap',       url: '/muscle_map_back.svg',  side: 'back',  focusViewBox: '640 180 640 300' },
   { id: 'lats',       label: 'Lats',       url: '/muscle_map_back.svg',  side: 'back',  focusViewBox: '640 200 640 400' },
   { id: 'shoulders',  label: 'Shoulders',  url: '/muscle_map_back.svg',  side: 'back',  focusViewBox: '640 90 640 340' },
   { id: 'arms',       label: 'Arms',       url: '/muscle_map_front.svg', side: 'front', focusViewBox: '640 150 640 600' },
@@ -52,7 +52,7 @@ const EQUIPMENT_OPTIONS = [
 function MuscleGroupCard({ group, selected, onToggle }) {
   const colors = useMemo(() => {
     const mc = {}
-    MUSCLE_SVG_IDS[group.id]?.[group.side]?.forEach(id => { mc[id] = NB.ink })
+    MUSCLE_SVG_IDS[group.id]?.[group.side]?.forEach(id => { mc[id] = NB.purpleDeep })
     return mc
   }, [group.id, group.side])
 
@@ -87,7 +87,7 @@ function MuscleGroupCard({ group, selected, onToggle }) {
 function MuscleCarouselCard({ group }) {
   const colors = useMemo(() => {
     const mc = {}
-    MUSCLE_SVG_IDS[group.id]?.[group.side]?.forEach(id => { mc[id] = NB.ink })
+    MUSCLE_SVG_IDS[group.id]?.[group.side]?.forEach(id => { mc[id] = NB.purpleDeep })
     return mc
   }, [group.id, group.side])
 
@@ -479,12 +479,24 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate, postSaveScre
             <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
               Exercises — tap + to add
             </div>
+
+            {/* Add your own exercise — first, so it's the most visible option */}
+            <button
+              onClick={() => setShowAddForm(true)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', marginBottom: 10, ...nbCardStyle(NB_CARD_NEUTRAL, 2, NB_CARD_NEUTRAL_SHADOW), borderRadius: 14, cursor: 'pointer' }}
+            >
+              <div style={{ width: 34, height: 34, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </div>
+              <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', color: NB.ink }}>Add your own exercise</span>
+            </button>
+
             {filteredExercises.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {filteredExercises.map(ex => {
                   const added = myExIds.has(ex.id)
                   return (
-                    <div key={ex.id} style={{ border: 'none', borderRadius: 16, padding: '12px 14px', background: NB.lavenderMist, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div key={ex.id} style={{ border: `3px solid ${NB.white}`, borderRadius: 16, padding: '12px 14px', background: NB.lavenderMist, display: 'flex', alignItems: 'center', gap: 12 }}>
                       <ExerciseThumb src={resolveExerciseImage(ex, equipment)} slot={ex.slot} size={44} radius={12} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: 14, color: NB.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</div>
@@ -506,39 +518,6 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate, postSaveScre
             ) : (
               <div style={{ textAlign: 'center', padding: '20px', ...nbCardStyle(NB_CARD_NEUTRAL, 2, NB_CARD_NEUTRAL_SHADOW), borderRadius: 16 }}>
                 <span style={{ fontSize: 13, color: '#555' }}>No exercises found for this muscle group yet.</span>
-              </div>
-            )}
-
-            {/* Add your own exercise */}
-            <button
-              onClick={() => setShowAddForm(true)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', marginTop: 10, ...nbCardStyle(NB_CARD_NEUTRAL, 2, NB_CARD_NEUTRAL_SHADOW), borderRadius: 14, cursor: 'pointer' }}
-            >
-              <div style={{ width: 34, height: 34, borderRadius: 10, border: `2px solid ${NB.ink}`, background: NB.yellow, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </div>
-              <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', color: NB.ink }}>Add your own exercise</span>
-            </button>
-
-            {/* Prev / Next stepping through the picked muscle groups */}
-            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <button
-                onClick={goToPrevGroup}
-                style={{ flex: 1, padding: '14px', border: NB_BORDER, borderRadius: 14, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
-              >
-                ‹ Back
-              </button>
-              <button
-                onClick={goToNextGroup}
-                disabled={!canAdvance}
-                style={{ flex: 2, padding: '14px', border: NB_BORDER, borderRadius: 14, boxShadow: canAdvance ? hardShadow(3) : 'none', background: canAdvance ? NB.magenta : NB.white, color: canAdvance ? NB.white : '#999', fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: canAdvance ? 'pointer' : 'default' }}
-              >
-                {focusedIdx >= carouselGroups.length - 1 ? 'Review Workout' : 'Next Muscle'}
-              </button>
-            </div>
-            {!canAdvance && (
-              <div style={{ textAlign: 'center', fontSize: 12, color: '#555', marginTop: 8 }}>
-                Add at least 1 exercise above to continue
               </div>
             )}
           </div>
@@ -581,8 +560,35 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate, postSaveScre
           </>
         )}
 
-        {/* Save button */}
-        {builderStage === 'review' && (
+      </div>
+
+      {/* Pinned footer — stays on screen while the content above scrolls */}
+      {builderStage === 'exercises' && (
+        <div style={{ flexShrink: 0, padding: '10px 22px 20px' }}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={goToPrevGroup}
+              style={{ flex: 1, padding: '14px', border: NB_BORDER, borderRadius: 14, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer' }}
+            >
+              ‹ Back
+            </button>
+            <button
+              onClick={goToNextGroup}
+              disabled={!canAdvance}
+              style={{ flex: 2, padding: '14px', border: NB_BORDER, borderRadius: 14, boxShadow: canAdvance ? hardShadow(3) : 'none', background: canAdvance ? NB.magenta : NB.white, color: canAdvance ? NB.white : '#999', fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: canAdvance ? 'pointer' : 'default' }}
+            >
+              {focusedIdx >= carouselGroups.length - 1 ? 'Review Workout' : 'Next Muscle'}
+            </button>
+          </div>
+          {!canAdvance && (
+            <div style={{ textAlign: 'center', fontSize: 12, color: '#555', marginTop: 8 }}>
+              Add at least 1 exercise above to continue
+            </div>
+          )}
+        </div>
+      )}
+      {builderStage === 'review' && (
+        <div style={{ flexShrink: 0, padding: '10px 22px 20px' }}>
           <button
             onClick={handleSave}
             disabled={!canSave}
@@ -590,9 +596,8 @@ export default function WorkoutBuilder({ onSaveWorkout, onNavigate, postSaveScre
           >
             {workoutName.trim() ? `Save "${workoutName.trim()}"` : 'Enter a workout name to save'}
           </button>
-        )}
-
-      </div>
+        </div>
+      )}
 
       {/* Add a muscle group / search the library — sheet (opened from the carousel's "+" card) */}
       {showAddSheet && (

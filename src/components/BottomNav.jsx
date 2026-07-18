@@ -1,9 +1,9 @@
 import React, { useContext, createContext } from 'react'
 import { NB, NB_BORDER } from '../styles/neoBrutalism'
 
-// Provided by App with the pending friend-request count, so the badge shows on
-// every screen's nav without each screen having to thread the prop through.
-export const NavBadgeContext = createContext(0)
+// Provided by App with cross-screen badge counts, so nav badges show up
+// without each screen having to thread the props through.
+export const NavBadgeContext = createContext({ pendingRequests: 0, questsReady: 0 })
 
 const MAIN_TABS = [
   {
@@ -62,9 +62,16 @@ const MAIN_TABS = [
 ]
 
 export default function BottomNav({ active, onNavigate, pendingRequests }) {
-  const ctxPending = useContext(NavBadgeContext)
+  const ctx = useContext(NavBadgeContext)
   // Explicit prop wins (Discovery passes a live count); otherwise use App's context
-  const pendingCount = pendingRequests ?? ctxPending ?? 0
+  const pendingCount = pendingRequests ?? ctx?.pendingRequests ?? 0
+  const questsReady = ctx?.questsReady ?? 0
+
+  const badgeFor = tabId => {
+    if (tabId === 'discovery') return pendingCount
+    if (tabId === 'profile') return questsReady
+    return 0
+  }
 
   return (
     <div style={{
@@ -73,7 +80,7 @@ export default function BottomNav({ active, onNavigate, pendingRequests }) {
       padding: '8px 8px 18px', flexShrink: 0,
     }}>
       {MAIN_TABS.map(tab => (
-        <TabBtn key={tab.id} tab={tab} active={active} onNavigate={onNavigate} badge={tab.id === 'discovery' ? pendingCount : 0} />
+        <TabBtn key={tab.id} tab={tab} active={active} onNavigate={onNavigate} badge={badgeFor(tab.id)} />
       ))}
     </div>
   )

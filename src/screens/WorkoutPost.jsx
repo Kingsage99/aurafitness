@@ -5,6 +5,7 @@ import { createPost, uploadPostMedia, top3Muscles } from '../lib/social'
 import { buildMuscleIntensityColors, MUSCLE_TO_GROUP } from '../utils/muscleIntensity'
 import { countsByGroup, buildIntensityRankColors } from '../utils/muscleRankColors'
 import { MUSCLE_RANK_MIN_WORKOUTS } from '../utils/gamification'
+import { dateKeyFor } from '../utils/workoutBuilder'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 import { CameraIcon, StrengthArmIcon, StopwatchIcon } from '../components/Icons'
 
@@ -13,7 +14,7 @@ function fmt(s) {
   return m === 0 ? `${s}s` : `${m}m`
 }
 
-export default function WorkoutPost({ sessionData, userProfile, session, gamification, isProUser = false, onNavigate }) {
+export default function WorkoutPost({ sessionData, userProfile, session, gamification, isProUser = false, onGamificationChange, onNavigate }) {
   const exercises = sessionData?.exercises ?? []
   const label     = sessionData?.workoutLabel ?? 'Workout'
   const elapsed   = sessionData?.elapsed ?? 0
@@ -71,6 +72,7 @@ export default function WorkoutPost({ sessionData, userProfile, session, gamific
       { label: label.replace(/^Day \d+ — /, ''), elapsed, muscles, totalSets: sessionData?.totalSets, setsCompleted: sessionData?.setsCompleted },
       { caption: caption.trim(), mediaUrl, mediaType }
     )
+    onGamificationChange?.(g => ({ ...g, lastPostDate: dateKeyFor() }))
     setPosting(false)
     onNavigate('home')
   }
@@ -164,7 +166,10 @@ export default function WorkoutPost({ sessionData, userProfile, session, gamific
           </div>
         )}
 
-        {/* Buttons */}
+      </div>
+
+      {/* Pinned footer — stays on screen while the content above scrolls */}
+      <div style={{ flexShrink: 0, padding: '10px 22px 20px' }}>
         <button
           onClick={handlePost}
           disabled={posting}
@@ -178,7 +183,6 @@ export default function WorkoutPost({ sessionData, userProfile, session, gamific
         >
           Skip
         </button>
-
       </div>
     </>
   )

@@ -115,9 +115,12 @@ export default function Auth() {
               <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
             </div>
           )}
+        </div>
 
+        {/* Pinned footer — stays on screen while the fields above scroll */}
+        <div style={{ flexShrink: 0, padding: '10px 26px 26px' }}>
           <button onClick={handleEmailAuth} disabled={loading}
-            style={{ width: '100%', height: 54, border: NB_BORDER, borderRadius: 16, boxShadow: loading ? 'none' : hardShadow(5), background: loading ? '#ccc' : NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', cursor: loading ? 'default' : 'pointer', marginTop: 22 }}>
+            style={{ width: '100%', height: 54, border: NB_BORDER, borderRadius: 16, boxShadow: loading ? 'none' : hardShadow(5), background: loading ? '#ccc' : NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase', cursor: loading ? 'default' : 'pointer' }}>
             {loading ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Create account'}
           </button>
 
@@ -130,7 +133,7 @@ export default function Auth() {
             </div>
           )}
 
-          <div style={{ textAlign: 'center', marginTop: 20, paddingBottom: 32 }}>
+          <div style={{ textAlign: 'center', marginTop: 20 }}>
             <span style={{ fontSize: 14, color: '#555' }}>
               {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
             </span>

@@ -10,6 +10,7 @@ export default function RulerSlider({
   pxPerUnit = 10, majorEvery = 5, labelEvery = 10,
   length = 320, thickness = 60,
   accent = NB.magenta,
+  formatLabel = v => v,
 }) {
   const vertical = orientation === 'vertical'
   const drag = useRef(null)
@@ -63,7 +64,7 @@ export default function RulerSlider({
               <div style={vertical
                 ? { position: 'absolute', top: t.pos, left: thickness * 0.5 + 4, transform: 'translateY(-50%)', fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, color: '#666' }
                 : { position: 'absolute', left: t.pos, top: thickness * 0.5 + 4, transform: 'translateX(-50%)', fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, color: '#666' }
-              }>{t.v}</div>
+              }>{formatLabel(t.v)}</div>
             )}
           </React.Fragment>
         )

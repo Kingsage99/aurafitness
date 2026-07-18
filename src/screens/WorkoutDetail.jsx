@@ -39,7 +39,7 @@ function MuscleCard({ group, pct }) {
   const colors = useMemo(() => {
     if (!config) return {}
     const mc = {}
-    MUSCLE_SVG_IDS[group]?.[config.side]?.forEach(id => { mc[id] = NB.ink })
+    MUSCLE_SVG_IDS[group]?.[config.side]?.forEach(id => { mc[id] = NB.purpleDeep })
     return mc
   }, [group, config])
 
