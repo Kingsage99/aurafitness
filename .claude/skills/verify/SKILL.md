@@ -29,8 +29,13 @@ Recipe:
   `{ width: 390, height: 844 }` (the app is a fixed phone frame).
 - **The script must live inside the repo** (e.g. `e2e/tmp-*.mjs`) or Node
   ESM can't resolve the project's `playwright` package. Delete it after.
-- After `page.goto('http://localhost:5173')`, wait ~3s for the Supabase
-  session restore before interacting.
+- The real app lives at `/app`, not bare root — root now serves a marketing
+  landing page (`src/screens/Landing.jsx`), and `/app` at a desktop-sized
+  viewport hard-gates to `src/screens/DesktopGate.jsx` instead of the app.
+  Always `page.goto('http://localhost:5173/app')` with a mobile-sized
+  viewport (390×844 above) to reach the actual app UI.
+- After `page.goto(...)`, wait ~3s for the Supabase session restore before
+  interacting.
 - Bottom-nav tabs are reachable via `page.getByText('Profile', { exact: true })`
   etc. Screens are state-switched in App.jsx (no URLs/routes to deep-link).
 - Collect `pageerror` / console `error` / HTTP >= 400 events — the app fails

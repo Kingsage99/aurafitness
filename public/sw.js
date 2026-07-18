@@ -27,7 +27,7 @@ self.addEventListener('push', (event) => {
     body: data.body || '',
     icon: '/notification_icon.png',
     badge: '/notification_icon.png',
-    data: { url: data.url || '/' },
+    data: { url: data.url || '/app' },
     requireInteraction: true,
   }
 
@@ -36,7 +36,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = event.notification.data?.url || '/'
+  const url = event.notification.data?.url || '/app'
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {

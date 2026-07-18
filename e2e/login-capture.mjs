@@ -6,7 +6,7 @@
 import { chromium } from 'playwright'
 import path from 'node:path'
 
-const DEV_URL = 'http://localhost:5173'
+const DEV_URL = 'http://localhost:5173/app'
 const PASSWORD = 'AuraE2ETest123!'
 
 const ACCOUNTS = [

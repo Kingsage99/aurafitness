@@ -1,16 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { NB, NB_BORDER, hardShadow, NB_DOT_GRID } from '../styles/neoBrutalism'
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 600)
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 600px)')
-    const handler = (e) => setIsMobile(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
-  return isMobile
-}
+import { useIsMobile } from '../hooks/useIsMobile'
 
 function StatusBar() {
   const isMobile = useIsMobile()

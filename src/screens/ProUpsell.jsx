@@ -4,7 +4,7 @@ import { startCheckout, isTrialEligible, STRIPE_PRICES } from '../lib/stripe'
 import { StarIcon, renderIcon } from '../components/Icons'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
 
-const FEATURES = [
+export const FEATURES = [
   { icon: '🍽️', label: 'Unlimited AI meal generation', desc: 'No daily limit on meal suggestions, food lookup, or "already ate" scans' },
   { icon: '🪄', label: 'AI meal adjustments', desc: 'Request changes to any recipe — more protein, no dairy — a Pro-only feature' },
   { icon: '📅', label: 'Build my full day', desc: 'Auto-plan every meal and snack for the whole day in one tap' },
