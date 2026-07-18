@@ -468,10 +468,7 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>Your height</div>
             <div style={stepSub}>Drag the ruler to set your height.</div>
           </div>
-          {/* No separate footer row here — Back/Next float over the avatar so
-              the crop can run all the way to the true bottom of the screen,
-              like the reference, instead of stopping above a footer bar. */}
-          <div style={{ flex: 1, padding: '10px 22px 0', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          <div className="scroll-fade-bottom" style={{ flex: 1, padding: '10px 22px 0', display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <UnitToggle options={['cm', 'ft']} active={heightUnit === 'ftin' ? 'ft' : 'cm'} onToggle={u => toggleHeightUnit(u === 'ft' ? 'ftin' : 'cm')} />
             </div>
@@ -480,13 +477,13 @@ export default function Onboarding({ onComplete, session }) {
               {heightUnit === 'cm' && <span style={{ fontSize: 20, fontWeight: 700, color: '#888', marginLeft: 4 }}>cm</span>}
             </div>
 
-            {/* Fills every remaining pixel down to the literal screen edge —
-                the avatar runs past that edge and legs/feet crop off there. */}
-            <div style={{ position: 'absolute', top: 100, left: 22, right: 22, bottom: 0, display: 'flex', alignItems: 'flex-start', gap: 6, overflow: 'hidden' }}>
-              {/* Sized by WIDTH (not height) so the arms are always fully
-                  inside the frame — height is auto from the image's own
-                  aspect ratio, and only overflows the box (cropping legs at
-                  the bottom) when it naturally runs taller than the space. */}
+            {/* Sized by WIDTH (not height) so the arms are always fully
+                inside the frame — height is auto from the image's own
+                aspect ratio. flex:1 + minHeight (not absolute positioning)
+                so this always stays above the pinned footer below instead
+                of relying on a fixed pixel offset that can miss the real
+                visible area on a shorter device. */}
+            <div style={{ flex: 1, minHeight: 220, display: 'flex', alignItems: 'flex-start', gap: 6, overflow: 'hidden', marginTop: 8 }}>
               <div style={{ flex: 1, height: '100%', overflow: 'hidden', display: 'flex', justifyContent: 'center' }}>
                 {avatarFailed
                   ? <AvatarSilhouette height={330} color={NB.ink} />
@@ -496,12 +493,10 @@ export default function Onboarding({ onComplete, session }) {
                 <RulerSlider orientation="vertical" min={120} max={220} value={Math.round(+heightCm)} onChange={v => setHeightCm(String(v))} length={600} thickness={54} pxPerUnit={7.4} formatLabel={v => heightUnit === 'ftin' ? cmToFtIn(v) : v} />
               </div>
             </div>
-
-            {/* Back/Next float on top of the avatar near the bottom */}
-            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 20, display: 'flex', gap: 12, zIndex: 4 }}>
-              <button style={backBtn} onClick={back}><ArrowLeft /></button>
-              <button style={nextBtn} onClick={next}>Next <ArrowRight /></button>
-            </div>
+          </div>
+          <div style={footer}>
+            <button style={backBtn} onClick={back}><ArrowLeft /></button>
+            <button style={nextBtn} onClick={next}>Next <ArrowRight /></button>
           </div>
         </>
       )}
@@ -514,14 +509,14 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>Your weight</div>
             <div style={stepSub}>Drag the ruler to set your weight.</div>
           </div>
-          <div style={{ flex: 1, padding: '10px 22px 0', display: 'flex', flexDirection: 'column' }}>
+          <div className="scroll-fade-bottom" style={{ flex: 1, padding: '10px 22px 0', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <UnitToggle options={['kg', 'lbs']} active={weightUnit} onToggle={u => toggleWeightUnit(u)} />
             </div>
             {/* Identical layout to the Age step: same avatar size/position,
                 same number spacing, same straight ruler (not a curved dial) —
                 just a different unit-aware value/formatLabel. */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
+            <div style={{ flex: 1, minHeight: 160, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
               {avatarFailed
                 ? <AvatarSilhouette height={300} color={NB.ink} />
                 : <img src={MEASURE_AVATAR} onError={() => setAvatarFailed(true)} alt="Your avatar" style={{ height: 400, maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />}
@@ -549,8 +544,8 @@ export default function Onboarding({ onComplete, session }) {
             <div style={stepTitle}>Your age</div>
             <div style={stepSub}>Drag the ruler to set your age.</div>
           </div>
-          <div style={{ flex: 1, padding: '10px 22px 0', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
+          <div className="scroll-fade-bottom" style={{ flex: 1, padding: '10px 22px 0', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+            <div style={{ flex: 1, minHeight: 160, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
               {avatarFailed
                 ? <AvatarSilhouette height={300} color={NB.ink} />
                 : <img src={MEASURE_AVATAR} onError={() => setAvatarFailed(true)} alt="Your avatar" style={{ height: 400, maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />}
