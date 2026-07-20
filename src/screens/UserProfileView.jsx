@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
-import { fetchProfileById, checkFriendshipStatus, sendFriendRequest } from '../lib/social'
+import { fetchProfileById, checkFriendshipStatus, sendFriendRequest, respondToRequest, removeFriend } from '../lib/social'
 import { RANKS, normalizeRankId } from '../utils/gamification'
 import { Avatar } from '../components/AvatarSilhouette'
 import { STORE_BORDERS, bannerGradientFor, bannerImageFor } from './StoreScreen'
@@ -81,21 +81,23 @@ export default function UserProfileView({ userId, session, onNavigate }) {
   const myId = session?.user?.id
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [friendStatus, setFriendStatus] = useState(null) // 'pending' | 'accepted' | null
+  const [friendReq, setFriendReq] = useState(null) // { id, status, sender_id, receiver_id } | null
   const [sending, setSending] = useState(false)
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     if (!userId) { setLoading(false); return }
     ;(async () => {
       setLoading(true)
-      const [p, status] = await Promise.all([
+      const [p, req] = await Promise.all([
         fetchProfileById(userId),
         myId && myId !== userId ? checkFriendshipStatus(myId, userId) : Promise.resolve(null),
       ])
       if (cancelled) return
       setProfile(p)
-      setFriendStatus(status)
+      setFriendReq(req)
+      setConfirmingRemove(false)
       setLoading(false)
     })()
     return () => { cancelled = true }
@@ -110,20 +112,37 @@ export default function UserProfileView({ userId, session, onNavigate }) {
   const isSelf = myId && myId === userId
 
   const handleAddFriend = async () => {
-    if (sending || friendStatus) return
+    if (sending || friendReq) return
     setSending(true)
-    setFriendStatus('pending')
+    setFriendReq({ id: null, status: 'pending', sender_id: myId, receiver_id: userId })
     await sendFriendRequest(myId, session?.user?.email?.split('@')[0] || 'MissVfit user', userId)
     setSending(false)
   }
 
-  const friendBtn = () => {
-    if (isSelf) return null
-    if (friendStatus === 'accepted') return { label: 'Friends ✓', disabled: true, bg: NB.teal }
-    if (friendStatus === 'pending') return { label: 'Requested', disabled: true, bg: NB.white }
-    return { label: '+ Add Friend', disabled: false, bg: NB.magenta, color: NB.white }
+  const handleAccept = async () => {
+    if (!friendReq) return
+    setFriendReq({ ...friendReq, status: 'accepted' })
+    await respondToRequest(friendReq.id, 'accepted')
   }
-  const btn = friendBtn()
+
+  const handleDecline = async () => {
+    if (!friendReq) return
+    const req = friendReq
+    setFriendReq(null)
+    await respondToRequest(req.id, 'declined')
+  }
+
+  const handleRemoveFriend = async () => {
+    if (!friendReq) return
+    const req = friendReq
+    setFriendReq(null)
+    setConfirmingRemove(false)
+    await removeFriend(req.id)
+  }
+
+  const isPending  = friendReq?.status === 'pending'
+  const theirTurn  = isPending && friendReq.sender_id === userId // they requested me — I can accept/decline
+  const isFriends  = friendReq?.status === 'accepted'
   const bannerImg = bannerImageFor(g.activeBanner)
 
   return (
@@ -167,15 +186,33 @@ export default function UserProfileView({ userId, session, onNavigate }) {
               <span style={{ background: NB.white, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '5px 12px', fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.ink }}>🔥 {streak} day streak</span>
             </div>
 
-            {/* Add friend */}
-            {btn && (
-              <button
-                onClick={handleAddFriend}
-                disabled={btn.disabled}
-                style={{ marginTop: 20, width: '100%', height: 50, border: NB_BORDER, borderRadius: 16, boxShadow: btn.disabled ? 'none' : hardShadow(4), background: btn.bg, color: btn.color || NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: btn.disabled ? 'default' : 'pointer' }}
-              >
-                {btn.label}
-              </button>
+            {/* Friend status / actions */}
+            {!isSelf && (
+              confirmingRemove ? (
+                <div style={{ marginTop: 20, border: NB_BORDER, borderRadius: 16, padding: '14px 16px', background: NB.lavenderMist }}>
+                  <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, color: NB.ink, marginBottom: 12 }}>Remove {name} as a friend?</div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={handleRemoveFriend} style={{ flex: 1, height: 44, border: NB_BORDER, borderRadius: 12, background: NB.red, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>Remove</button>
+                    <button onClick={() => setConfirmingRemove(false)} style={{ flex: 1, height: 44, border: NB_BORDER, borderRadius: 12, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>Cancel</button>
+                  </div>
+                </div>
+              ) : theirTurn ? (
+                <div style={{ marginTop: 20, border: NB_BORDER, borderRadius: 16, padding: '14px 16px', background: NB.lavenderMist }}>
+                  <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, color: NB.ink, marginBottom: 12 }}>{name} wants to be friends</div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={handleAccept} style={{ flex: 1, height: 44, border: NB_BORDER, borderRadius: 12, background: NB.teal, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>Accept</button>
+                    <button onClick={handleDecline} style={{ flex: 1, height: 44, border: NB_BORDER, borderRadius: 12, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>Decline</button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={isFriends ? () => setConfirmingRemove(true) : isPending ? undefined : handleAddFriend}
+                  disabled={isPending}
+                  style={{ marginTop: 20, width: '100%', height: 50, border: NB_BORDER, borderRadius: 16, boxShadow: isPending ? 'none' : hardShadow(4), background: isFriends ? NB.teal : isPending ? NB.white : NB.magenta, color: isFriends ? NB.ink : isPending ? NB.ink : NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, textTransform: 'uppercase', cursor: isPending ? 'default' : 'pointer' }}
+                >
+                  {isFriends ? 'Friends ✓' : isPending ? 'Requested' : '+ Add Friend'}
+                </button>
+              )
             )}
             {isSelf && <div style={{ marginTop: 20, fontSize: 13, color: '#555' }}>This is your profile.</div>}
           </div>

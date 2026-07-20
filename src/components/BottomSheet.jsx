@@ -30,8 +30,9 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
         style={{ flex: 1, background: 'rgba(0,0,0,.45)', opacity: visible ? 1 : 0, transition: 'opacity 0.2s ease' }}
       />
       <div style={{
-        background: NB.white, borderTop: NB_BORDER, borderTopLeftRadius: 22, borderTopRightRadius: 22,
-        boxShadow: `0 -6px 0 ${NB.ink}`, padding: '16px 22px 32px', maxHeight, display: 'flex', flexDirection: 'column',
+        background: NB.white, border: NB_BORDER, borderTopLeftRadius: 22, borderTopRightRadius: 22,
+        boxShadow: `0 -4px 14px rgba(0,0,0,.14)`, padding: '16px 22px 32px', maxHeight, display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
         transform: visible ? 'translateY(0)' : 'translateY(100%)',
         transition: 'transform 0.22s cubic-bezier(0.32, 0.72, 0, 1)',
       }}>

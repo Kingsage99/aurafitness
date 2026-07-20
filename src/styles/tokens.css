@@ -96,3 +96,55 @@ button:active {
   0%, 100% { opacity: 1; }
   50% { opacity: .55; }
 }
+
+/* App-wide loading spinner — a rotating 3D cube built from 6 faces. Needs a
+   real @keyframes + nth-of-type selectors, which inline styles can't express,
+   so it lives here instead (see App.jsx's Spinner component). Face color is
+   NB.magenta (the app's primary accent, #B48CF2) at low opacity with a white
+   edge, echoing the "white border on a colored card" look used app-wide.
+   position:relative added (not in the original snippet) so the absolutely
+   positioned faces size against the cube itself, not some outer ancestor. */
+.spinner {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  animation: spinner-cube-spin 2s infinite ease;
+  transform-style: preserve-3d;
+}
+
+.spinner > div {
+  background-color: rgba(180, 140, 242, 0.45);
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  border: 4px solid #ffffff;
+}
+
+.spinner div:nth-of-type(1) {
+  transform: translateZ(-44px) rotateY(180deg);
+}
+.spinner div:nth-of-type(2) {
+  transform: rotateY(-270deg) translateX(50%);
+  transform-origin: top right;
+}
+.spinner div:nth-of-type(3) {
+  transform: rotateY(270deg) translateX(-50%);
+  transform-origin: center left;
+}
+.spinner div:nth-of-type(4) {
+  transform: rotateX(90deg) translateY(-50%);
+  transform-origin: top center;
+}
+.spinner div:nth-of-type(5) {
+  transform: rotateX(-90deg) translateY(50%);
+  transform-origin: bottom center;
+}
+.spinner div:nth-of-type(6) {
+  transform: translateZ(44px);
+}
+
+@keyframes spinner-cube-spin {
+  0% { transform: rotate(45deg) rotateX(-25deg) rotateY(25deg); }
+  50% { transform: rotate(45deg) rotateX(-385deg) rotateY(25deg); }
+  100% { transform: rotate(45deg) rotateX(-385deg) rotateY(385deg); }
+}

@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { getWeekdayIndex, getPrimaryMuscles, dateKeyFor, estimateDuration } from '../utils/workoutBuilder'
-import { readWorkoutDraft } from '../utils/workoutDraft'
+import { readWorkoutDraft, clearWorkoutDraft } from '../utils/workoutDraft'
 import { FireIcon, SpaIcon, ToolsIcon, CrownIcon } from '../components/Icons'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
@@ -38,11 +38,17 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
   const now      = new Date()
   const todayDow = getWeekdayIndex(now)
   const draft    = readWorkoutDraft(userId)
+  const [discardingDraft, setDiscardingDraft] = useState(false)
 
   const handleResumeDraft = () => {
     if (!draft) return
     setActiveWorkout({ label: draft.label, exercises: draft.exercises, source: 'resume' })
     onNavigate('workoutActive')
+  }
+
+  const handleDiscardDraft = () => {
+    clearWorkoutDraft(userId)
+    setDiscardingDraft(false)
   }
 
   const routineToday    = routine[dateKeyFor(now)]
@@ -83,7 +89,26 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
       <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '6px 22px 16px' }}>
 
         {/* ── Resume unfinished workout (autosaved draft) ──────────── */}
-        {draft && (
+        {draft && (discardingDraft ? (
+          <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '13px 16px', marginBottom: 16 }}>
+            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', color: NB.ink, marginBottom: 10 }}>Discard this workout?</div>
+            <div style={{ fontSize: 12, color: '#555', marginBottom: 12 }}>Your saved progress on {draft.label} will be lost.</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={handleDiscardDraft}
+                style={{ flex: 1, padding: '10px', border: NB_BORDER, borderRadius: 12, background: NB.red, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer' }}
+              >
+                Discard
+              </button>
+              <button
+                onClick={() => setDiscardingDraft(false)}
+                style={{ flex: 1, padding: '10px', border: NB_BORDER, borderRadius: 12, background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
           <div
             onClick={handleResumeDraft}
             style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '13px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}
@@ -92,12 +117,18 @@ export default function WorkoutHub({ weeklyPlan, userWorkouts = [], setActiveWor
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Resume unfinished workout</div>
+              <div style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Resume workout</div>
               <div style={{ fontSize: 12, color: '#555' }}>{draft.label} · {Math.floor((draft.elapsed || 0) / 60)} min in</div>
             </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); setDiscardingDraft(true) }}
+              style={{ width: 30, height: 30, borderRadius: 9, border: `1.5px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
             <ChevronRight />
           </div>
-        )}
+        ))}
 
         {/* ── Today's Workout ──────────────────────── */}
         <div style={{ marginBottom: 22 }}>

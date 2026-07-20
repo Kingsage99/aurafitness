@@ -115,10 +115,10 @@ const BORDER_GRADIENTS = {
 }
 
 const GEM_PACKAGES = [
-  { id: 'gems_100',  label: '100 Gems',   gems: 100,  price: '£0.99',  tag: null },
-  { id: 'gems_500',  label: '500 Gems',   gems: 500,  price: '£3.99',  tag: '🔥 Popular' },
-  { id: 'gems_1200', label: '1,200 Gems', gems: 1200, price: '£7.99',  tag: '+200 Bonus' },
-  { id: 'gems_2500', label: '2,500 Gems', gems: 2500, price: '£14.99', tag: '⭐ Best Value' },
+  { id: 'gems_100',  label: '100 Gems',   gems: 100,  price: '$1.99',  tag: null },
+  { id: 'gems_500',  label: '500 Gems',   gems: 500,  price: '$4.99',  tag: '🔥 Popular' },
+  { id: 'gems_1200', label: '1,200 Gems', gems: 1200, price: '$9.99',  tag: '+200 Bonus' },
+  { id: 'gems_2500', label: '2,500 Gems', gems: 2500, price: '$19.99', tag: '⭐ Best Value' },
 ]
 
 const LIFE_ITEMS = [

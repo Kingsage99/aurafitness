@@ -16,6 +16,7 @@ import AssignSchedule from './screens/AssignSchedule'
 import WorkoutRoutine from './screens/WorkoutRoutine'
 import MuscleMap from './screens/MuscleMap'
 import Meals from './screens/Meals'
+import MacrosScreen from './screens/MacrosScreen'
 import Profile from './screens/Profile'
 import MedalsScreen from './screens/MedalsScreen'
 import QuestsScreen from './screens/QuestsScreen'
@@ -91,8 +92,9 @@ function mealBucket(type) {
 
 const Spinner = () => (
   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <div style={{ width: 34, height: 34, border: '3px solid #1A1A1A', borderTopColor: 'transparent', animation: 'spin 0.7s linear infinite' }} />
-    <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    <div className="spinner">
+      <div /><div /><div /><div /><div /><div />
+    </div>
   </div>
 )
 
@@ -128,6 +130,31 @@ export default function App() {
   // the "missed workout yesterday" notification, among other one-time side effects).
   const profileLoadTriggered = useRef(false)
 
+  // Wipes ALL user-specific in-memory state back to defaults. Called on sign-out
+  // AND at the very start of loadProfile, so switching accounts (or a brand-new
+  // signup) in the same tab can never inherit the previous user's workouts, Pro
+  // status, gamification, etc. Must run with dataReady.current === false so the
+  // debounced autosaves stay suppressed and don't flush these defaults into the
+  // incoming user's row before their real data loads.
+  const resetUserState = () => {
+    setUserProfile(DEFAULT_PROFILE)
+    setWeeklyPlan(null)
+    setLoggedMacros(DEFAULT_LOGGED_MACROS)
+    setCookbook([])
+    setGamification(DEFAULT_GAMIFICATION)
+    setUserWorkouts([])
+    setRoutine({})
+    setCustomSchedule({})
+    setCustomExercises([])
+    setSubscription({ proUntil: null, status: null })
+    setActiveWorkout(null)
+    setWorkoutSession(null)
+    setMealPostData(null)
+    setMissState(null)
+    setPendingRequests([])
+    setViewUserId(null)
+  }
+
   const pushNotification = (msg) => {
     const id = Date.now() + Math.random()
     setNotifications(prev => [...prev, { id, msg }])
@@ -135,6 +162,12 @@ export default function App() {
   }
 
   async function loadProfile(userId) {
+    // Clean slate before loading — guarantees a new/switched account never
+    // inherits the previous user's state. dataReady stays false here (set by the
+    // caller / below) so these resets don't trigger autosaves into userId's row.
+    dataReady.current = false
+    resetUserState()
+
     // Try full select first; fall back to core columns if new columns don't exist yet
     let data = null
     let usedFallback = false
@@ -277,11 +310,13 @@ export default function App() {
   useEffect(() => {
     if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
     const todayKey = dateKeyFor()
+    const uid = sessionRef.current.user.id
     const t = setTimeout(async () => {
+      if (sessionRef.current?.user?.id !== uid) return // account switched mid-flight — don't write A's data into B's row
       const { error } = await supabase.from('profiles').update({
         daily_log: loggedMacros,
         daily_log_date: todayKey,
-      }).eq('id', sessionRef.current.user.id)
+      }).eq('id', uid)
       if (error) console.error('Daily log save error:', error.message)
     }, 1500)
     return () => clearTimeout(t)
@@ -290,10 +325,12 @@ export default function App() {
   // Auto-save cookbook to Supabase (debounced 1.5s)
   useEffect(() => {
     if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
+    const uid = sessionRef.current.user.id
     const t = setTimeout(async () => {
+      if (sessionRef.current?.user?.id !== uid) return // account switched mid-flight
       const { error } = await supabase.from('profiles').update({
         cookbook,
-      }).eq('id', sessionRef.current.user.id)
+      }).eq('id', uid)
       if (error) console.error('Cookbook save error:', error.message)
     }, 1500)
     return () => clearTimeout(t)
@@ -302,8 +339,10 @@ export default function App() {
   // Auto-save gamification to Supabase (debounced 1.5s)
   useEffect(() => {
     if (!dataReady.current || !sessionRef.current) return
+    const uid = sessionRef.current.user.id
     const t = setTimeout(async () => {
-      const { error } = await supabase.from('profiles').update({ gamification }).eq('id', sessionRef.current.user.id)
+      if (sessionRef.current?.user?.id !== uid) return // account switched mid-flight
+      const { error } = await supabase.from('profiles').update({ gamification }).eq('id', uid)
       if (error) console.error('Gamification save error:', error.message)
     }, 1500)
     return () => clearTimeout(t)
@@ -338,8 +377,10 @@ export default function App() {
   // Auto-save user-built workouts to Supabase (debounced 1.5s)
   useEffect(() => {
     if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
+    const uid = sessionRef.current.user.id
     const t = setTimeout(async () => {
-      const { error } = await supabase.from('profiles').update({ user_workouts: userWorkouts }).eq('id', sessionRef.current.user.id)
+      if (sessionRef.current?.user?.id !== uid) return // account switched mid-flight
+      const { error } = await supabase.from('profiles').update({ user_workouts: userWorkouts }).eq('id', uid)
       if (error) console.error('User workouts save error:', error.message)
     }, 1500)
     return () => clearTimeout(t)
@@ -348,8 +389,10 @@ export default function App() {
   // Auto-save My Routine assignments to Supabase (debounced 1.5s)
   useEffect(() => {
     if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
+    const uid = sessionRef.current.user.id
     const t = setTimeout(async () => {
-      const { error } = await supabase.from('profiles').update({ routine }).eq('id', sessionRef.current.user.id)
+      if (sessionRef.current?.user?.id !== uid) return // account switched mid-flight
+      const { error } = await supabase.from('profiles').update({ routine }).eq('id', uid)
       if (error) console.error('Routine save error:', error.message)
     }, 1500)
     return () => clearTimeout(t)
@@ -358,8 +401,10 @@ export default function App() {
   // Auto-save custom weekly schedule to Supabase (debounced 1.5s)
   useEffect(() => {
     if (!dataReady.current || !sessionRef.current) return
+    const uid = sessionRef.current.user.id
     const t = setTimeout(async () => {
-      const { error } = await supabase.from('profiles').update({ custom_schedule: customSchedule }).eq('id', sessionRef.current.user.id)
+      if (sessionRef.current?.user?.id !== uid) return // account switched mid-flight
+      const { error } = await supabase.from('profiles').update({ custom_schedule: customSchedule }).eq('id', uid)
       if (error) console.error('Custom schedule save error:', error.message)
     }, 1500)
     return () => clearTimeout(t)
@@ -368,8 +413,10 @@ export default function App() {
   // Auto-save user-created custom exercises to Supabase (debounced 1.5s)
   useEffect(() => {
     if (!dataReady.current || !sessionRef.current || screen === 'onboarding') return
+    const uid = sessionRef.current.user.id
     const t = setTimeout(async () => {
-      const { error } = await supabase.from('profiles').update({ custom_exercises: customExercises }).eq('id', sessionRef.current.user.id)
+      if (sessionRef.current?.user?.id !== uid) return // account switched mid-flight
+      const { error } = await supabase.from('profiles').update({ custom_exercises: customExercises }).eq('id', uid)
       if (error) console.error('Custom exercises save error:', error.message)
     }, 1500)
     return () => clearTimeout(t)
@@ -403,10 +450,7 @@ export default function App() {
         dataReady.current = false
         setProfileLoading(false)
         setScreen('onboarding')
-        setUserProfile(DEFAULT_PROFILE)
-        setWeeklyPlan(null)
-        setLoggedMacros(DEFAULT_LOGGED_MACROS)
-        setCookbook([])
+        resetUserState()
       }
       // TOKEN_REFRESHED / USER_UPDATED / INITIAL_SESSION etc: session refs are already
       // updated above — don't reset dataReady/profileLoading or re-run loadProfile, or
@@ -796,6 +840,8 @@ export default function App() {
             isProUser={isProUser}
           />
         )
+      case 'macros':
+        return <MacrosScreen session={session} loggedMacros={loggedMacros} userProfile={userProfile} onNavigate={navigate} />
       case 'profile':
         return (
           <Profile

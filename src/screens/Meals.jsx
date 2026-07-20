@@ -8,20 +8,17 @@ import { diffMeal } from '../utils/mealDiff'
 import { dateKeyFor } from '../utils/workoutBuilder'
 import { COUNTRIES } from '../data/countries'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
-import { PancakesIcon, LunchIcon, DinnerIcon, SnackIcon, LockIcon } from '../components/Icons'
-import MacroRing from '../components/MacroRing'
+import { LockIcon } from '../components/Icons'
+import { MealTypeIcon, MEAL_COLORS } from '../components/MealTypeIcon'
 
 const CRAVING_TAGS = ['Pasta', 'Light & fresh', 'Sweet', 'Spicy', 'High-protein', 'Comfort food']
+// Quick-log shortcuts for the "already ate" mode — common foods people log fast.
+const EATEN_TAGS = ['Coffee', 'Banana', 'Eggs', 'Protein shake', 'Chicken & rice', 'Sandwich']
 
 // A distinct color per tile (not just selected/unselected) makes the
 // meal/snack count pickers easier to scan at a glance.
 const COUNT_TILE_COLORS = [NB.red, NB.magenta, NB.teal, NB.yellow]
 
-const MEAL_COLORS = {
-  breakfast: NB.yellow, lunch: NB.teal, dinner: NB.magenta,
-  snack: NB.pink, snack_1: NB.pink, snack_2: NB.orange, snack_3: NB.blue,
-  second_lunch: NB.lavender, suggested: NB.lavender,
-}
 const MEAL_LABELS = {
   breakfast: 'BREAKFAST', lunch: 'LUNCH', dinner: 'DINNER', snack: 'SNACK',
   snack_1: 'SNACK 1', snack_2: 'SNACK 2', snack_3: 'SNACK 3', second_lunch: 'BRUNCH',
@@ -66,19 +63,8 @@ const COOKBOOK_SECTIONS = [
 ]
 const sectionForType = type => (COOKBOOK_SECTIONS.find(s => s.match(type || '')) || COOKBOOK_SECTIONS[3]).id
 
-// Meal-type icon (replaces the old "meal photo" placeholder). Buckets any type
-// into one of four custom icons: breakfast (pancakes), lunch (bento box),
-// dinner (steak), snack (chocolate bar).
-const mealIconKind = type => { const s = sectionForType(type); return s === 'other' ? 'snack' : s }
-function MealTypeIcon({ type, size = 46, opacity = 1 }) {
-  const style = { opacity }
-  switch (mealIconKind(type)) {
-    case 'breakfast': return <PancakesIcon size={size} style={style} />
-    case 'lunch':     return <LunchIcon size={size} style={style} />
-    case 'dinner':    return <DinnerIcon size={size} style={style} />
-    default:          return <SnackIcon size={size} style={style} />
-  }
-}
+// MealTypeIcon + MEAL_COLORS now live in ../components/MealTypeIcon (shared with
+// the Macros page's recently-logged list).
 
 const buildMealSlots = (meals, snacks, existing = [], totalCalories = 1750) => {
   const mainTypes = ['breakfast', 'lunch', 'dinner', 'second_lunch'].slice(0, meals)
@@ -186,78 +172,8 @@ function CalorieSplitBar({ slots, remaining, onSlotsChange }) {
 }
 
 // ─── Components ──────────────────────────────────────────────────────────────
-
-// Daily totals card — page 1 is the classic Macro Ring, page 2 shows all 10
-// tracked macros against the user's daily targets. Swipe left to switch.
-function DailyMacroCard({ macros = {}, targets = {} }) {
-  const scrollRef = useRef()
-  const [page, setPage] = useState(0)
-
-  const onScroll = () => {
-    const el = scrollRef.current
-    if (!el || !el.clientWidth) return
-    setPage(Math.round(el.scrollLeft / el.clientWidth))
-  }
-
-  return (
-    <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 5, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '20px 22px 14px', marginBottom: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <span style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: NB.ink }}>{page === 0 ? 'Macro Ring' : 'All Macros'}</span>
-        <span style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#888' }}>{page === 0 ? 'Swipe →' : '← Swipe'}</span>
-      </div>
-
-      <div ref={scrollRef} onScroll={onScroll} style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}>
-        {/* Page 1 — ring + calories bar (classic view) */}
-        <div style={{ minWidth: '100%', scrollSnapAlign: 'center', boxSizing: 'border-box' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <MacroRing protein={macros.protein || 0} carbs={macros.carbs || 0} fat={macros.fat || 0} calories={macros.calories || 0} size={110} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[['Protein', macros.protein, NB.magenta], ['Carbs', macros.carbs, NB.yellow], ['Fat', macros.fat, NB.pink]].map(([label, val, color]) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 16, height: 16, borderRadius: 5, background: color, border: `2px solid ${NB.ink}`, flexShrink: 0 }} />
-                  <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, color: NB.ink }}>{label} {Math.round(val || 0)}g</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: NB.ink, margin: '20px 0 8px' }}>Calories</div>
-          <div style={{ border: 'none', borderRadius: 999, background: NB.lavenderMist, height: 22, padding: 3, boxSizing: 'border-box' }}>
-            <div style={{ height: '100%', width: `${Math.min(100, Math.round(((macros.calories || 0) / Math.max(1, targets.calories || 1)) * 100))}%`, borderRadius: 999, background: NB.magenta, transition: 'width 0.5s ease' }} />
-          </div>
-          <div style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, color: NB.ink, marginTop: 6 }}>{Math.round(macros.calories || 0).toLocaleString()} / {(targets.calories || 0).toLocaleString()} kcal</div>
-        </div>
-
-        {/* Page 2 — every tracked macro vs its daily target */}
-        <div style={{ minWidth: '100%', scrollSnapAlign: 'center', boxSizing: 'border-box' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {MACRO_META.map(meta => {
-              const val = Math.round(macros[meta.key] || 0)
-              const target = Math.round(targets[meta.key] || 0)
-              const pct = target > 0 ? Math.min(100, Math.round((val / target) * 100)) : 0
-              return (
-                <div key={meta.key} style={{ border: 'none', borderRadius: 11, background: NB.lavenderMist, padding: '8px 10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-                    <span style={{ fontFamily: NB.fontMono, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', color: '#666' }}>{meta.label}</span>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: NB.ink }}>{val}<span style={{ color: '#999', fontWeight: 700 }}>/{target}{meta.unit}</span></span>
-                  </div>
-                  <div style={{ height: 8, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden' }}>
-                    <div style={{ width: `${pct}%`, height: '100%', background: meta.color }} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
-        {[0, 1].map(i => (
-          <span key={i} style={{ width: 8, height: 8, borderRadius: '50%', border: `1.5px solid ${NB.ink}`, background: page === i ? NB.magenta : NB.white }} />
-        ))}
-      </div>
-    </div>
-  )
-}
+// (The old DailyMacroCard swipe card was replaced by the CompactMacroBar on the
+// Meals home + the dedicated Macros page — see CompactMacroBar / MacrosScreen.)
 
 // Shared "add to collection" control — a capped-height scrollable checklist,
 // with a search box that only appears once the list is long enough to need
@@ -566,46 +482,62 @@ function MacroPageGrid({ macros = {}, targets }) {
 // Pro users see a plain "unlimited" banner instead. This is a display-only
 // mirror of the real, server-enforced quota (see gamification.js's
 // getAiUsesRemaining/AI_DAILY_LIMITS).
-function AiUsageCard({ isProUser, gamification, onNavigate }) {
+// Compact tappable calorie/macro summary — replaces the big swipeable macro
+// card on the Meals home. Tapping opens the full Macros page.
+function CompactMacroBar({ macros, targets, onNavigate }) {
+  const consumed = Math.round(macros.calories || 0)
+  const target = Math.round(targets.calories || 0)
+  return (
+    <button
+      onClick={() => onNavigate?.('macros')}
+      style={{ flex: 1, minWidth: 0, ...nbCardStyle(NB.white, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.ink}`, borderRadius: 14, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', textAlign: 'left' }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, color: NB.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 14 }}>{consumed.toLocaleString()}</span> / {target.toLocaleString()} kcal
+        </div>
+        <div style={{ display: 'flex', gap: 8, fontFamily: NB.fontMono, fontWeight: 700, fontSize: 10.5, marginTop: 2 }}>
+          <span style={{ color: NB.magenta }}>P{Math.round(macros.protein || 0)}</span>
+          <span style={{ color: '#C6A200' }}>C{Math.round(macros.carbs || 0)}</span>
+          <span style={{ color: NB.pink }}>F{Math.round(macros.fat || 0)}</span>
+        </div>
+      </div>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M9 6l6 6-6 6" /></svg>
+    </button>
+  )
+}
+
+// Compact top-right AI-usage widget: Pro members get a "✦ PRO" pill; free users
+// get a small dark meter of remaining daily uses (taps through to the paywall).
+// Full quota logic still lives server-side (see gamification.js).
+function CompactAiWidget({ isProUser, gamification, onNavigate }) {
   if (isProUser) {
     return (
-      <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px 18px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 20 }}>⭐</span>
-        <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: NB.ink }}>MissVfit Pro — Unlimited AI</span>
+      <div style={{ flexShrink: 0, background: NB.ink, borderRadius: 14, padding: '9px 14px', display: 'flex', alignItems: 'center', gap: 6, boxShadow: hardShadow(3, NB.purpleDeep) }}>
+        <span style={{ fontSize: 12, color: NB.yellow }}>✦</span>
+        <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 13, letterSpacing: 1, color: NB.yellow, textTransform: 'uppercase' }}>Pro</span>
       </div>
     )
   }
   const todayKey = dateKeyFor()
-  const lookupsLeft = getAiUsesRemaining(gamification, 'lookups', todayKey)
   const mealGensLeft = getAiUsesRemaining(gamification, 'mealGens', todayKey)
-  const depleted = lookupsLeft <= 0 && mealGensLeft <= 0
+  const lookupsLeft = getAiUsesRemaining(gamification, 'lookups', todayKey)
   const rows = [
-    ['Meal Generations', AI_DAILY_LIMITS.mealGens - mealGensLeft, AI_DAILY_LIMITS.mealGens, mealGensLeft, NB.magenta],
-    ['Food Lookups', AI_DAILY_LIMITS.lookups - lookupsLeft, AI_DAILY_LIMITS.lookups, lookupsLeft, NB.teal],
+    ['Meals', mealGensLeft, AI_DAILY_LIMITS.mealGens, NB.magenta],
+    ['Lookup', lookupsLeft, AI_DAILY_LIMITS.lookups, NB.teal],
   ]
   return (
-    <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '16px 18px', marginBottom: 14 }}>
-      <div style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: NB.ink, marginBottom: 14 }}>Today's Free AI Uses</div>
-      {rows.map(([label, used, cap, left, color], i) => {
-        const pct = Math.min(100, Math.round((used / cap) * 100))
-        return (
-          <div key={label} style={{ marginBottom: i === rows.length - 1 ? 0 : 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-              <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, color: NB.ink }}>{label}</span>
-              <span style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 12, color: left <= 0 ? NB.red : '#666' }}>{left} of {cap} left</span>
-            </div>
-            <div style={{ border: 'none', borderRadius: 999, background: NB.lavenderMist, height: 16, padding: 3, boxSizing: 'border-box' }}>
-              <div style={{ height: '100%', width: `${pct}%`, borderRadius: 999, background: color, transition: 'width 0.5s ease' }} />
-            </div>
+    <button onClick={() => onNavigate?.('proUpsell')} style={{ flexShrink: 0, background: NB.ink, border: 'none', borderRadius: 14, padding: '8px 11px', display: 'flex', flexDirection: 'column', gap: 5, cursor: 'pointer' }}>
+      {rows.map(([label, left, cap, color]) => (
+        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 8, letterSpacing: 0.5, textTransform: 'uppercase', color: '#aaa', width: 34 }}>{label}</span>
+          <div style={{ width: 40, height: 6, borderRadius: 999, background: 'rgba(255,255,255,0.18)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${Math.min(100, ((cap - left) / cap) * 100)}%`, background: left <= 0 ? NB.red : color }} />
           </div>
-        )
-      })}
-      {depleted && (
-        <button onClick={() => onNavigate?.('proUpsell')} style={{ marginTop: 16, width: '100%', height: 42, border: 'none', borderRadius: 12, background: NB.ink, color: NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: 'pointer' }}>
-          Go Pro for Unlimited
-        </button>
-      )}
-    </div>
+          <span style={{ fontFamily: NB.fontMono, fontWeight: 700, fontSize: 9, color: left <= 0 ? NB.red : NB.white }}>{left}/{cap}</span>
+        </div>
+      ))}
+    </button>
   )
 }
 
@@ -1103,8 +1035,10 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
   }
 
   // ── Already-ate handlers ─────────────────────────────────────────────────────
-  const handleIdentifyEaten = async () => {
-    if (!eatenText.trim()) return
+  const handleIdentifyEaten = async (overrideText) => {
+    const text = (typeof overrideText === 'string' ? overrideText : eatenText).trim()
+    if (!text) return
+    if (typeof overrideText === 'string') setEatenText(overrideText)
     const todayKey = dateKeyFor()
     if (!isProUser && getAiUsesRemaining(gamification, 'eatenLookups', todayKey) <= 0) {
       setView('eaten')
@@ -1116,7 +1050,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
     setEatenLogged(false)
     setEatenLoading(true)
     try {
-      const result = await identifyEatenFood(eatenText.trim(), { countryName, countryCode: country })
+      const result = await identifyEatenFood(text, { countryName, countryCode: country })
       setEatenResult(result)
       if (!isProUser) onGamificationChange?.(g => recordAiUsage(g, 'eatenLookups', todayKey))
     } catch (err) {
@@ -1220,180 +1154,197 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
   if (view === 'home') {
     const prevPct = cravingPreview && remaining > 0 ? cravingPreview.calories / remaining : 0
     const prevColor = prevPct > 0.7 ? NB.red : prevPct > 0.4 ? NB.yellow : NB.green
+    const hr = new Date().getHours()
+    const timeOfDay = hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening'
+    const weekday = new Date().toLocaleDateString('en-GB', { weekday: 'long' })
 
     return (
       <>
         <StatusBar />
-        <div style={{ padding: '4px 22px 0', flexShrink: 0 }}>
-          <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 700, color: '#555' }}>
-            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()}
-          </div>
-          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 26, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1 }}>Meals</div>
+        {/* Compact top row — tappable calorie/macro bar + AI usage / Pro widget */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'stretch', padding: '6px 22px 0', flexShrink: 0 }}>
+          <CompactMacroBar macros={safeLoggedMacros} targets={targets} onNavigate={onNavigate} />
+          <CompactAiWidget isProUser={isProUser} gamification={gamification} onNavigate={onNavigate} />
         </div>
 
-        <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 0' }}>
-          {/* ── Today's free AI uses (progress bars) ────────────────────── */}
-          <AiUsageCard isProUser={isProUser} gamification={gamification} onNavigate={onNavigate} />
+        <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '44px 22px 0', display: 'flex', flexDirection: 'column' }}>
+        {/* Hero + craving/already-ate form. Fixed (not content-height-based)
+            top position, so the greeting/heading/toggle sit at the exact same
+            spot in both Craving and Already-ate mode — only the shorter/taller
+            form content below the toggle differs, absorbed by the flexible
+            spacer further down instead of shifting this block around. */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {/* Hero — greeting + craving/already-ate */}
+          <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            <div style={{ fontSize: 18, lineHeight: 1, marginBottom: 6, color: NB.purpleDeep }}>✦</div>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: '#888', textTransform: 'uppercase' }}>
+              {weekday} {timeOfDay}{name ? `, ${name}` : ''}
+            </div>
+            <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 27, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.08, marginTop: 5, textWrap: 'balance', minHeight: 62, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {mealMode === 'craving' ? 'What are you craving?' : 'What did you eat?'}
+            </div>
+          </div>
 
-          {/* ── Daily macros card (swipe for all 10 macros vs targets) ────── */}
-          <DailyMacroCard macros={safeLoggedMacros} targets={targets} />
-
-          {/* Craving / Already ate card */}
-          <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '16px', marginBottom: 14 }}>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          {/* Craving / Already-ate switch — centered segmented control */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <div style={{ display: 'inline-flex', gap: 4, background: NB.lavenderMist, borderRadius: 12, padding: 4, border: `2px solid ${NB.ink}`, boxShadow: hardShadow(2, NB_CARD_NEUTRAL_SHADOW) }}>
               {[['craving', 'Craving'], ['eaten', 'Already ate']].map(([id, label]) => (
                 <button key={id} onClick={() => setMealMode(id)}
-                  style={{ flex: 1, height: 36, border: 'none', borderRadius: 10, background: mealMode === id ? NB.teal : NB.lavenderMist, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', color: NB.ink, cursor: 'pointer' }}>
+                  style={{ padding: '0 22px', height: 36, border: 'none', borderRadius: 9, background: mealMode === id ? NB.ink : 'transparent', fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', color: mealMode === id ? NB.white : NB.ink, cursor: 'pointer', transition: 'background 0.15s' }}>
                   {label}
                 </button>
               ))}
             </div>
-
-            {mealMode === 'craving' ? (
-              <>
-                <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>What are you craving?</div>
-
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                  <input
-                    ref={inputRef}
-                    value={craving}
-                    onChange={e => { setCraving(e.target.value); if (!e.target.value.trim()) setCravingPreview(null) }}
-                    onKeyDown={e => e.key === 'Enter' && craving.trim() && handleGenerate(1)}
-                    placeholder="Type a food or meal…"
-                    style={{ flex: 1, height: 44, border: 'none', borderRadius: 12, padding: '0 14px', fontSize: 14, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none', background: NB.lavenderMist }}
-                  />
-                  <button
-                    onClick={() => craving.trim() && handleGenerate(1)}
-                    style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: craving.trim() ? NB.magenta : NB.lavenderMist, cursor: craving.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={craving.trim() ? NB.white : NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Calorie preview */}
-                {cravingPreviewError && !cravingPreviewLoading && (
-                  <div style={{ border: `2px solid ${NB.ink}`, borderRadius: 12, background: NB.cream, padding: '10px 12px', marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, color: NB.ink, fontWeight: 600 }}>{cravingPreviewError}</span>
-                  </div>
-                )}
-                {(cravingPreviewLoading || cravingPreview) && (
-                  <div style={{ border: `2px solid ${NB.ink}`, borderRadius: 12, background: cravingPreview ? prevColor : NB.cream, padding: '10px 12px', marginBottom: 10 }}>
-                    {cravingPreviewLoading && !cravingPreview ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.7s linear infinite', flexShrink: 0 }} />
-                        <style>{`@keyframes mealSpin { to { transform: rotate(360deg) } }`}</style>
-                        <span style={{ fontSize: 13, color: NB.ink, fontWeight: 600 }}>Estimating calories…</span>
-                      </div>
-                    ) : cravingPreview ? (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: NB.ink }}>{cravingPreview.name}</div>
-                            <div style={{ fontSize: 11, color: NB.ink }}>{cravingPreview.servingSize}</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontFamily: NB.fontDisplay, fontSize: 20, fontWeight: 900, color: NB.ink, lineHeight: 1 }}>{cravingPreview.calories}</div>
-                            <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.ink, fontWeight: 700 }}>KCAL</div>
-                          </div>
-                        </div>
-                        <div style={{ height: 6, borderRadius: 3, border: `1.5px solid ${NB.ink}`, background: NB.white, overflow: 'hidden', marginBottom: 6 }}>
-                          <div style={{ width: `${Math.min(prevPct * 100, 100)}%`, height: '100%', background: NB.ink, transition: 'width 0.5s' }} />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: 11, color: NB.ink }}>P {cravingPreview.protein}g · C {cravingPreview.carbs}g · F {cravingPreview.fat}g</span>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: NB.ink }}>
-                            {remaining > 0 ? `${Math.round(prevPct * 100)}% of ${remaining} kcal left` : 'Budget full'}
-                          </span>
-                        </div>
-                      </>
-                    ) : null}
-                  </div>
-                )}
-
-                {/* Quick tags */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {CRAVING_TAGS.map(tag => (
-                    <button key={tag} onClick={() => handleGenerate(1, tag)}
-                      style={{ padding: '6px 14px', border: 'none', borderRadius: 10, background: craving === tag ? NB.yellow : NB.lavenderMist, fontSize: 13, fontWeight: 600, color: NB.ink, cursor: 'pointer' }}>
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-
-                {remaining > 0 && (
-                  <div style={{ marginTop: 10, fontSize: 12, color: NB.ink, fontWeight: 600 }}>
-                    We&rsquo;ll fit meals to your <strong>{remaining} kcal</strong> left today.
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>What did you eat?</div>
-
-                <div style={{ fontSize: 12, color: '#555', marginBottom: 10 }}>Tell us what you ate and we'll estimate the macros.</div>
-
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    value={eatenText}
-                    onChange={e => setEatenText(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && eatenText.trim() && handleIdentifyEaten()}
-                    placeholder="e.g. 'McDonald's medium fries'"
-                    style={{ flex: 1, height: 44, border: 'none', borderRadius: 12, padding: '0 14px', fontSize: 14, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none', background: NB.lavenderMist }}
-                  />
-                  <button
-                    onClick={() => eatenText.trim() && handleIdentifyEaten()}
-                    style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: eatenText.trim() ? NB.magenta : NB.lavenderMist, cursor: eatenText.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={eatenText.trim() ? NB.white : NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
-                    </svg>
-                  </button>
-                </div>
-              </>
-            )}
           </div>
 
-          {/* Build full day card — Pro-exclusive */}
-          <button onClick={() => {
-            if (!isProUser) { onNavigate?.('proUpsell'); return }
-            const slots = buildMealSlots(mealCount, snackCount, [], remaining)
-            setMealSlots(slots)
-            setBuilderMode('fullday')
-            setView('builder')
-          }} style={{ width: '100%', ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '16px 18px', cursor: 'pointer', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, border: `2px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {isProUser
-                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
-                : <LockIcon size={20} />}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Build my full day</span>
-                {!isProUser && <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.white, background: NB.ink, borderRadius: 5, padding: '2px 6px', textTransform: 'uppercase' }}>Pro</span>}
+          {mealMode === 'craving' ? (
+            <>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <input
+                  ref={inputRef}
+                  value={craving}
+                  onChange={e => { setCraving(e.target.value); if (!e.target.value.trim()) setCravingPreview(null) }}
+                  onKeyDown={e => e.key === 'Enter' && craving.trim() && handleGenerate(1)}
+                  placeholder="Type a food or meal…"
+                  style={{ flex: 1, height: 46, border: `2.5px solid ${NB.ink}`, borderRadius: 12, padding: '0 14px', fontSize: 14, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none', background: NB.white }}
+                />
+                <button
+                  onClick={() => craving.trim() && handleGenerate(1)}
+                  style={{ width: 46, height: 46, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: craving.trim() ? NB.magenta : NB.lavenderMist, cursor: craving.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={craving.trim() ? NB.white : NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
+                  </svg>
+                </button>
               </div>
-              <div style={{ fontSize: 12, color: '#555' }}>{isProUser ? 'Plan all your meals + snacks for today' : 'Unlock full-day meal planning with MissVfit Pro'}</div>
-            </div>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </button>
 
-          {/* Cookbook favourites */}
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Cookbook favourites</span>
-              <button onClick={() => setView('cookbook')} style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, color: NB.ink, textDecoration: 'underline', textTransform: 'uppercase', background: 'none', border: 'none', cursor: 'pointer' }}>See all</button>
-            </div>
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
-              {cookbook.slice(0, 4).map((item, i) => (
-                <div key={i} onClick={() => setViewingCookbookItem(item)}
-                  style={{ flexShrink: 0, width: 120, ...nbCardStyle(NB_CARD_NEUTRAL, 2, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '12px', cursor: 'pointer' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 9, border: `1.5px solid ${NB.ink}`, background: MEAL_COLORS[item.type] || NB.teal, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <MealTypeIcon type={item.type} size={22} />
-                  </div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: NB.ink, lineHeight: 1.3, marginBottom: 4 }}>{item.name}</div>
-                  <div style={{ fontSize: 11, color: '#555' }}>{item.protein}g P · {item.calories} kcal</div>
+              {/* Calorie preview */}
+              {cravingPreviewError && !cravingPreviewLoading && (
+                <div style={{ ...nbCardStyle(NB.white, 2, NB_CARD_NEUTRAL_SHADOW), border: `2.5px solid ${NB.ink}`, borderRadius: 14, padding: '10px 12px', marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: NB.ink, fontWeight: 600 }}>{cravingPreviewError}</span>
                 </div>
-              ))}
-            </div>
+              )}
+              {(cravingPreviewLoading || cravingPreview) && (
+                <div style={{ ...nbCardStyle(NB.white, 3, NB_CARD_NEUTRAL_SHADOW), border: `2.5px solid ${NB.ink}`, borderRadius: 14, padding: '12px 14px', marginBottom: 10 }}>
+                  {cravingPreviewLoading && !cravingPreview ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.7s linear infinite', flexShrink: 0 }} />
+                      <style>{`@keyframes mealSpin { to { transform: rotate(360deg) } }`}</style>
+                      <span style={{ fontSize: 13, color: NB.ink, fontWeight: 600 }}>Estimating calories…</span>
+                    </div>
+                  ) : cravingPreview ? (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{cravingPreview.name}</div>
+                          <div style={{ fontSize: 11, color: '#777' }}>{cravingPreview.servingSize}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontFamily: NB.fontDisplay, fontSize: 20, fontWeight: 900, color: NB.ink, lineHeight: 1 }}>{cravingPreview.calories}</div>
+                          <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: '#999', fontWeight: 700 }}>KCAL</div>
+                        </div>
+                      </div>
+                      <div style={{ height: 8, borderRadius: 4, border: `1.5px solid ${NB.ink}`, background: NB.lavenderMist, overflow: 'hidden', marginBottom: 8 }}>
+                        <div style={{ width: `${Math.min(prevPct * 100, 100)}%`, height: '100%', background: prevColor, transition: 'width 0.5s' }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, color: '#666', fontWeight: 600 }}>P {cravingPreview.protein}g · C {cravingPreview.carbs}g · F {cravingPreview.fat}g</span>
+                        <span style={{ fontSize: 10.5, fontWeight: 800, color: NB.ink, background: prevColor, border: `1.5px solid ${NB.ink}`, borderRadius: 999, padding: '3px 9px', whiteSpace: 'nowrap' }}>
+                          {remaining > 0 ? `${Math.round(prevPct * 100)}% left` : 'Budget full'}
+                        </span>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              )}
+
+              {/* Quick tags */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {CRAVING_TAGS.map(tag => {
+                  const sel = craving === tag
+                  return (
+                    <button key={tag} onClick={() => handleGenerate(1, tag)}
+                      style={{ padding: '8px 16px', ...nbCardStyle(sel ? NB.magenta : NB.lavender, 2, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 999, fontSize: 12.5, fontWeight: 800, color: sel ? NB.white : NB.ink, cursor: 'pointer' }}>
+                      {tag}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {remaining > 0 && (
+                <div style={{ marginTop: 12, fontSize: 12, color: '#555', fontWeight: 600, textAlign: 'center' }}>
+                  We&rsquo;ll fit meals to your <strong style={{ color: NB.ink }}>{remaining} kcal</strong> left today.
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 12, color: '#555', marginBottom: 10, textAlign: 'center' }}>Tell us what you ate and we'll estimate the macros.</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <input
+                  value={eatenText}
+                  onChange={e => setEatenText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && eatenText.trim() && handleIdentifyEaten()}
+                  placeholder="e.g. 'McDonald's medium fries'"
+                  style={{ flex: 1, height: 46, border: `2.5px solid ${NB.ink}`, borderRadius: 12, padding: '0 14px', fontSize: 14, color: NB.ink, fontFamily: NB.fontDisplay, outline: 'none', background: NB.white }}
+                />
+                <button
+                  onClick={() => eatenText.trim() && handleIdentifyEaten()}
+                  style={{ width: 46, height: 46, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: eatenText.trim() ? NB.magenta : NB.lavenderMist, cursor: eatenText.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={eatenText.trim() ? NB.white : NB.ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Quick-log shortcuts */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {EATEN_TAGS.map(tag => (
+                  <button key={tag} onClick={() => handleIdentifyEaten(tag)}
+                    style={{ padding: '8px 16px', ...nbCardStyle(NB.lavender, 2, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 999, fontSize: 12.5, fontWeight: 800, color: NB.ink, cursor: 'pointer' }}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+          {/* Absorbs leftover height so the tiles stay pinned to the bottom
+              without moving the fixed header/toggle block above. */}
+          <div style={{ flex: 1, minHeight: 24 }} />
+
+          {/* Bottom tiles — Plan my day + Cookbook */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            <button onClick={() => {
+              if (!isProUser) { onNavigate?.('proUpsell'); return }
+              const slots = buildMealSlots(mealCount, snackCount, [], remaining)
+              setMealSlots(slots)
+              setBuilderMode('fullday')
+              setView('builder')
+            }} style={{ flex: 1, minWidth: 0, ...nbCardStyle(NB.lavender, 4), border: `3px solid ${NB.ink}`, borderRadius: 18, padding: '14px', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {isProUser
+                  ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  : <LockIcon size={18} />}
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 13, textTransform: 'uppercase', color: NB.ink }}>Plan my day</span>
+                  {!isProUser && <span style={{ fontFamily: NB.fontMono, fontSize: 8, fontWeight: 800, color: NB.white, background: NB.ink, borderRadius: 4, padding: '1px 5px', textTransform: 'uppercase' }}>Pro</span>}
+                </div>
+                <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>All meals + snacks</div>
+              </div>
+            </button>
+
+            <button onClick={() => setView('cookbook')} style={{ flex: 1, minWidth: 0, ...nbCardStyle(NB.pink, 4), border: `3px solid ${NB.ink}`, borderRadius: 18, padding: '14px', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              </div>
+              <div>
+                <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 13, textTransform: 'uppercase', color: NB.ink }}>Cookbook</div>
+                <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>{cookbook.length} favourite{cookbook.length === 1 ? '' : 's'}</div>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -1438,9 +1389,10 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 24px' }}>
           {eatenLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', gap: 16 }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', border: `4px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.8s linear infinite' }} />
+              <div style={{ height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div className="spinner"><div /><div /><div /><div /><div /><div /></div>
+              </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: NB.ink, textAlign: 'center' }}>Identifying what you ate…</div>
-              <style>{`@keyframes mealSpin { to { transform: rotate(360deg) } }`}</style>
             </div>
           ) : eatenResult?.error ? (
             <div style={{ ...nbCardStyle(NB.red, 2), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '12px 16px' }}>
@@ -1665,10 +1617,11 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '12px 22px 24px' }}>
           {generating ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', gap: 16 }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', border: `4px solid ${NB.ink}`, borderTopColor: 'transparent', animation: 'mealSpin 0.8s linear infinite' }} />
+              <div style={{ height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div className="spinner"><div /><div /><div /><div /><div /><div /></div>
+              </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: NB.ink, textAlign: 'center' }}>Building your personalised meals…</div>
               <div style={{ fontSize: 12, color: '#555', textAlign: 'center' }}>Fitting your targets, cravings & dietary needs</div>
-              <style>{`@keyframes mealSpin { to { transform: rotate(360deg) } }`}</style>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 28, paddingBottom: 8 }}>

@@ -169,15 +169,26 @@ export async function fetchFriendIds(userId) {
   return (data || []).map(r => r.sender_id === userId ? r.receiver_id : r.sender_id)
 }
 
+// Returns the full row (not just status) so the caller can tell which
+// direction a pending request runs — needed to show Accept/Decline on a
+// profile you're viewing when THEY sent the request, vs a disabled
+// "Requested" state when you're the one waiting.
 export async function checkFriendshipStatus(currentUserId, targetUserId) {
   const { data } = await supabase
     .from('friend_requests')
-    .select('status')
+    .select('id, status, sender_id, receiver_id')
     .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${currentUserId})`)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
-  return data?.status || null
+  return data || null
+}
+
+// Deletes an accepted friend_requests row — the only way to "unfriend"
+// since there's no separate friends table, just accepted-status requests.
+export async function removeFriend(requestId) {
+  const { error } = await supabase.from('friend_requests').delete().eq('id', requestId)
+  if (error) console.error('removeFriend error:', error.message)
 }
 
 // ─── Username ─────────────────────────────────────────────────────────────────
@@ -193,7 +204,7 @@ export async function setUsername(userId, username) {
 export async function searchUserByUsername(query) {
   if (!query?.trim()) return null
   const { data, error } = await supabase
-    .from('profiles')
+    .from('public_profiles')
     .select('id, username, profile_data')
     .ilike('username', query.trim())
     .limit(1)
@@ -212,7 +223,7 @@ export async function fetchProfilesByIds(ids = []) {
   const unique = [...new Set(ids)].filter(Boolean)
   if (!unique.length) return {}
   const { data, error } = await supabase
-    .from('profiles')
+    .from('public_profiles')
     .select('id, username, profile_data, gamification, pro_until')
     .in('id', unique)
   if (error || !data) return {}
@@ -225,7 +236,7 @@ export async function fetchProfilesByIds(ids = []) {
 export async function fetchProfileById(userId) {
   if (!userId) return null
   const { data, error } = await supabase
-    .from('profiles')
+    .from('public_profiles')
     .select('id, username, profile_data, gamification, pro_until')
     .eq('id', userId)
     .maybeSingle()
@@ -320,7 +331,7 @@ export async function fetchBodyWeightLog(userId) {
 
 // scope: 'friends' | 'global' | 'regional'
 export async function fetchLeaderboardProfiles({ scope, userId, country, limit = 40 }) {
-  let query = supabase.from('profiles').select('id, username, profile_data, gamification, pro_until')
+  let query = supabase.from('public_profiles').select('id, username, profile_data, gamification, pro_until')
 
   if (scope === 'friends') {
     const friendIds = await fetchFriendIds(userId)
