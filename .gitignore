@@ -39,3 +39,8 @@ e2e/AUDIT_REPORT.md
 
 # Claude runtime state
 .claude/scheduled_tasks.lock
+
+# Symlinks into .agents/skills/ (universal skill installs) -- core.symlinks is
+# off on this checkout, so `git add` would otherwise duplicate the whole skill
+# as real files here instead of tracking the symlink. Source of truth is .agents/.
+.claude/skills/vibe-security

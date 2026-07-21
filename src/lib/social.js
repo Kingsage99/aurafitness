@@ -306,14 +306,16 @@ export async function logBodyWeight(userId, { date, weightKg, photoUrl }) {
   return !error
 }
 
-// Progress photo upload — same bucket as avatars/exercise images, own prefix.
+// Progress photo upload — private bucket (unlike post-media, this one is NOT
+// public: body-progress photos are sensitive and must never be guessable or
+// listable by anyone else). Stores just the storage path in the DB; callers
+// resolve it to a short-lived signed URL at read time via fetchBodyWeightLog.
 export async function uploadBodyProgressPhoto(userId, file) {
   const ext = file.name.split('.').pop() || 'bin'
-  const path = `progress/${userId}-${Date.now()}.${ext}`
-  const { data, error } = await supabase.storage.from('post-media').upload(path, file)
+  const path = `${userId}/${Date.now()}.${ext}`
+  const { data, error } = await supabase.storage.from('body-progress').upload(path, file)
   if (error) { console.error('uploadBodyProgressPhoto error:', error.message); return null }
-  const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(data.path)
-  return publicUrl
+  return data.path
 }
 
 export async function fetchBodyWeightLog(userId) {
@@ -324,7 +326,22 @@ export async function fetchBodyWeightLog(userId) {
     .order('date', { ascending: true })
     .limit(1000)
   if (error) { console.error('fetchBodyWeightLog error:', error.message); return [] }
-  return data || []
+  const rows = data || []
+  // photo_url is left untouched (it's what gets round-tripped back into
+  // logBodyWeight when a day is re-saved without changing its photo) --
+  // photo_display_url is a separate field, safe to put straight in <img src>.
+  // photo_url historically stored a public URL (old post-media bucket) --
+  // leave those as-is. Newer rows store a bare storage path in the private
+  // body-progress bucket and need a signed URL minted before they're usable.
+  await Promise.all(rows.map(async row => {
+    if (!row.photo_url) return
+    if (row.photo_url.startsWith('http')) { row.photo_display_url = row.photo_url; return }
+    const { data: signed, error: signErr } = await supabase.storage
+      .from('body-progress')
+      .createSignedUrl(row.photo_url, 3600)
+    row.photo_display_url = signErr ? null : signed.signedUrl
+  }))
+  return rows
 }
 
 // ─── Leaderboards ─────────────────────────────────────────────────────────────

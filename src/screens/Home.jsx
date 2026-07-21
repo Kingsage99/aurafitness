@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
-import BottomNav from '../components/BottomNav'
+import BottomNav, { NavBadgeContext } from '../components/BottomNav'
 import { Avatar } from '../components/AvatarSilhouette'
 import { STORE_BORDERS } from './StoreScreen'
 import ProBorderRing from '../components/ProBorderRing'
@@ -51,6 +51,18 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
   }, [session?.user?.id])
   const { showWorkoutMiss, showCalorieMiss, missedWorkoutEntry } = getMissFlags(missState, gamification, loggedMacros)
   const notificationsOn = userProfile?.notificationsEnabled !== false
+
+  // Same counts BottomNav badges its Discover/Profile tabs with — the bell is
+  // just another surface for the same two pending-attention signals, since
+  // there's no separate persisted notification feed anywhere in the app.
+  const navBadges = useContext(NavBadgeContext)
+  const pendingFriendReqs = navBadges?.pendingRequests ?? 0
+  const questsReadyCount = navBadges?.questsReady ?? 0
+  const bellCount = pendingFriendReqs + questsReadyCount
+  const handleBellTap = () => {
+    if (pendingFriendReqs > 0) onNavigate('discovery')
+    else if (questsReadyCount > 0) onNavigate('profile')
+  }
 
   const done = days.map((_, i) => {
     if (i > todayDayIdx) return false
@@ -114,8 +126,17 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
               <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, color: NB.ink }}>{gems}</span>
             </div>
           </div>
-          <button style={{ width: 42, height: 42, borderRadius: 12, border: NB_BORDER, boxShadow: hardShadow(2), background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+          <button onClick={handleBellTap} style={{ position: 'relative', width: 42, height: 42, borderRadius: 12, border: NB_BORDER, boxShadow: hardShadow(2), background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            {bellCount > 0 && (
+              <div style={{
+                position: 'absolute', top: -5, right: -5,
+                minWidth: 18, height: 18, borderRadius: 6, border: `2px solid ${NB.ink}`,
+                background: NB.red, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+              }}>
+                <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.white }}>{bellCount}</span>
+              </div>
+            )}
           </button>
         </div>
 

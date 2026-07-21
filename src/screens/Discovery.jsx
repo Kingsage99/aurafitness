@@ -13,7 +13,7 @@ import { getMissFlags, RANKS, normalizeRankId, SUB_LEVEL_ROMAN, SUB_LEVELS_PER_T
 import { dateKeyFor } from '../utils/workoutBuilder'
 import { groupOf } from '../utils/muscleGroups'
 import { tierForGroup } from '../utils/muscleRankColors'
-import { FireIcon } from '../components/Icons'
+import { FireIcon, AddReactionIcon } from '../components/Icons'
 import ImageCropSheet from '../components/ImageCropSheet'
 import AuthorAvatar from '../components/AuthorAvatar'
 import { SkeletonBox } from '../components/Skeleton'
@@ -486,7 +486,7 @@ function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, 
               onClick={onToggleSticker}
               style={{ ...stickerButtonStyle(HEART_STICKER), filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.45))' }}
             >
-              <img src={HEART_STICKER} alt="React" style={stickerImgStyle(HEART_STICKER)} />
+              <AddReactionIcon size={STICKER_SIZE} />
             </button>
             {isStickerOpen && stickerOptions.map(url => (
               <button

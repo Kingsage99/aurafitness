@@ -2,9 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { RANKS, getLevel, getMetricScore, compareByMetric, getMuscleRankInfo, MUSCLE_RANK_MIN_WORKOUTS, normalizeRankId, SUB_LEVEL_ROMAN } from '../utils/gamification'
 import { fetchLeaderboardProfiles } from '../lib/social'
-import { COUNTRIES } from '../data/countries'
 import { MUSCLE_GROUPS, MUSCLE_LABELS } from '../utils/muscleLabels'
-import CountrySheet from '../components/CountrySheet'
 import { Avatar as PhotoAvatar } from '../components/AvatarSilhouette'
 import ProBorderRing from '../components/ProBorderRing'
 import { STORE_BORDERS } from './StoreScreen'
@@ -244,13 +242,12 @@ function PinnedYouRow({ entry, rank, metric, rankMode, rankModeLabel, isProUser 
   )
 }
 
-export default function Leaderboard({ session, userProfile, gamification, isProUser = false, onUpdateCountry, onNavigate }) {
+export default function Leaderboard({ session, userProfile, gamification, isProUser = false, onNavigate }) {
   const [scope, setScope] = useState('friends')
   const [metric, setMetric] = useState('streaks')
   const [rankMode, setRankMode] = useState('overall')
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
-  const [countrySheetOpen, setCountrySheetOpen] = useState(false)
 
   const userId = session?.user?.id
   const country = userProfile?.country
@@ -301,7 +298,7 @@ export default function Leaderboard({ session, userProfile, gamification, isProU
         <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 12 }}>
           <div style={{ display: 'flex', border: `2px solid ${NB.ink}`, borderRadius: 12, overflow: 'hidden' }}>
             {SCOPES.map(([id, label]) => (
-              <button key={id} onClick={() => id === 'regional' && !country ? setCountrySheetOpen(true) : setScope(id)} style={{
+              <button key={id} onClick={() => setScope(id)} style={{
                 padding: '8px 18px', border: 'none', background: scope === id ? NB.teal : NB.white,
                 fontFamily: NB.fontMono, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: NB.ink, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 4,
@@ -311,11 +308,6 @@ export default function Leaderboard({ session, userProfile, gamification, isProU
               </button>
             ))}
           </div>
-          {scope === 'regional' && country && (
-            <button onClick={() => setCountrySheetOpen(true)} style={chipStyle(false)}>
-              {COUNTRIES.find(c => c.code === country)?.flag} Change
-            </button>
-          )}
         </div>
 
         {/* Muscle picker — only for the Ranks metric */}
@@ -332,8 +324,8 @@ export default function Leaderboard({ session, userProfile, gamification, isProU
       <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '14px 18px 20px' }}>
         {loading ? null : scope === 'regional' && !country ? (
           <div style={{ ...nbCardStyle(NB.cream, 3), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '18px 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: 13, color: NB.ink, fontWeight: 700, marginBottom: 10 }}>Pick your country to see regional rankings.</div>
-            <button onClick={() => setCountrySheetOpen(true)} style={{ height: 38, padding: '0 18px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.teal, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', color: NB.ink, cursor: 'pointer' }}>Choose country</button>
+            <div style={{ fontSize: 13, color: NB.ink, fontWeight: 700, marginBottom: 10 }}>Your country isn't set yet — redo onboarding in Settings to see regional rankings.</div>
+            <button onClick={() => onNavigate('settings')} style={{ height: 38, padding: '0 18px', border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.teal, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', color: NB.ink, cursor: 'pointer' }}>Go to Settings</button>
           </div>
         ) : sorted.length <= 1 ? (
           <div style={{ ...nbCardStyle(NB.cream, 3), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '18px 16px', textAlign: 'center' }}>
@@ -393,13 +385,6 @@ export default function Leaderboard({ session, userProfile, gamification, isProU
           )
         })}
       </div>
-
-      {countrySheetOpen && (
-        <CountrySheet
-          onSelect={(code) => { onUpdateCountry?.(code); setCountrySheetOpen(false); setScope('regional') }}
-          onClose={() => setCountrySheetOpen(false)}
-        />
-      )}
     </div>
   )
 }

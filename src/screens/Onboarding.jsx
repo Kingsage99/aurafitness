@@ -7,7 +7,7 @@ import MuscleSVG, { TARGET_AREA_SVG, SVG_TO_TARGET_AREA } from '../components/Mu
 import CountrySheet from '../components/CountrySheet'
 import { COUNTRIES } from '../data/countries'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
-import { GlobeIcon } from '../components/Icons'
+import { GlobeIcon, FeatherIcon, DumbbellIcon, HourglassIcon, BalanceScaleIcon, WingsIcon } from '../components/Icons'
 import { subscribeToPush, isPushSupported, isIOSDevice } from '../utils/pushNotifications'
 import { savePushSubscription } from '../lib/social'
 
@@ -44,11 +44,11 @@ function getCalorieWarnings(target, tdee) {
 }
 
 const FITNESS_GOALS = [
-  { id: 'lose_weight', label: 'Lose weight', sub: 'Burn fat & slim down', icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M8 12h8M12 8v8"/></svg> },
-  { id: 'build_muscle', label: 'Build muscle', sub: 'Lean bulk & strength', icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 6.5l11 11M4 9l-2 2 3 3 2-2M20 15l2-2-3-3-2 2"/></svg> },
-  { id: 'tone_recomp', label: 'Tone & recompose', sub: 'Lose fat, keep muscle', icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10M20.49 9a9 9 0 10-2.13 9.36L23 14"/></svg> },
-  { id: 'maintain', label: 'Maintain weight', sub: 'Stay where I am', icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg> },
-  { id: 'athletic_performance', label: 'Improve fitness', sub: 'Performance & endurance', icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L4.5 12.5h6L9 22l9-12h-6z"/></svg> },
+  { id: 'lose_weight', label: 'Lose weight', sub: 'Burn fat & slim down', icon: <FeatherIcon size={28} /> },
+  { id: 'build_muscle', label: 'Build muscle', sub: 'Lean bulk & strength', icon: <DumbbellIcon size={28} /> },
+  { id: 'tone_recomp', label: 'Tone & recompose', sub: 'Lose fat, keep muscle', icon: <HourglassIcon size={28} /> },
+  { id: 'maintain', label: 'Maintain weight', sub: 'Stay where I am', icon: <BalanceScaleIcon size={28} /> },
+  { id: 'athletic_performance', label: 'Improve fitness', sub: 'Performance & endurance', icon: <WingsIcon size={28} /> },
 ]
 
 const PHYSIQUES = [

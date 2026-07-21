@@ -72,7 +72,7 @@ export function LockIcon({ size = 16, style, ...props }) {
 }
 
 export function QuestIcon({ size = 16, style, ...props }) {
-  return <CroppedIconImg src="/icons/quest.png" size={size} style={style} {...props} />
+  return <CroppedIconImg src="/icons/new_quest.png" size={size} zoom={1.52} style={style} {...props} />
 }
 
 export function StarIcon({ size = 16, style, ...props }) {
@@ -149,6 +149,41 @@ export function DinnerIcon({ size = 16, style, ...props }) {
 
 export function SnackIcon({ size = 16, style, ...props }) {
   return <CroppedIconImg src="/icons/snack.png" size={size} style={style} {...props} />
+}
+
+// This newer batch of PNGs was generated with much less baked-in padding than
+// the set above, so the default zoom=1.6 over-crops them — a lower zoom here
+// keeps the full artwork visible instead of clipping it.
+export function FeatherIcon({ size = 16, style, ...props }) {
+  return <CroppedIconImg src="/icons/feather.png" size={size} zoom={1.1} style={style} {...props} />
+}
+
+export function DumbbellIcon({ size = 16, style, ...props }) {
+  return <CroppedIconImg src="/icons/dumbbell.png" size={size} zoom={1.1} style={style} {...props} />
+}
+
+export function HourglassIcon({ size = 16, style, ...props }) {
+  return <CroppedIconImg src="/icons/hourglass.png" size={size} zoom={1.1} style={style} {...props} />
+}
+
+export function BalanceScaleIcon({ size = 16, style, ...props }) {
+  return <CroppedIconImg src="/icons/balance_scale.png" size={size} zoom={1.1} style={style} {...props} />
+}
+
+export function WingsIcon({ size = 16, style, ...props }) {
+  return <CroppedIconImg src="/icons/wings.png" size={size} zoom={1.1} style={style} {...props} />
+}
+
+export function CookbookIcon({ size = 16, style, ...props }) {
+  return <CroppedIconImg src="/icons/cookbook.png" size={size} zoom={1.1} style={style} {...props} />
+}
+
+export function BurritoMealIcon({ size = 16, style, ...props }) {
+  return <CroppedIconImg src="/icons/burrito_meal.png" size={size} zoom={1.1} style={style} {...props} />
+}
+
+export function AddReactionIcon({ size = 16, style, ...props }) {
+  return <CroppedIconImg src="/icons/sticker_button.png" size={size} zoom={1.1} style={style} {...props} />
 }
 
 // For data-driven `icon: '💎'`-style fields (badges, quests, store items):

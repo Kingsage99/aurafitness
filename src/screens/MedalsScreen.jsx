@@ -15,7 +15,7 @@ const MEDAL_METALS = {
 // the rest still emboss the raw emoji as SVG text until art is commissioned.
 const BADGE_ICON_IMAGES = {
   '🥗': '/icons/bowl.png',
-  '🎯': '/icons/quest.png',
+  '🎯': '/icons/new_quest.png',
   '👑': '/icons/crown.png',
   '⚡': '/icons/bolt.png',
   '🏆': '/icons/trophy.png',
@@ -23,9 +23,37 @@ const BADGE_ICON_IMAGES = {
   '💪': '/icons/glute.png',
 }
 
+// Full custom medal art (ribbon + disc + emblem already composited into one
+// image) for these 9 badges — keyed by badge id, not emoji, since it's a
+// complete replacement of MedalArt's hand-drawn shape rather than a small
+// emblem embossed onto it. Badges with no entry keep the hand-drawn medal +
+// BADGE_ICON_IMAGES/emoji fallback below.
+const BADGE_MEDAL_IMAGES = {
+  first_step: '/medals/feet_crown.png',
+  sweat_session: '/medals/glute_medals.png',
+  nutrition_nerd: '/medals/nutrition_bowl.png',
+  cookbook_queen: '/medals/cookbook_medal.png',
+  macro_master: '/medals/balance_scale_medal.png',
+  month_strong: '/medals/calendar_medal.png',
+  fifty_workouts: '/medals/crown_medal.png',
+  legend_streak: '/medals/bolt_medal.png',
+  perfect_week: '/medals/trophy_medal.png',
+}
+
 // Hand-drawn neo-brutalist medal: twin ribbon tails + struck metal disc,
-// with the badge's icon embossed in the centre.
-function MedalArt({ tier, icon, earned }) {
+// with the badge's icon embossed in the centre. Badges in BADGE_MEDAL_IMAGES
+// render their own complete medal art instead of this hand-drawn shape.
+function MedalArt({ id, tier, icon, earned }) {
+  const fullMedal = BADGE_MEDAL_IMAGES[id]
+  if (fullMedal) {
+    return (
+      <img
+        src={fullMedal}
+        alt=""
+        style={{ width: 64, height: 72, objectFit: 'contain', filter: earned ? 'none' : 'grayscale(1)', opacity: earned ? 1 : 0.55 }}
+      />
+    )
+  }
   const m = MEDAL_METALS[tier] || MEDAL_METALS.bronze
   const iconImg = BADGE_ICON_IMAGES[icon]
   return (
@@ -66,7 +94,7 @@ export default function MedalsScreen({ gamification = {}, onNavigate }) {
 
       <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '20px 18px' }}>
         {/* Badge grid grouped by tier */}
-        {['gold', 'silver', 'bronze'].map(tier => {
+        {['gold', 'silver', 'bronze', 'starter'].map(tier => {
           const tierBadges = BADGES.filter(b => b.tier === tier)
           const tc = TIER_COLORS[tier]
           return (
@@ -81,7 +109,7 @@ export default function MedalsScreen({ gamification = {}, onNavigate }) {
                   const isEarned = earned.has(badge.id)
                   return (
                     <div key={badge.id} style={{ background: isEarned ? tc.bg : '#eee', padding: '12px 8px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, border: 'none', borderRadius: 14 }}>
-                      <MedalArt tier={tier} icon={badge.icon} earned={isEarned} />
+                      <MedalArt id={badge.id} tier={tier} icon={badge.icon} earned={isEarned} />
                       <div style={{ fontSize: 10, fontWeight: 800, color: NB.ink, textAlign: 'center', lineHeight: 1.3, opacity: isEarned ? 1 : 0.55 }}>{badge.label}</div>
                       {isEarned && <div style={{ fontFamily: NB.fontMono, fontSize: 9, color: NB.ink, fontWeight: 700, background: NB.white, border: `1px solid ${NB.ink}`, borderRadius: 6, padding: '2px 7px' }}>Earned ✓</div>}
                     </div>

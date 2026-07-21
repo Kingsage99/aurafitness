@@ -8,7 +8,7 @@ import { TrendChart, BarTrend, HBarList, StackedShareBar } from '../components/C
 import { fetchWorkoutHistory, fetchNutritionLog, fetchBodyWeightLog } from '../lib/social'
 import { getDailyTargets, MACRO_META } from '../utils/nutrition'
 import { xpProgress, RANKS, normalizeRankId } from '../utils/gamification'
-import { renderIcon, MedalIcon } from '../components/Icons'
+import { renderIcon, MedalIcon, LockIcon } from '../components/Icons'
 import { SkeletonBox } from '../components/Skeleton'
 import { GROUP_LABELS, exerciseCountsByGroup } from '../utils/muscleGroups'
 import { dateKeyFor } from '../utils/workoutBuilder'
@@ -25,8 +25,8 @@ import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRA
 const PERIODS = [
   { days: 7, label: '7D' },
   { days: 30, label: '30D' },
-  { days: 90, label: '90D' },
-  { days: null, label: 'ALL' },
+  { days: 90, label: '90D', pro: true },
+  { days: null, label: 'ALL', pro: true },
 ]
 
 const MEAL_SPLIT_COLORS = { breakfast: NB.yellow, lunch: NB.teal, dinner: NB.magenta, snacks: NB.pink, other: NB.lavender }
@@ -141,11 +141,16 @@ export default function Analytics({ gamification, userProfile, loggedMacros, ses
 
         {/* Sticky period chips — one filter row above all charts */}
         <div style={{ position: 'sticky', top: 0, zIndex: 10, background: NB.bg, padding: '6px 16px 10px', display: 'flex', gap: 8 }}>
-          {PERIODS.map(p => (
-            <button key={p.label} onClick={() => setPeriod(p.days)} style={{ ...chipStyle(period === p.days), flex: 1 }}>
-              {p.label}
-            </button>
-          ))}
+          {PERIODS.map(p => {
+            const locked = p.pro && !isProUser
+            return (
+              <button key={p.label} onClick={() => locked ? onNavigate('proUpsell') : setPeriod(p.days)}
+                style={{ ...chipStyle(period === p.days && !locked), flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, opacity: locked ? 0.6 : 1 }}>
+                {locked && <LockIcon size={10} />}
+                {p.label}
+              </button>
+            )
+          })}
         </div>
 
         <div style={{ padding: '4px 16px 24px' }}>

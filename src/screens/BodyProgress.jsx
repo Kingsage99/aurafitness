@@ -52,14 +52,19 @@ export default function BodyProgress({ session, userProfile, onNavigate }) {
     const w = fromDisplayWeight(displayValue, units)
     if (!w || w <= 0 || !session?.user?.id || saving) return
     setSaving(true)
+    // photo_url is the raw value that gets persisted (a bare storage path for
+    // new uploads, so fetchBodyWeightLog can re-sign it later); photo_display_url
+    // is what's actually safe to put in an <img src> right now, without waiting
+    // for a fresh signed URL round-trip.
     let photoUrl = todayEntry?.photo_url
+    let photoDisplayUrl = todayEntry?.photo_display_url
     if (photoFile) {
       const uploaded = await uploadBodyProgressPhoto(session.user.id, photoFile)
-      if (uploaded) photoUrl = uploaded
+      if (uploaded) { photoUrl = uploaded; photoDisplayUrl = photoPreview }
     }
     const ok = await logBodyWeight(session.user.id, { date: todayKey, weightKg: w, photoUrl })
     if (ok) {
-      setRows(prev => [...prev.filter(r => r.date !== todayKey), { date: todayKey, weight_kg: w, photo_url: photoUrl }])
+      setRows(prev => [...prev.filter(r => r.date !== todayKey), { date: todayKey, weight_kg: w, photo_url: photoUrl, photo_display_url: photoDisplayUrl }])
       setWeightInput('')
       setPhotoFile(null)
       setPhotoPreview(null)
@@ -103,8 +108,8 @@ export default function BodyProgress({ session, userProfile, onNavigate }) {
             <button onClick={() => fileRef.current?.click()} style={{ width: 76, height: 76, borderRadius: 14, border: `2px solid ${NB.ink}`, background: NB.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0, padding: 0 }}>
               {photoPreview ? (
                 <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : todayEntry?.photo_url ? (
-                <img src={todayEntry.photo_url} alt="Today" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : todayEntry?.photo_display_url ? (
+                <img src={todayEntry.photo_display_url} alt="Today" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.55"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
               )}
@@ -148,8 +153,8 @@ export default function BodyProgress({ session, userProfile, onNavigate }) {
                     onClick={() => r.photo_url && setViewingPhoto(r)}
                     style={{ width: 52, height: 52, borderRadius: 12, border: `1.5px solid ${NB.ink}`, background: NB.cream, flexShrink: 0, overflow: 'hidden', padding: 0, cursor: r.photo_url ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    {r.photo_url
-                      ? <img src={r.photo_url} alt={r.date} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {r.photo_display_url
+                      ? <img src={r.photo_display_url} alt={r.date} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="1.8" opacity="0.35"><circle cx="12" cy="12" r="9"/></svg>}
                   </button>
                   <div style={{ flex: 1 }}>
@@ -171,7 +176,7 @@ export default function BodyProgress({ session, userProfile, onNavigate }) {
       {/* Full photo view */}
       {viewingPhoto && (
         <div onClick={() => setViewingPhoto(null)} style={{ position: 'absolute', inset: 0, zIndex: 200, background: 'rgba(0,0,0,.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, cursor: 'pointer' }}>
-          <img src={viewingPhoto.photo_url} alt={viewingPhoto.date} style={{ maxWidth: '100%', maxHeight: '70%', borderRadius: 16, border: `2px solid ${NB.white}` }} />
+          <img src={viewingPhoto.photo_display_url} alt={viewingPhoto.date} style={{ maxWidth: '100%', maxHeight: '70%', borderRadius: 16, border: `2px solid ${NB.white}` }} />
           <div style={{ color: NB.white, marginTop: 14, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15 }}>
             {toDisplayWeight(viewingPhoto.weight_kg, units)} {unitLabel} · {new Date(viewingPhoto.date + 'T12:00:00').toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}
           </div>

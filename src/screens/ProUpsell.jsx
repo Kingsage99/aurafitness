@@ -10,6 +10,7 @@ export const FEATURES = [
   { icon: '📅', label: 'Build my full day', desc: 'Auto-plan every meal and snack for the whole day in one tap' },
   { icon: '✨', label: 'Shiny Pro name & muscle map', desc: 'Your name and workout stats shine blue-purple everywhere' },
   { icon: '🏆', label: 'True rank colors on your muscle map', desc: "Real bronze-to-goddess muscle coloring once you've logged 5 workouts" },
+  { icon: '📈', label: 'Full analytics history', desc: '90-day and all-time trends across workouts and nutrition, not just the last 30 days' },
   { icon: '👑', label: 'Exclusive Pro avatar border', desc: 'A crowned gradient ring only Pro members can equip' },
   { icon: '🐾', label: 'Every Legendary pet, free', desc: 'All Legendary pets in the Store are automatically unlocked for you' },
 ]

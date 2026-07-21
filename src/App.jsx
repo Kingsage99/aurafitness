@@ -694,16 +694,6 @@ export default function App() {
     }
   }
 
-  const handleUpdateCountry = async (country) => {
-    setUserProfile(prev => ({ ...prev, country }))
-    if (sessionRef.current) {
-      const { error } = await supabase.from('profiles').update({
-        profile_data: { ...userProfile, country },
-      }).eq('id', sessionRef.current.user.id)
-      if (error) console.error('Country save error:', error.message)
-    }
-  }
-
   const handleUpdateProfile = async (partial) => {
     const next = { ...userProfile, ...partial }
     setUserProfile(next)
@@ -909,7 +899,6 @@ export default function App() {
             userProfile={userProfile}
             gamification={gamification}
             isProUser={isProUser}
-            onUpdateCountry={handleUpdateCountry}
             onNavigate={navigate}
           />
         )

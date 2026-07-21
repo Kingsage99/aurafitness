@@ -8,7 +8,7 @@ import { diffMeal } from '../utils/mealDiff'
 import { dateKeyFor } from '../utils/workoutBuilder'
 import { COUNTRIES } from '../data/countries'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
-import { LockIcon } from '../components/Icons'
+import { LockIcon, CookbookIcon, BurritoMealIcon } from '../components/Icons'
 import { MealTypeIcon, MEAL_COLORS } from '../components/MealTypeIcon'
 
 const CRAVING_TAGS = ['Pasta', 'Light & fresh', 'Sweet', 'Spicy', 'High-protein', 'Comfort food']
@@ -1324,7 +1324,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
             }} style={{ flex: 1, minWidth: 0, ...nbCardStyle(NB.lavender, 4), border: `3px solid ${NB.ink}`, borderRadius: 18, padding: '14px', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {isProUser
-                  ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  ? <BurritoMealIcon size={22} />
                   : <LockIcon size={18} />}
               </div>
               <div>
@@ -1338,7 +1338,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
 
             <button onClick={() => setView('cookbook')} style={{ flex: 1, minWidth: 0, ...nbCardStyle(NB.pink, 4), border: `3px solid ${NB.ink}`, borderRadius: 18, padding: '14px', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, border: `2px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <CookbookIcon size={22} />
               </div>
               <div>
                 <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 13, textTransform: 'uppercase', color: NB.ink }}>Cookbook</div>
