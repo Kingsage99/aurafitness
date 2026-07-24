@@ -7,6 +7,7 @@ import MuscleSVG, { TARGET_AREA_SVG, SVG_TO_TARGET_AREA } from '../components/Mu
 import CountrySheet from '../components/CountrySheet'
 import { COUNTRIES } from '../data/countries'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
+import { calculateNutrition } from '../utils/nutrition'
 import { GlobeIcon, FeatherIcon, DumbbellIcon, HourglassIcon, BalanceScaleIcon, WingsIcon } from '../components/Icons'
 import { subscribeToPush, isPushSupported, isIOSDevice } from '../utils/pushNotifications'
 import { savePushSubscription } from '../lib/social'
@@ -16,18 +17,6 @@ const lbsToKg = (lbs) => Math.round(parseFloat(lbs) / 2.2046 * 10) / 10
 const cmToFtIn = (cm) => { const t = Math.round(cm / 2.54); return `${Math.floor(t / 12)}'${t % 12}"` }
 const kgToLbs = (kg) => Math.round(kg * 2.2046)
 const MEASURE_AVATAR = '/avatar/avatar.png'
-
-function calculateNutrition(weightKg, heightCm, age, daysCount, fitnessGoal) {
-  const bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161
-  // Standard Mifflin-St Jeor activity factors keyed to training days/week:
-  // 1.375 light (1-3d), 1.55 moderate (3-5d), 1.725 very active (6-7d).
-  // 1.9 (extra active) is reserved for 2x/day athletes + physical jobs, so we
-  // don't use it here — it would inflate targets for regular 6-7 day trainees.
-  const mults = { 1: 1.375, 2: 1.375, 3: 1.55, 4: 1.55, 5: 1.55, 6: 1.725, 7: 1.725 }
-  const tdee = Math.round(bmr * (mults[daysCount] ?? 1.55))
-  const offsets = { lose_weight: -500, build_muscle: 300, tone_recomp: 0, maintain: 0, athletic_performance: 200 }
-  return { bmr: Math.round(bmr), tdee, goalTarget: tdee + (offsets[fitnessGoal] ?? 0) }
-}
 
 function getCalorieWarnings(target, tdee) {
   if (!target || !tdee) return []

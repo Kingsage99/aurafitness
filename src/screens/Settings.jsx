@@ -27,6 +27,12 @@ const NOTIFICATION_CATEGORIES = [
   { key: 'weeklySummary',       label: 'Weekly summary',        desc: 'Monday recap of last week + this week\'s schedule' },
 ]
 
+// No backend — two mailto links, matching the only existing precedent (the
+// plain support@missvfit.app mention in LegalDoc.jsx's Terms/Privacy copy).
+const SUPPORT_EMAIL = 'support@missvfit.app'
+const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('MissVfit Support Request')}`
+const FEEDBACK_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('MissVfit Feedback')}`
+
 function SectionLabel({ children }) {
   return (
     <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
@@ -54,9 +60,8 @@ function Toggle({ on, onChange, disabled = false }) {
   )
 }
 
-export default function Settings({ userProfile, session, subscription, isProUser, onNavigate, onUpdateProfile, onResetOnboarding }) {
+export default function Settings({ userProfile, session, subscription, isProUser, onNavigate, onUpdateProfile }) {
   const [signingOut, setSigningOut] = useState(false)
-  const [resetting, setResetting] = useState(false)
   const [pushBusy, setPushBusy] = useState(false)
   const [pushError, setPushError] = useState('')
   const [billingBusy, setBillingBusy] = useState(false)
@@ -67,6 +72,8 @@ export default function Settings({ userProfile, session, subscription, isProUser
   const [subscriptionActive, setSubscriptionActive] = useState(null)
 
   const trialEligible = isTrialEligible(subscription)
+  const isGiftTrial = subscription?.status === 'trialing_gift'
+  const isTrialCopy = subscription?.status === 'trialing' || isGiftTrial
 
   useEffect(() => {
     hasActiveSubscription().then(setSubscriptionActive)
@@ -145,11 +152,6 @@ export default function Settings({ userProfile, session, subscription, isProUser
     await supabase.auth.signOut()
   }
 
-  const handleResetOnboarding = async () => {
-    setResetting(true)
-    await onResetOnboarding?.()
-  }
-
   return (
     <>
       <StatusBar />
@@ -172,23 +174,32 @@ export default function Settings({ userProfile, session, subscription, isProUser
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: NB.ink }}>
-                    {subscription?.status === 'trialing' ? 'MissVfit Pro — free trial' : 'MissVfit Pro'}
+                    {isTrialCopy ? 'MissVfit Pro — free trial' : 'MissVfit Pro'}
                   </div>
                   <div style={{ fontSize: 11, color: '#333', marginTop: 2 }}>
                     {subscription?.proUntil
-                      ? `${subscription.status === 'trialing' ? 'Trial ends' : 'Renews'} ${new Date(subscription.proUntil).toLocaleDateString()}`
+                      ? `${isTrialCopy ? 'Trial ends' : 'Renews'} ${new Date(subscription.proUntil).toLocaleDateString()}`
                       : 'Unlimited AI nutrition coaching unlocked'}
                   </div>
                 </div>
                 <StarIcon size={20} />
               </div>
-              <button
-                onClick={handleManageBilling}
-                disabled={billingBusy}
-                style={{ marginTop: 12, height: 40, width: '100%', border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: billingBusy ? 'default' : 'pointer' }}
-              >
-                {billingBusy ? '…' : 'Manage subscription'}
-              </button>
+              {isGiftTrial ? (
+                <button
+                  onClick={() => onNavigate('proUpsell')}
+                  style={{ marginTop: 12, height: 40, width: '100%', border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer' }}
+                >
+                  Choose a plan
+                </button>
+              ) : (
+                <button
+                  onClick={handleManageBilling}
+                  disabled={billingBusy}
+                  style={{ marginTop: 12, height: 40, width: '100%', border: `2px solid ${NB.ink}`, borderRadius: 10, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: billingBusy ? 'default' : 'pointer' }}
+                >
+                  {billingBusy ? '…' : 'Manage subscription'}
+                </button>
+              )}
             </div>
           ) : (
             <div style={{ ...nbCardStyle(NB.lavender, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '14px 16px' }}>
@@ -322,6 +333,21 @@ export default function Settings({ userProfile, session, subscription, isProUser
           </div>
         </div>
 
+        {/* Support & Feedback */}
+        <div style={{ marginBottom: 24 }}>
+          <SectionLabel>Support & Feedback</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <a href={SUPPORT_MAILTO} style={{ height: 46, border: `2px solid ${NB.ink}`, borderRadius: 14, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', textDecoration: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxSizing: 'border-box' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Contact Support
+            </a>
+            <a href={FEEDBACK_MAILTO} style={{ height: 46, border: `2px solid ${NB.ink}`, borderRadius: 14, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', textDecoration: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxSizing: 'border-box' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Send Feedback
+            </a>
+          </div>
+        </div>
+
         {/* Legal */}
         <div style={{ marginBottom: 24 }}>
           <SectionLabel>Legal</SectionLabel>
@@ -341,9 +367,9 @@ export default function Settings({ userProfile, session, subscription, isProUser
         <div>
           <SectionLabel>Account</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button onClick={handleResetOnboarding} disabled={resetting} style={{ height: 46, border: `2px solid ${NB.ink}`, borderRadius: 14, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <button onClick={() => onNavigate('editDetails')} style={{ height: 46, border: `2px solid ${NB.ink}`, borderRadius: 14, background: NB.white, color: NB.ink, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              {resetting ? '…' : 'Redo Onboarding'}
+              Edit My Details
             </button>
             <button onClick={handleSignOut} disabled={signingOut} style={{ height: 46, border: `2px solid ${NB.ink}`, borderRadius: 14, background: NB.red, color: NB.white, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>

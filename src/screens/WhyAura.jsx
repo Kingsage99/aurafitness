@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
 
@@ -36,6 +36,14 @@ export default function WhyAura({ userProfile = {}, weeklyPlan = null, onContinu
   const goalLabel = GOAL_LABELS[fitnessGoal] || 'Your Goal'
   const goalCopy = GOAL_COPY[fitnessGoal] || GOAL_COPY.tone_recomp
   const trainingDays = (weeklyPlan || []).filter(d => d.isTrainingDay)
+
+  const [busy, setBusy] = useState(false)
+  const handleContinue = async () => {
+    if (busy) return
+    setBusy(true)
+    await onContinue?.()
+    // no setBusy(false) on success -- App.jsx navigates away right after
+  }
 
   return (
     <>
@@ -99,20 +107,25 @@ export default function WhyAura({ userProfile = {}, weeklyPlan = null, onContinu
 
       <div style={{ padding: '14px 22px 26px', flexShrink: 0 }}>
         <button
-          onClick={onContinue}
+          onClick={handleContinue}
+          disabled={busy}
           style={{
             width: '100%', height: 56, border: NB_BORDER,
-            background: NB.magenta, color: NB.white,
+            background: busy ? '#ccc' : NB.magenta, color: NB.white,
             fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 16, textTransform: 'uppercase',
-            boxShadow: hardShadow(5),
+            boxShadow: busy ? 'none' : hardShadow(5),
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            cursor: 'pointer',
+            cursor: busy ? 'default' : 'pointer',
           }}
         >
-          Let's go
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M13 6l6 6-6 6"/>
-          </svg>
+          {busy ? 'Please wait…' : (
+            <>
+              Let's go
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NB.white} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M13 6l6 6-6 6"/>
+              </svg>
+            </>
+          )}
         </button>
       </div>
     </>

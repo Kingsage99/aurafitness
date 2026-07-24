@@ -88,7 +88,7 @@ function DayDetailPanel({ dateKey, assigned, availableWorkouts, onAssign, onClos
           <div style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: '#555', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>Exercises</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {(assigned.exercises || []).map((ex, i) => (
-              <div key={i} style={{ border: 'none', borderRadius: 14, padding: '10px 12px', background: NB.lavenderMist, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div key={i} style={{ ...nbCardStyle(NB.lavenderMist, 3), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <ExerciseThumb src={resolveExerciseImage(ex, equipment)} slot={ex.slot} size={26} radius={8} />
                   <span style={{ position: 'absolute', bottom: -4, right: -4, width: 14, height: 14, borderRadius: 5, border: `1.5px solid ${NB.ink}`, background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: NB.fontDisplay, fontSize: 8, fontWeight: 900, color: NB.ink }}>{i + 1}</span>
@@ -113,7 +113,7 @@ function DayDetailPanel({ dateKey, assigned, availableWorkouts, onAssign, onClos
                 <div
                   key={i}
                   onClick={() => { onAssign(dateKey, w); setPicking(false) }}
-                  style={{ border: 'none', borderRadius: 14, padding: '12px 14px', background: NB.lavenderMist, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  style={{ ...nbCardStyle(NB.lavenderMist, 3), border: `3px solid ${NB.white}`, borderRadius: 14, padding: '12px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                 >
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: NB.ink }}>{w.label?.replace(/^Day \d+ — /, '') ?? `Workout ${i + 1}`}</div>
@@ -142,23 +142,43 @@ export default function WorkoutRoutine({ weeklyPlan, userProfile, userWorkouts =
   const [selectedDay, setSelectedDay] = useState(null)
   const [localRoutine, setLocalRoutine] = useState(routine)
 
-  const now       = new Date()
-  const year      = now.getFullYear()
-  const month     = now.getMonth()
-  const todayDate = now.getDate()
+  const now = new Date()
+  const todayKey = dateKeyFor(now)
+  const [viewYear, setViewYear] = useState(now.getFullYear())
+  const [viewMonth, setViewMonth] = useState(now.getMonth())
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1) }
+    else setViewMonth(m => m - 1)
+  }
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
+    else setViewMonth(m => m + 1)
+  }
 
   const { grid } = useMemo(() => {
-    const first    = new Date(year, month, 1)
-    const last     = new Date(year, month + 1, 0)
-    const dim      = last.getDate()
-    const startDow = first.getDay() === 0 ? 6 : first.getDay() - 1
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+    const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate()
+    const leadOffset = getWeekdayIndex(new Date(viewYear, viewMonth, 1))
+    const prevM = viewMonth === 0 ? 11 : viewMonth - 1
+    const prevY = viewMonth === 0 ? viewYear - 1 : viewYear
+    const nextM = viewMonth === 11 ? 0 : viewMonth + 1
+    const nextY = viewMonth === 11 ? viewYear + 1 : viewYear
 
     const g = []
-    for (let i = 0; i < startDow; i++) g.push(null)
-    for (let d = 1; d <= dim; d++) g.push(d)
-    while (g.length % 7 !== 0) g.push(null)
-    return { grid: g, daysInMonth: dim }
-  }, [year, month])
+    for (let i = 0; i < leadOffset; i++) {
+      g.push({ day: daysInPrevMonth - leadOffset + 1 + i, year: prevY, month: prevM, adjacent: true })
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      g.push({ day: d, year: viewYear, month: viewMonth, adjacent: false })
+    }
+    let trailDay = 1
+    while (g.length % 7 !== 0) {
+      g.push({ day: trailDay, year: nextY, month: nextM, adjacent: true })
+      trailDay++
+    }
+    return { grid: g }
+  }, [viewYear, viewMonth])
 
   const handleAssign = (dateKey, workout) => {
     const next = { ...localRoutine }
@@ -193,7 +213,15 @@ export default function WorkoutRoutine({ weeklyPlan, userProfile, userWorkouts =
         </button>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink }}>My Routine</div>
-          <div style={{ fontSize: 12, color: '#555' }}>{MONTH_NAMES[month]} {year}</div>
+          <div style={{ fontSize: 12, color: '#555' }}>{MONTH_NAMES[viewMonth]} {viewYear}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          <button onClick={prevMonth} style={{ width: 30, height: 30, borderRadius: 9, border: `1.5px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15,18 9,12 15,6"/></svg>
+          </button>
+          <button onClick={nextMonth} style={{ width: 30, height: 30, borderRadius: 9, border: `1.5px solid ${NB.ink}`, background: NB.white, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9,18 15,12 9,6"/></svg>
+          </button>
         </div>
         {userProfile?.planningMode === 'custom' && (
           <button onClick={() => onNavigate('assignSchedule')} style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 800, textTransform: 'uppercase', background: NB.white, border: NB_BORDER, boxShadow: hardShadow(2), borderRadius: 11, cursor: 'pointer', padding: '9px 12px', flexShrink: 0 }}>
@@ -211,37 +239,50 @@ export default function WorkoutRoutine({ weeklyPlan, userProfile, userWorkouts =
           ))}
         </div>
 
-        {/* Calendar grid */}
+        {/* Calendar grid — same look as the Calendar screen: plain day cells,
+            a solid color fill for the signal that matters (here: has a
+            workout assigned), no in-cell text/label. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-          {grid.map((day, idx) => {
-            if (!day) return <div key={`empty-${idx}`} />
-
-            const dateKey   = toKey(year, month, day)
-            const isToday   = day === todayDate
+          {grid.map((cell, idx) => {
+            const dateKey = toKey(cell.year, cell.month, cell.day)
+            const isToday = dateKey === todayKey
             const isSelected = selectedDay === dateKey
-            const assigned  = effectiveAssignment(dateKey, localRoutine, weeklyPlan)
+            const assigned = effectiveAssignment(dateKey, localRoutine, weeklyPlan)
+            const hasWorkout = assigned && !cell.adjacent
+
+            const handleTap = () => {
+              if (cell.adjacent) { setViewYear(cell.year); setViewMonth(cell.month) }
+              setSelectedDay(isSelected ? null : dateKey)
+            }
 
             return (
               <div
-                key={dateKey}
-                onClick={() => setSelectedDay(isSelected ? null : dateKey)}
+                key={`${cell.year}-${cell.month}-${cell.day}-${idx}`}
+                onClick={handleTap}
                 style={{
-                  padding: '6px 2px 5px', textAlign: 'center', cursor: 'pointer',
-                  background: isSelected ? NB.magenta : isToday ? NB.yellow : assigned ? NB.cream : NB.white,
-                  border: `2px solid ${NB.ink}`,
-                  borderRadius: 8,
-                  minHeight: 44,
+                  height: 38, borderRadius: 10, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isSelected ? NB.magenta : hasWorkout ? NB.teal : 'transparent',
+                  border: isToday ? `2px solid ${NB.ink}` : '2px solid transparent',
+                  opacity: cell.adjacent ? 0.35 : 1,
                 }}
               >
-                <div style={{ fontFamily: NB.fontDisplay, fontSize: 12, fontWeight: 800, color: isSelected ? NB.white : NB.ink, marginBottom: assigned ? 3 : 0 }}>{day}</div>
-                {assigned && (
-                  <div style={{ fontFamily: NB.fontMono, fontSize: 8, fontWeight: 700, color: isSelected ? NB.white : NB.ink, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>
-                    {(assigned.label || '').replace(/^Day \d+ — /, '').slice(0, 8)}
-                  </div>
-                )}
+                <span style={{ fontSize: 12, fontWeight: (isSelected || isToday) ? 800 : 500, color: isSelected ? NB.white : NB.ink }}>{cell.day}</span>
               </div>
             )
           })}
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 12, height: 12, borderRadius: 4, background: NB.teal, border: `1.5px solid ${NB.ink}` }} />
+            <span style={{ fontSize: 11, color: '#555' }}>Workout scheduled</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 12, height: 12, borderRadius: 4, border: `2px solid ${NB.ink}` }} />
+            <span style={{ fontSize: 11, color: '#555' }}>Today</span>
+          </div>
         </div>
       </div>
 

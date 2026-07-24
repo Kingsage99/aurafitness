@@ -41,6 +41,7 @@ export const DEFAULT_GAMIFICATION = {
   reactionsToday: { date: '', postIds: [] }, // distinct posts reacted to today, for the post_or_react quest
   reactionStreak: 0,        // consecutive days with at least one reaction — independent of workoutStreak
   lastReactionDate: '',     // "YYYY-MM-DD"
+  totalReactionsGiven: 0,   // lifetime count, drives the Community medal family (never resets)
   aiUsageToday: { date: '', mealGens: 0, lookups: 0, eatenLookups: 0 }, // client-side display mirror of the server-enforced daily AI quota — see getAiUsesRemaining/recordAiUsage below
 }
 
@@ -77,25 +78,28 @@ export const LIFE_PENALTY_PCT = 0.25
 
 export const BADGES = [
   // Starter
-  { id: 'first_step',     label: 'First Step',     tier: 'starter', icon: '👣', desc: 'Complete onboarding' },
-  { id: 'fuelled_up',     label: 'Fuelled Up',     tier: 'starter', icon: '🍽️', desc: 'Log your first meal' },
-  { id: 'sweat_session',  label: 'Sweat Session',  tier: 'starter', icon: '💪', desc: 'Complete your first workout' },
-  { id: 'on_a_roll',      label: 'On a Roll',      tier: 'starter', icon: '🔥', desc: '3-day workout streak' },
+  { id: 'first_step',    label: 'First Step',    tier: 'starter', icon: '👣', desc: 'Complete onboarding' },
+  { id: 'fuelled_up',    label: 'Fuelled Up',    tier: 'starter', icon: '🍽️', desc: 'Log your first meal' },
+  { id: 'sweat_session', label: 'Sweat Session', tier: 'starter', icon: '💪', desc: 'Complete your first workout' },
   // Bronze
-  { id: 'week_warrior',   label: 'Week Warrior',   tier: 'bronze',  icon: '⚔️', desc: 'Complete all workouts in a week' },
-  { id: 'nutrition_nerd', label: 'Nutrition Nerd', tier: 'bronze',  icon: '🥗', desc: 'Hit calorie goal 5 days in a row' },
-  { id: 'committed',      label: 'Committed',      tier: 'bronze',  icon: '🎯', desc: '7-day workout streak' },
-  { id: 'cookbook_queen', label: 'Cookbook Queen', tier: 'bronze',  icon: '📖', desc: 'Save 5 recipes to your cookbook' },
+  { id: 'streak_bronze',    label: 'Streak Starter',  tier: 'bronze', icon: '🔥', desc: '7-day workout streak' },
+  { id: 'workouts_bronze',  label: 'Getting Started', tier: 'bronze', icon: '💯', desc: '10 total workouts completed' },
+  { id: 'nutrition_bronze', label: 'Nutrition Nerd',  tier: 'bronze', icon: '🥗', desc: 'Hit calorie goal 5 days in a row' },
+  { id: 'cookbook_bronze',  label: 'Home Cook',       tier: 'bronze', icon: '📖', desc: 'Save 5 recipes to your cookbook' },
+  { id: 'community_bronze', label: 'Friendly Face',   tier: 'bronze', icon: '🤝', desc: 'React to 10 posts' },
   // Silver
-  { id: 'iron_will',      label: 'Iron Will',      tier: 'silver',  icon: '🦾', desc: '14-day workout streak' },
-  { id: 'ten_workouts',   label: 'Ten Strong',     tier: 'silver',  icon: '💯', desc: '10 total workouts completed' },
-  { id: 'macro_master',   label: 'Macro Master',   tier: 'silver',  icon: '⚖️', desc: 'Hit calorie goal 7 days in a row' },
-  { id: 'month_strong',   label: 'Month Strong',   tier: 'silver',  icon: '🗓️', desc: '30-day workout streak' },
+  { id: 'streak_silver',    label: 'Streak Keeper',  tier: 'silver', icon: '🔥', desc: '30-day workout streak' },
+  { id: 'workouts_silver',  label: 'Ten Strong',     tier: 'silver', icon: '💯', desc: '25 total workouts completed' },
+  { id: 'nutrition_silver', label: 'Macro Master',   tier: 'silver', icon: '⚖️', desc: 'Hit calorie goal 10 days in a row' },
+  { id: 'cookbook_silver',  label: 'Cookbook Queen', tier: 'silver', icon: '📖', desc: 'Save 15 recipes to your cookbook' },
+  { id: 'community_silver', label: 'Community Star', tier: 'silver', icon: '🤝', desc: 'React to 50 posts' },
   // Gold
-  { id: 'fifty_workouts', label: 'Elite',          tier: 'gold',    icon: '👑', desc: '50 total workouts completed' },
-  { id: 'legend_streak',  label: 'Legend Streak',  tier: 'gold',    icon: '⚡', desc: '60-day workout streak' },
-  { id: 'perfect_week',   label: 'Perfect Week',   tier: 'gold',    icon: '🏆', desc: 'Complete every workout + hit calorie goal all week' },
-  { id: 'aura_queen',     label: 'Aura Queen',     tier: 'gold',    icon: '✨', desc: 'Unlock all Silver badges' },
+  { id: 'streak_gold',    label: 'Legend Streak',  tier: 'gold', icon: '⚡', desc: '60-day workout streak' },
+  { id: 'workouts_gold',  label: 'Elite',          tier: 'gold', icon: '👑', desc: '50 total workouts completed' },
+  { id: 'nutrition_gold', label: 'Dialed In',      tier: 'gold', icon: '🎯', desc: 'Hit calorie goal 14 days in a row' },
+  { id: 'cookbook_gold',  label: 'Master Chef',    tier: 'gold', icon: '📖', desc: 'Save 30 recipes to your cookbook' },
+  { id: 'community_gold', label: 'Community Icon', tier: 'gold', icon: '🤝', desc: 'React to 150 posts' },
+  { id: 'perfect_week',   label: 'Perfect Week',   tier: 'gold', icon: '🏆', desc: 'Complete every workout + hit calorie goal all week' },
 ]
 
 const SILVER_IDS = BADGES.filter(b => b.tier === 'silver').map(b => b.id)
@@ -298,7 +302,7 @@ function getMondayDate(dateStr) {
   return dateKeyFor(d)
 }
 
-function getYesterday(todayStr) {
+export function getYesterday(todayStr) {
   const d = parseLocalDateKey(todayStr)
   d.setDate(d.getDate() - 1)
   return dateKeyFor(d)
@@ -306,7 +310,7 @@ function getYesterday(todayStr) {
 
 function getHighestTitle(g) {
   if (g.totalWorkouts >= 50 || g.workoutStreak >= 60) return 'MissVfit Elite'
-  if (g.badges.includes('macro_master')) return 'Macro Master'
+  if (g.badges.includes('macro_master') || g.badges.includes('nutrition_silver')) return 'Macro Master'
   if (g.totalWorkouts >= 25) return 'Sweat Legend'
   if (g.workoutStreak >= 14) return 'Iron Queen'
   if (g.workoutStreak >= 7) return 'Warrior'
@@ -396,16 +400,46 @@ export function updateStreak(g, today) {
   return { ...g, workoutStreak: 1, longestStreak: Math.max(g.longestStreak, 1), lastWorkoutDate: today }
 }
 
+// Proactively reconciles a broken workout streak — updateStreak only ever runs
+// reactively off an actual workout completion, so a user who simply doesn't
+// open the app again after breaking their streak keeps a stale/frozen counter
+// until their next real workout silently resets it with no explanation.
+// Mirrors checkCaloriePenalty's shape/contract so both load-time checks behave
+// the same way from the caller's perspective.
+// Returns { g, streakBroken, freezeConsumed, lifeLost, penaltyApplied }
+export function reconcileWorkoutStreak(g, todayKey) {
+  const none = { g, streakBroken: false, freezeConsumed: false, lifeLost: false, penaltyApplied: 0 }
+  if (!g.lastWorkoutDate) return none                // brand-new user — nothing to break
+  if (g.lastWorkoutDate === todayKey) return none     // already trained today
+  const yd = getYesterday(todayKey)
+  if (g.lastWorkoutDate === yd) return none           // streak still legitimately pending today's workout
+
+  // A real gap of 2+ days
+  const freezes = g.inventory?.streakFreezes ?? 0
+  if (freezes > 0) {
+    const g2 = { ...g, lastWorkoutDate: yd, inventory: { ...(g.inventory || {}), streakFreezes: freezes - 1 } }
+    return { g: g2, streakBroken: false, freezeConsumed: true, lifeLost: false, penaltyApplied: 0 }
+  }
+
+  if (g.workoutStreak > 0) {
+    const { g: pg, penaltyApplied } = loseLife({ ...g, workoutStreak: 0 })
+    return { g: pg, streakBroken: true, freezeConsumed: false, lifeLost: true, penaltyApplied }
+  }
+
+  return none
+}
+
 // Independent day-continuity streak for reacting to posts — same shape as
 // updateStreak but its own field, so it doesn't interact with workoutStreak
 // or consume streak-freeze inventory.
 export function updateReactionStreak(g, today) {
   if (g.lastReactionDate === today) return g
   const yd = getYesterday(today)
+  const totalReactionsGiven = (g.totalReactionsGiven || 0) + 1
   if (g.lastReactionDate === yd) {
-    return { ...g, reactionStreak: (g.reactionStreak || 0) + 1, lastReactionDate: today }
+    return { ...g, reactionStreak: (g.reactionStreak || 0) + 1, lastReactionDate: today, totalReactionsGiven }
   }
-  return { ...g, reactionStreak: 1, lastReactionDate: today }
+  return { ...g, reactionStreak: 1, lastReactionDate: today, totalReactionsGiven }
 }
 
 // events: { onboardingCompleted, workoutCompleted, mealLogged, cookbookCount, weeklyTarget, allWeekDone }
@@ -426,22 +460,31 @@ export function checkBadges(g, events = {}) {
     updated = g2
   }
 
-  if (events.onboardingCompleted)                  earn('first_step')
-  if (events.mealLogged)                           earn('fuelled_up')
-  if (events.workoutCompleted && updated.totalWorkouts >= 1) earn('sweat_session')
-  if (updated.workoutStreak >= 3)                  earn('on_a_roll')
-  if (updated.workoutStreak >= 7)                  earn('committed')
-  if ((events.cookbookCount || 0) >= 5)            earn('cookbook_queen')
-  if (updated.calorieGoalStreak >= 5)              earn('nutrition_nerd')
-  if (events.allWeekDone)                          earn('week_warrior')
-  if (updated.workoutStreak >= 14)                 earn('iron_will')
-  if (updated.totalWorkouts >= 10)                 earn('ten_workouts')
-  if (updated.calorieGoalStreak >= 7)              earn('macro_master')
-  if (updated.workoutStreak >= 30)                 earn('month_strong')
-  if (updated.totalWorkouts >= 50)                 earn('fifty_workouts')
-  if (updated.workoutStreak >= 60)                 earn('legend_streak')
+  if (events.onboardingCompleted)                            earn('first_step')
+  if (events.mealLogged)                                     earn('fuelled_up')
+  if (events.workoutCompleted && updated.totalWorkouts >= 1)  earn('sweat_session')
+
+  if (updated.workoutStreak >= 60) earn('streak_gold')
+  if (updated.workoutStreak >= 30) earn('streak_silver')
+  if (updated.workoutStreak >= 7)  earn('streak_bronze')
+
+  if (updated.totalWorkouts >= 50) earn('workouts_gold')
+  if (updated.totalWorkouts >= 25) earn('workouts_silver')
+  if (updated.totalWorkouts >= 10) earn('workouts_bronze')
+
+  if (updated.calorieGoalStreak >= 14) earn('nutrition_gold')
+  if (updated.calorieGoalStreak >= 10) earn('nutrition_silver')
+  if (updated.calorieGoalStreak >= 5)  earn('nutrition_bronze')
+
+  if ((events.cookbookCount || 0) >= 30) earn('cookbook_gold')
+  if ((events.cookbookCount || 0) >= 15) earn('cookbook_silver')
+  if ((events.cookbookCount || 0) >= 5)  earn('cookbook_bronze')
+
+  if (updated.totalReactionsGiven >= 150) earn('community_gold')
+  if (updated.totalReactionsGiven >= 50)  earn('community_silver')
+  if (updated.totalReactionsGiven >= 10)  earn('community_bronze')
+
   if (events.allWeekDone && updated.calorieGoalStreak >= 7) earn('perfect_week')
-  if (SILVER_IDS.every(id => existing.has(id)))   earn('aura_queen')
 
   updated = { ...updated, badges: [...existing] }
   updated.title = getHighestTitle(updated)
@@ -643,7 +686,12 @@ export function calorieGoalStatus(dailyCalorieTarget, dayLog) {
 export function checkCaloriePenalty(g, yesterdayStr, dailyCalorieTarget, yesterdayLog) {
   if (g.lastCalorieDate === yesterdayStr) return { g, penaltyApplied: 0, lifeLost: false, goalHit: false }
 
-  let updated = { ...g, lastCalorieDate: yesterdayStr }
+  // A gap of 2+ days since this last ran (and not a brand-new user who's never
+  // been checked at all) — we can't retroactively evaluate hit/miss for each
+  // individual skipped day without logged data for them, but the streak itself
+  // is definitely broken, so don't leave it frozen at an inflated value.
+  const gapBroken = !!g.lastCalorieDate && g.lastCalorieDate !== getYesterday(yesterdayStr)
+  let updated = { ...g, lastCalorieDate: yesterdayStr, ...(gapBroken ? { calorieGoalStreak: 0 } : {}) }
 
   const status = calorieGoalStatus(dailyCalorieTarget, yesterdayLog)
   if (status === 'no_target' || status === 'not_logged') {
@@ -656,9 +704,10 @@ export function checkCaloriePenalty(g, yesterdayStr, dailyCalorieTarget, yesterd
   }
 
   // Goal hit — award gems + XP + streak (extends the same streak a workout would)
+  const baseStreak = updated.calorieGoalStreak || 0
   updated = awardGems(updated, 20)
   const { g: g2 } = awardXP(updated, 30)
-  updated = { ...g2, calorieGoalStreak: (g.calorieGoalStreak || 0) + 1 }
+  updated = { ...g2, calorieGoalStreak: baseStreak + 1 }
   updated = updateStreak(updated, yesterdayStr)
   return { g: updated, penaltyApplied: 0, lifeLost: false, goalHit: true }
 }

@@ -4,6 +4,7 @@ import {
   awardGems, awardXP, updateStreak, updateReactionStreak, resetWeeklyIfNeeded,
   getDailyQuests, checkBadges, claimWeeklyChallenge, getWeeklyChallengeState,
   evaluateDailyQuests, claimQuest, equipCosmetic, purchaseItem,
+  reconcileWorkoutStreak, checkCaloriePenalty,
 } from './gamification'
 
 const g0 = () => ({ ...DEFAULT_GAMIFICATION })
@@ -105,7 +106,28 @@ describe('checkBadges', () => {
   it('awards streak badges from state alone', () => {
     const g = { ...g0(), workoutStreak: 7 }
     const { updatedG } = checkBadges(g, {})
-    expect(updatedG.badges).toEqual(expect.arrayContaining(['on_a_roll', 'committed']))
+    expect(updatedG.badges).toEqual(expect.arrayContaining(['streak_bronze']))
+    expect(updatedG.badges).not.toContain('streak_silver')
+  })
+
+  it('awards bronze + silver but not gold when a stat lands mid-family', () => {
+    const g = { ...g0(), totalWorkouts: 26 }
+    const { updatedG } = checkBadges(g, {})
+    expect(updatedG.badges).toEqual(expect.arrayContaining(['workouts_bronze', 'workouts_silver']))
+    expect(updatedG.badges).not.toContain('workouts_gold')
+  })
+
+  it('awards all three tiers at once when a stat jumps straight past every threshold', () => {
+    const g = { ...g0(), workoutStreak: 60 }
+    const { updatedG } = checkBadges(g, {})
+    expect(updatedG.badges).toEqual(expect.arrayContaining(['streak_bronze', 'streak_silver', 'streak_gold']))
+  })
+
+  it('awards the Community family from totalReactionsGiven', () => {
+    const g = { ...g0(), totalReactionsGiven: 10 }
+    const { updatedG } = checkBadges(g, {})
+    expect(updatedG.badges).toContain('community_bronze')
+    expect(updatedG.badges).not.toContain('community_silver')
   })
 
   it('does not revert a manually-equipped frame on the next tracked action', () => {
@@ -299,5 +321,104 @@ describe('updateReactionStreak', () => {
     const next = updateReactionStreak(g, '2026-07-06')
     expect(next.reactionStreak).toBe(1)
     expect(next.workoutStreak).toBe(9)
+  })
+
+  it('increments the lifetime totalReactionsGiven counter alongside the streak', () => {
+    const g = { ...g0(), totalReactionsGiven: 4, lastReactionDate: '2026-07-05' }
+    expect(updateReactionStreak(g, '2026-07-06').totalReactionsGiven).toBe(5)
+  })
+
+  it('does not double-count totalReactionsGiven for the same day', () => {
+    const g = { ...g0(), totalReactionsGiven: 4, lastReactionDate: '2026-07-06' }
+    expect(updateReactionStreak(g, '2026-07-06').totalReactionsGiven).toBe(4)
+  })
+})
+
+describe('reconcileWorkoutStreak', () => {
+  it('no-ops when already trained today', () => {
+    const g = { ...g0(), workoutStreak: 5, lastWorkoutDate: '2026-07-06' }
+    const result = reconcileWorkoutStreak(g, '2026-07-06')
+    expect(result.g).toBe(g)
+    expect(result.streakBroken).toBe(false)
+  })
+
+  it("no-ops when the streak is still legitimately pending today's workout", () => {
+    const g = { ...g0(), workoutStreak: 5, lastWorkoutDate: '2026-07-05' }
+    const result = reconcileWorkoutStreak(g, '2026-07-06')
+    expect(result.g).toBe(g)
+    expect(result.streakBroken).toBe(false)
+  })
+
+  it('no-ops for a brand-new user with no workout history', () => {
+    const result = reconcileWorkoutStreak(g0(), '2026-07-06')
+    expect(result.streakBroken).toBe(false)
+    expect(result.freezeConsumed).toBe(false)
+  })
+
+  it('consumes a streak freeze on a real gap instead of breaking the streak', () => {
+    const g = { ...g0(), workoutStreak: 5, lastWorkoutDate: '2026-07-01', inventory: { streakFreezes: 1 } }
+    const result = reconcileWorkoutStreak(g, '2026-07-06')
+    expect(result.freezeConsumed).toBe(true)
+    expect(result.streakBroken).toBe(false)
+    expect(result.g.workoutStreak).toBe(5)
+    expect(result.g.lastWorkoutDate).toBe('2026-07-05')
+    expect(result.g.inventory.streakFreezes).toBe(0)
+  })
+
+  it('breaks the streak and costs a life on a real gap with no freeze available', () => {
+    const g = { ...g0(), workoutStreak: 5, longestStreak: 5, lastWorkoutDate: '2026-07-01', lives: 3, weeklyGemsEarned: 40 }
+    const result = reconcileWorkoutStreak(g, '2026-07-06')
+    expect(result.streakBroken).toBe(true)
+    expect(result.lifeLost).toBe(true)
+    expect(result.g.workoutStreak).toBe(0)
+    expect(result.g.lives).toBe(2)
+    expect(result.g.lastWorkoutDate).toBe('2026-07-01') // untouched — real gap math stays correct
+  })
+
+  it('applies the gem penalty + pet-death when the life loss brings lives to 0', () => {
+    const g = { ...g0(), workoutStreak: 2, lastWorkoutDate: '2026-07-01', lives: 1, gems: 100, weeklyGemsEarned: 40 }
+    const result = reconcileWorkoutStreak(g, '2026-07-06')
+    expect(result.g.lives).toBe(0)
+    expect(result.penaltyApplied).toBe(10) // 25% of weeklyGemsEarned
+    expect(result.g.gems).toBe(90)
+  })
+
+  it('does not lose a life when there was no streak to lose', () => {
+    const g = { ...g0(), workoutStreak: 0, lastWorkoutDate: '2026-07-01', lives: 3 }
+    const result = reconcileWorkoutStreak(g, '2026-07-06')
+    expect(result.streakBroken).toBe(false)
+    expect(result.lifeLost).toBe(false)
+    expect(result.g).toBe(g)
+  })
+})
+
+describe('checkCaloriePenalty multi-day gap', () => {
+  it('resets calorieGoalStreak on a genuine multi-day gap even with nothing logged', () => {
+    const g = { ...g0(), calorieGoalStreak: 6, lastCalorieDate: '2026-07-01' }
+    const { g: next, goalHit, lifeLost } = checkCaloriePenalty(g, '2026-07-06', 2000, null)
+    expect(next.calorieGoalStreak).toBe(0)
+    expect(next.lastCalorieDate).toBe('2026-07-06')
+    expect(goalHit).toBe(false)
+    expect(lifeLost).toBe(false)
+  })
+
+  it('does not reset the streak in the normal contiguous day-to-day case', () => {
+    const g = { ...g0(), calorieGoalStreak: 4, lastCalorieDate: '2026-07-05' }
+    const { g: next } = checkCaloriePenalty(g, '2026-07-06', 2000, { calories: 2000 })
+    expect(next.calorieGoalStreak).toBe(5)
+  })
+
+  it('does not flag a brand-new user (empty lastCalorieDate) as a gap', () => {
+    const g = { ...g0(), calorieGoalStreak: 0, lastCalorieDate: '' }
+    const { g: next } = checkCaloriePenalty(g, '2026-07-06', 2000, null)
+    expect(next.calorieGoalStreak).toBe(0)
+    expect(next.lastCalorieDate).toBe('2026-07-06')
+  })
+
+  it('a hit right after a gap starts the streak at 1, not from the stale pre-gap count', () => {
+    const g = { ...g0(), calorieGoalStreak: 6, lastCalorieDate: '2026-07-01' }
+    const { g: next, goalHit } = checkCaloriePenalty(g, '2026-07-06', 2000, { calories: 2000 })
+    expect(goalHit).toBe(true)
+    expect(next.calorieGoalStreak).toBe(1) // gap reset to 0, then +1 — NOT 7
   })
 })

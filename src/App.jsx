@@ -5,6 +5,8 @@ import Auth from './screens/Auth'
 import Onboarding from './screens/Onboarding'
 import WhyAura from './screens/WhyAura'
 import ProUpsell from './screens/ProUpsell'
+import GiftTrialEnded from './screens/GiftTrialEnded'
+import GiftTrialDowngrade from './screens/GiftTrialDowngrade'
 import Home from './screens/Home'
 import WorkoutHub from './screens/WorkoutHub'
 import WorkoutDetail from './screens/WorkoutDetail'
@@ -20,6 +22,7 @@ import MacrosScreen from './screens/MacrosScreen'
 import Profile from './screens/Profile'
 import MedalsScreen from './screens/MedalsScreen'
 import QuestsScreen from './screens/QuestsScreen'
+import CalendarScreen from './screens/CalendarScreen'
 import StoreScreen from './screens/StoreScreen'
 import Discovery from './screens/Discovery'
 import UserProfileView from './screens/UserProfileView'
@@ -29,13 +32,15 @@ import BodyProgress from './screens/BodyProgress'
 import RankPage from './screens/RankPage'
 import Leaderboard from './screens/Leaderboard'
 import Settings from './screens/Settings'
+import EditDetails from './screens/EditDetails'
 import LegalDoc from './screens/LegalDoc'
 import { buildWeeklyPlan, buildCustomWeeklyPlan, getWeekdayIndex, dateKeyFor } from './utils/workoutBuilder'
 import { supabase } from './lib/supabase'
 import { saveWorkoutHistory, fetchPendingRequests, setUsername, logNutrition, notifySelf } from './lib/social'
+import { grantGiftTrial } from './lib/giftTrial'
 import {
   DEFAULT_GAMIFICATION, resetWeeklyIfNeeded, awardGems, awardXP,
-  updateStreak, checkBadges, checkCaloriePenalty, calorieGoalStatus,
+  updateStreak, reconcileWorkoutStreak, getYesterday, checkBadges, checkCaloriePenalty, calorieGoalStatus,
   awardRankPoints, awardMuscleRankPoints, claimQuest, purchaseItem, equipCosmetic, QUEST_POOL, SHOP_ITEMS,
   MUSCLE_RANK_MIN_WORKOUTS, claimWeeklyChallenge, evaluateDailyQuests,
 } from './utils/gamification'
@@ -214,12 +219,24 @@ export default function App() {
       }
 
       setUserProfile(profile)
-      setSubscription({ proUntil: data.pro_until || null, status: data.subscription_status || null })
+      const subState = { proUntil: data.pro_until || null, status: data.subscription_status || null }
+      setSubscription(subState)
       const plan = profile.planningMode === 'custom'
         ? buildCustomWeeklyPlan(data.custom_schedule || {})
         : buildWeeklyPlan(profile)
       setWeeklyPlan(plan)
-      setScreen('home')
+
+      // The automatic 7-day gift trial just lapsed (status still marks it as
+      // the gift, but pro_until is now in the past) -- force the "Continue
+      // with Pro" / "Continue Free" decision before anything else loads. Only
+      // re-checked here, on load/login -- not live mid-session. A user
+      // already inside the app when their gift lapses simply sees normal
+      // free-tier gating (isProUser is recomputed every render, so that part
+      // IS live) until their next reload, rather than an interstitial.
+      const giftTrialLapsed = subState.status === 'trialing_gift'
+        && subState.proUntil
+        && new Date(subState.proUntil).getTime() <= Date.now()
+      setScreen(giftTrialLapsed ? 'giftTrialEnded' : 'home')
 
       if (!usedFallback) {
         if (data.cookbook && Array.isArray(data.cookbook)) {
@@ -241,12 +258,17 @@ export default function App() {
         let g = { ...DEFAULT_GAMIFICATION, ...(data.gamification || {}) }
         g = resetWeeklyIfNeeded(g)
 
-        // Check yesterday's calorie goal and apply penalty/reward
+        // Check yesterday's calorie goal and apply penalty/reward. Called
+        // unconditionally now (not just when data.daily_log_date is exactly
+        // yesterday) — checkCaloriePenalty itself detects a multi-day gap and
+        // resets a stale calorieGoalStreak instead of leaving it frozen, and
+        // no-ops safely when there's nothing new to evaluate.
         const ydDate = new Date(); ydDate.setDate(ydDate.getDate() - 1)
         const yesterdayKey = dateKeyFor(ydDate)
-        if (data.daily_log_date === yesterdayKey && data.daily_log) {
+        const yesterdayLog = data.daily_log_date === yesterdayKey ? data.daily_log : null
+        {
           const dailyTarget = profile.dailyCalorieTarget
-          const { g: checkedG, lifeLost, penaltyApplied, goalHit } = checkCaloriePenalty(g, yesterdayKey, dailyTarget, data.daily_log)
+          const { g: checkedG, lifeLost, penaltyApplied, goalHit } = checkCaloriePenalty(g, yesterdayKey, dailyTarget, yesterdayLog)
           g = checkedG
           if (lifeLost) {
             if (penaltyApplied > 0) pushNotification(`❤️ Life lost — missed calorie goal. -${penaltyApplied} 💎 penalty`)
@@ -264,6 +286,37 @@ export default function App() {
           }
         }
 
+        // Proactively reconcile a broken workout streak — a genuine 2+ day gap
+        // either consumes a streak freeze (streak preserved) or breaks it and
+        // costs a life, same mechanic as a missed calorie goal.
+        {
+          const { g: reconciledG, streakBroken, freezeConsumed, penaltyApplied: streakPenalty } = reconcileWorkoutStreak(g, todayKey)
+          g = reconciledG
+          if (streakBroken) {
+            if (streakPenalty > 0) pushNotification(`❤️ Life lost — workout streak broken. -${streakPenalty} 💎 penalty`)
+            else pushNotification('❤️ Life lost — workout streak broken')
+            if (g.lives === 0) {
+              notifySelf({
+                title: '💀 Your pet has died',
+                body: 'Your pet ran out of lives — revive it in the Store to bring it back.',
+                url: '/',
+                category: 'petCare',
+              })
+            }
+          } else if (freezeConsumed) {
+            pushNotification('🧊 Streak freeze used — your streak is safe!')
+          }
+        }
+
+        // Badge thresholds (calorieGoalStreak / workoutStreak) may have just
+        // been crossed by either check above — evaluate immediately instead of
+        // waiting for an unrelated later meal-log/workout event.
+        {
+          const { updatedG, newBadges } = checkBadges(g, {})
+          g = updatedG
+          newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
+        }
+
         // Unified "did the user miss yesterday" detection — feeds the Home banner,
         // the Discovery lock, and the missed-workout make-up prompt from one pass.
         // Only meaningful for a user who was actually active before today —
@@ -273,7 +326,7 @@ export default function App() {
         const yesterdayDow = getWeekdayIndex(ydDate)
         const yesterdaySlot = plan?.[yesterdayDow] ?? null
         const workoutMissedYesterday = activeBeforeToday && !!yesterdaySlot?.isTrainingDay && !(g.workoutDates || []).includes(yesterdayKey)
-        const cStatus = calorieGoalStatus(profile.dailyCalorieTarget, data.daily_log_date === yesterdayKey ? data.daily_log : null)
+        const cStatus = calorieGoalStatus(profile.dailyCalorieTarget, yesterdayLog)
         const calorieMissedYesterday = activeBeforeToday && (cStatus === 'missed' || cStatus === 'not_logged')
         setMissState({ yesterdayKey, workoutMissedYesterday, missedWorkoutEntry: workoutMissedYesterday ? yesterdaySlot : null, calorieMissedYesterday })
         if (workoutMissedYesterday) pushNotification(`😔 You missed ${yesterdaySlot.label} yesterday`)
@@ -335,6 +388,37 @@ export default function App() {
     }, 1500)
     return () => clearTimeout(t)
   }, [cookbook]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Evaluates cookbook_queen the moment cookbook count actually changes (save
+  // OR delete), instead of waiting for the user's next unrelated workout
+  // completion — the only place cookbookCount was previously threaded into
+  // checkBadges. Idempotent — checkBadges no-ops once the badge is already
+  // earned — and this also retroactively grants the badge to any existing
+  // user who already has 5+ items but never triggered the old check.
+  useEffect(() => {
+    if (!dataReady.current) return
+    const { newBadges } = checkBadges(gamification, { cookbookCount: cookbook.length })
+    if (newBadges.length > 0) {
+      setGamification(prev => checkBadges(prev, { cookbookCount: cookbook.length }).updatedG)
+      newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cookbook.length])
+
+  // Evaluates the Community medal family the moment totalReactionsGiven
+  // changes — updateReactionStreak() (called from Discovery's handleReact)
+  // never threads into checkBadges itself, same reasoning as the cookbook
+  // effect above. Idempotent — also retroactively grants tiers to any
+  // existing user who already crossed a threshold but never triggered a check.
+  useEffect(() => {
+    if (!dataReady.current) return
+    const { newBadges } = checkBadges(gamification, {})
+    if (newBadges.length > 0) {
+      setGamification(prev => checkBadges(prev, {}).updatedG)
+      newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gamification.totalReactionsGiven])
 
   // Auto-save gamification to Supabase (debounced 1.5s)
   useEffect(() => {
@@ -502,85 +586,105 @@ export default function App() {
     }
   }
 
-  const handleResetOnboarding = async () => {
-    if (sessionRef.current) {
-      await supabase.from('profiles').update({ onboarding_done: false }).eq('id', sessionRef.current.user.id)
+  const handleClaimGiftTrial = async () => {
+    setOnboardingFlow(false)
+    try {
+      const next = await grantGiftTrial()
+      setSubscription(next)
+    } catch (err) {
+      console.error('Gift trial grant failed:', err.message)
+      // Never strand a new user here -- worst case they land on Home without
+      // Pro yet and can subscribe normally later from Settings.
     }
-    dataReady.current = false
-    setUserProfile(DEFAULT_PROFILE)
-    setWeeklyPlan(null)
-    setLoggedMacros(DEFAULT_LOGGED_MACROS)
-    setCookbook([])
-    setScreen('onboarding')
+    navigate('home')
   }
 
   const handleWorkoutComplete = (rawSessionData = {}) => {
     const today = dateKeyFor()
-    let g = resetWeeklyIfNeeded(gamification)
-    g = { ...g, totalWorkouts: g.totalWorkouts + 1, weeklyWorkoutsDone: g.weeklyWorkoutsDone + 1 }
-    // Track workout date for calendar
-    const existingDates = g.workoutDates || []
-    if (!existingDates.includes(today)) g = { ...g, workoutDates: [...existingDates, today] }
-    g = updateStreak(g, today)
-    if (activeWorkout?.source === 'makeup') g = { ...g, lastMakeupDate: today }
-
-    // Base workout reward — scaled by how much of the workout was actually
-    // completed, so finishing 1 set doesn't earn the same as finishing all of
-    // them (a flat reward undermined the "Finish Workout" completion cue).
+    const isMakeup = activeWorkout?.source === 'makeup'
     const completionRatio = rawSessionData.totalSets > 0 ? rawSessionData.setsCompleted / rawSessionData.totalSets : 1
     const baseGems = Math.max(10, Math.round(30 * completionRatio))
     const baseXP = Math.max(15, Math.round(50 * completionRatio))
-    g = awardGems(g, baseGems)
-    let levelUp = false; let lvl = g.level
-    ;({ g, leveledUp: levelUp, newLevel: lvl } = awardXP(g, baseXP))
+
+    // Pure — computes the full gamification delta for this workout completion
+    // from a given base state. Called once against the render-time `gamification`
+    // (purely to derive this call's notification text / workoutSession summary)
+    // and once more inside the setGamification updater against the freshest
+    // `prev` (the actual persisted commit) — so a near-simultaneous mutation from
+    // another handler (e.g. handleMealLogged) can never be silently dropped by
+    // one overwriting the other's stale snapshot.
+    const buildWorkoutRewards = (baseG) => {
+      let g = resetWeeklyIfNeeded(baseG)
+      g = { ...g, totalWorkouts: g.totalWorkouts + 1, weeklyWorkoutsDone: g.weeklyWorkoutsDone + 1 }
+      // Track workout date for calendar
+      const existingDates = g.workoutDates || []
+      if (!existingDates.includes(today)) g = { ...g, workoutDates: [...existingDates, today] }
+      // A makeup workout is credited for the day it was FOR (yesterday — this
+      // app only ever flags a single most-recent missed day, no backlog), not
+      // today — otherwise updateStreak sees `today` as a fresh gap and resets
+      // to 1 exactly as if the user had skipped it, identical to handleSkipMakeup's outcome.
+      g = updateStreak(g, isMakeup ? getYesterday(today) : today)
+      if (isMakeup) g = { ...g, lastMakeupDate: today }
+
+      // Base workout reward — scaled by how much of the workout was actually
+      // completed, so finishing 1 set doesn't earn the same as finishing all of
+      // them (a flat reward undermined the "Finish Workout" completion cue).
+      g = awardGems(g, baseGems)
+      let levelUp = false; let lvl = g.level
+      ;({ g, leveledUp: levelUp, newLevel: lvl } = awardXP(g, baseXP))
+
+      // Streak milestone bonuses
+      const milestones = { 3: { gems: 25, xp: 40 }, 7: { gems: 75, xp: 100 }, 30: { gems: 300, xp: 500 }, 60: { gems: 500, xp: 800 } }
+      const mb = milestones[g.workoutStreak]
+      if (mb) {
+        g = awardGems(g, mb.gems)
+        ;({ g } = awardXP(g, mb.xp))
+      }
+
+      const allWeekDone = g.weeklyWorkoutsDone >= (userProfile.daysPerWeek || 3)
+      const { updatedG, newBadges } = checkBadges(g, { workoutCompleted: true, cookbookCount: cookbook.length, allWeekDone })
+      g = updatedG
+
+      // Rank points
+      let rankedUp = false; let newRankLabel = ''
+      ;({ g, rankedUp, newRank: newRankLabel } = awardRankPoints(g, allWeekDone ? 20 : 10))
+
+      // Muscle-group rank points
+      const muscleGains = {}   // { muscleId: pointsGainedThisSession }
+      ;(rawSessionData.exercises || []).forEach(ex => {
+        const doneSets = (ex.loggedSets || []).filter(s => s.done)
+        if (doneSets.length === 0) return
+
+        const avgWeight = doneSets.reduce((sum, s) => sum + (parseFloat(s.weight) || 0), 0) / doneSets.length
+        const weightBonus = Math.min(30, Math.round(avgWeight / 5))
+
+        ;(ex.muscles?.primary   || []).forEach(m => { muscleGains[m] = (muscleGains[m] || 0) + 10 + weightBonus })
+        ;(ex.muscles?.secondary || []).forEach(m => { muscleGains[m] = (muscleGains[m] || 0) + 5  + weightBonus })
+      })
+
+      const muscleRankUps = []
+      Object.entries(muscleGains).forEach(([muscleId, points]) => {
+        const { g: g2, rankedUp: muscleRankedUp, newRank: muscleNewRank } = awardMuscleRankPoints(g, muscleId, points)
+        g = g2
+        if (muscleRankedUp) muscleRankUps.push({ muscleId, label: muscleNewRank })
+      })
+
+      return { g, levelUp, lvl, mb, allWeekDone, newBadges, rankedUp, newRankLabel, muscleGains, muscleRankUps }
+    }
+
+    const display = buildWorkoutRewards(gamification)
     pushNotification(`+${baseGems} 💎  Workout complete!`)
-    if (levelUp) pushNotification(`Level up! You're now Level ${lvl} ⬆️`)
-
-    // Streak milestone bonuses
-    const milestones = { 3: { gems: 25, xp: 40 }, 7: { gems: 75, xp: 100 }, 30: { gems: 300, xp: 500 }, 60: { gems: 500, xp: 800 } }
-    const mb = milestones[g.workoutStreak]
-    if (mb) {
-      g = awardGems(g, mb.gems)
-      ;({ g } = awardXP(g, mb.xp))
-      pushNotification(`🔥 ${g.workoutStreak}-day streak bonus! +${mb.gems} 💎`)
+    if (display.levelUp) pushNotification(`Level up! You're now Level ${display.lvl} ⬆️`)
+    if (display.mb) pushNotification(`🔥 ${display.g.workoutStreak}-day streak bonus! +${display.mb.gems} 💎`)
+    display.newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
+    if (display.allWeekDone) pushNotification('+60 💎  Full week complete!')
+    if (display.rankedUp) pushNotification(`Rank up! You're now ${display.newRankLabel} 🏆`)
+    if (display.g.totalWorkouts >= MUSCLE_RANK_MIN_WORKOUTS) {
+      display.muscleRankUps.forEach(({ muscleId, label }) => pushNotification(`🏆 ${MUSCLE_LABELS[muscleId] || muscleId} ranked up to ${label}!`))
     }
 
-    const allWeekDone = g.weeklyWorkoutsDone >= (userProfile.daysPerWeek || 3)
-    const { updatedG, newBadges } = checkBadges(g, { workoutCompleted: true, cookbookCount: cookbook.length, allWeekDone })
-    g = updatedG
-    newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
-    if (allWeekDone) pushNotification('+60 💎  Full week complete!')
-
-    // Rank points
-    let rankedUp = false; let newRankLabel = ''
-    ;({ g, rankedUp, newRank: newRankLabel } = awardRankPoints(g, allWeekDone ? 20 : 10))
-    if (rankedUp) pushNotification(`Rank up! You're now ${newRankLabel} 🏆`)
-
-    // Muscle-group rank points
-    const muscleGains = {}   // { muscleId: pointsGainedThisSession }
-    ;(rawSessionData.exercises || []).forEach(ex => {
-      const doneSets = (ex.loggedSets || []).filter(s => s.done)
-      if (doneSets.length === 0) return
-
-      const avgWeight = doneSets.reduce((sum, s) => sum + (parseFloat(s.weight) || 0), 0) / doneSets.length
-      const weightBonus = Math.min(30, Math.round(avgWeight / 5))
-
-      ;(ex.muscles?.primary   || []).forEach(m => { muscleGains[m] = (muscleGains[m] || 0) + 10 + weightBonus })
-      ;(ex.muscles?.secondary || []).forEach(m => { muscleGains[m] = (muscleGains[m] || 0) + 5  + weightBonus })
-    })
-
-    const muscleRankUps = []
-    Object.entries(muscleGains).forEach(([muscleId, points]) => {
-      const { g: g2, rankedUp: muscleRankedUp, newRank: muscleNewRank } = awardMuscleRankPoints(g, muscleId, points)
-      g = g2
-      if (muscleRankedUp) muscleRankUps.push({ muscleId, label: muscleNewRank })
-    })
-    if (g.totalWorkouts >= MUSCLE_RANK_MIN_WORKOUTS) {
-      muscleRankUps.forEach(({ muscleId, label }) => pushNotification(`🏆 ${MUSCLE_LABELS[muscleId] || muscleId} ranked up to ${label}!`))
-    }
-
-    setGamification(g)
-    setWorkoutSession({ ...rawSessionData, xpEarned: baseXP, gemsEarned: baseGems, streak: g.workoutStreak, muscleGains, muscleRankUps })
+    setGamification(prev => buildWorkoutRewards(prev).g)
+    setWorkoutSession({ ...rawSessionData, xpEarned: baseXP, gemsEarned: baseGems, streak: display.g.workoutStreak, muscleGains: display.muscleGains, muscleRankUps: display.muscleRankUps })
 
     // Persist workout history (user chooses whether to post via WorkoutPost)
     if (sessionRef.current) {
@@ -671,22 +775,27 @@ export default function App() {
       })
     }
 
-    let g = resetWeeklyIfNeeded(gamification)
-    g = awardGems(g, 5)
-    ;({ g } = awardXP(g, 10))
-    const { updatedG, newBadges } = checkBadges(g, { mealLogged: true })
-    g = updatedG
-
     // Track today's meal-kind buckets so meal-logging quests can auto-complete.
     // Date format must match the quest system (Home.jsx/QuestsScreen.jsx — local date).
     const todayKey = dateKeyFor()
     const bucket = mealBucket(mealData.mealType)
-    const mt = g.mealsToday?.date === todayKey ? g.mealsToday : { date: todayKey, types: [] }
-    g = { ...g, mealsToday: { date: todayKey, types: [...mt.types, bucket] } }
 
-    setGamification(g)
+    // Pure, same reasoning as handleWorkoutComplete's buildWorkoutRewards.
+    const buildMealRewards = (baseG) => {
+      let g = resetWeeklyIfNeeded(baseG)
+      g = awardGems(g, 5)
+      ;({ g } = awardXP(g, 10))
+      const { updatedG, newBadges } = checkBadges(g, { mealLogged: true })
+      g = updatedG
+      const mt = g.mealsToday?.date === todayKey ? g.mealsToday : { date: todayKey, types: [] }
+      g = { ...g, mealsToday: { date: todayKey, types: [...mt.types, bucket] } }
+      return { g, newBadges }
+    }
+
+    const display = buildMealRewards(gamification)
+    setGamification(prev => buildMealRewards(prev).g)
     pushNotification('+5 💎  Meal logged!')
-    newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
+    display.newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
 
     if (offerShare && mealData.name) {
       setMealPostData(mealData)
@@ -697,7 +806,10 @@ export default function App() {
   const handleUpdateProfile = async (partial) => {
     const next = { ...userProfile, ...partial }
     setUserProfile(next)
-    if (next.planningMode !== 'custom' && ('trainingStyle' in partial || 'daysPerWeek' in partial || 'trainingDays' in partial)) {
+    if (next.planningMode !== 'custom' && (
+      'trainingStyle' in partial || 'daysPerWeek' in partial || 'trainingDays' in partial ||
+      'equipment' in partial || 'experience' in partial
+    )) {
       setWeeklyPlan(buildWeeklyPlan(next))
     }
     if (sessionRef.current) {
@@ -722,11 +834,20 @@ export default function App() {
           <WhyAura
             userProfile={userProfile}
             weeklyPlan={weeklyPlan}
-            onContinue={() => { setOnboardingFlow(false); navigate('proUpsell') }}
+            onContinue={handleClaimGiftTrial}
           />
         )
       case 'proUpsell':
         return <ProUpsell subscription={subscription} onContinue={() => navigate('home')} />
+      case 'giftTrialEnded':
+        return <GiftTrialEnded onNavigate={navigate} />
+      case 'giftTrialDowngrade':
+        return (
+          <GiftTrialDowngrade
+            onDeclined={(next) => { setSubscription(next); navigate('home') }}
+            onNavigate={navigate}
+          />
+        )
       case 'home':
         return <Home userProfile={userProfile} loggedMacros={loggedMacros} todayWorkout={todayWorkout} gamification={gamification} isProUser={isProUser} missState={missState} session={session} onStartMakeup={handleStartMakeup} onSkipMakeup={handleSkipMakeup} onSkipCalorieMiss={handleSkipCalorieMiss} onNavigate={navigate} />
 
@@ -857,7 +978,14 @@ export default function App() {
             isProUser={isProUser}
             onNavigate={navigate}
             onUpdateProfile={handleUpdateProfile}
-            onResetOnboarding={handleResetOnboarding}
+          />
+        )
+      case 'editDetails':
+        return (
+          <EditDetails
+            userProfile={userProfile}
+            onUpdateProfile={handleUpdateProfile}
+            onNavigate={navigate}
           />
         )
       case 'terms':
@@ -868,6 +996,17 @@ export default function App() {
         return <MedalsScreen gamification={gamification} onNavigate={navigate} />
       case 'quests':
         return <QuestsScreen gamification={gamification} onClaimQuest={handleClaimQuest} onClaimChallenge={handleClaimChallenge} onNavigate={navigate} />
+      case 'calendar':
+        return (
+          <CalendarScreen
+            gamification={gamification}
+            routine={routine}
+            weeklyPlan={weeklyPlan}
+            session={session}
+            onClaimQuest={handleClaimQuest}
+            onNavigate={navigate}
+          />
+        )
       case 'discovery':
         return (
           <Discovery

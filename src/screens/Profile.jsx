@@ -22,7 +22,7 @@ const SECTIONS = [
   { id: 'store',     label: 'Store',     icon: '🛍️', bg: NB.pink,     screen: 'store' },
   { id: 'inventory', label: 'Inventory', icon: '🎒', bg: NB.green,    sheet: true },
   { id: 'nutrition', label: 'Nutrition', icon: '🥗', bg: NB.cream,    screen: 'meals' },
-  { id: 'calendar',  label: 'Calendar',  icon: '📅', bg: NB.white,    sheet: true },
+  { id: 'calendar',  label: 'Calendar',  icon: '📅', bg: NB.white,    screen: 'calendar' },
   { id: 'analytics',   label: 'Analytics',   icon: '📈', bg: NB.magenta, screen: 'analytics' },
   { id: 'leaderboard', label: 'Leaderboard', icon: '🏆', bg: NB.yellow,  screen: 'leaderboard' },
 ]
@@ -148,62 +148,6 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
           </div>
           )
         })}
-      </div>
-    )
-  }
-
-  // ── Calendar sheet ──────────────────────────────────────────────────────────
-  const CalendarContent = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = now.getMonth()
-    const monthName = now.toLocaleString('default', { month: 'long' })
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const firstDay = new Date(year, month, 1).getDay()
-    const firstOffset = firstDay === 0 ? 6 : firstDay - 1
-    const workoutSet = new Set(g.workoutDates || [])
-    const todayStr = dateKeyFor(now)
-    const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
-    const thisMonthCount = (g.workoutDates || []).filter(d => d.startsWith(monthKey)).length
-
-    const cells = []
-    for (let i = 0; i < firstOffset; i++) cells.push(null)
-    for (let d = 1; d <= daysInMonth; d++) cells.push(d)
-
-    return (
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, textTransform: 'uppercase', color: NB.ink }}>{monthName} {year}</div>
-          <div style={{ fontSize: 12, color: NB.ink, fontWeight: 700, background: NB.yellow, border: `1.5px solid ${NB.ink}`, borderRadius: 8, padding: '4px 10px' }}>{thisMonthCount} workouts</div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 6 }}>
-          {['M','T','W','T','F','S','S'].map((d, i) => (
-            <div key={i} style={{ textAlign: 'center', fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: '#555', padding: '2px 0' }}>{d}</div>
-          ))}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
-          {cells.map((day, i) => {
-            if (!day) return <div key={i} />
-            const dateStr = `${monthKey}-${String(day).padStart(2, '0')}`
-            const hasWorkout = workoutSet.has(dateStr)
-            const isToday = dateStr === todayStr
-            return (
-              <div key={i} style={{ height: 34, borderRadius: 8, border: isToday ? `2px solid ${NB.ink}` : '1.5px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', background: hasWorkout ? NB.teal : isToday ? NB.cream : 'transparent' }}>
-                <span style={{ fontSize: 11, fontWeight: hasWorkout || isToday ? 800 : 400, color: NB.ink }}>{day}</span>
-              </div>
-            )
-          })}
-        </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 12, height: 12, borderRadius: 4, background: NB.teal, border: `1.5px solid ${NB.ink}` }} />
-            <span style={{ fontSize: 11, color: '#555' }}>Workout day</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 12, height: 12, borderRadius: 4, border: `2px solid ${NB.ink}` }} />
-            <span style={{ fontSize: 11, color: '#555' }}>Today</span>
-          </div>
-        </div>
       </div>
     )
   }
@@ -395,9 +339,6 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
       {/* Section sheets */}
       <BottomSheet open={openSheet === 'inventory'} onClose={() => setOpenSheet(null)} title="Inventory">
         <InventoryContent />
-      </BottomSheet>
-      <BottomSheet open={openSheet === 'calendar'} onClose={() => setOpenSheet(null)} title="Calendar">
-        <CalendarContent />
       </BottomSheet>
 
       <BottomNav active="profile" onNavigate={onNavigate} />

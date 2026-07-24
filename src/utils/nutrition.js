@@ -40,6 +40,17 @@ export const MACRO_META = [
 
 export const MACRO_KEYS = MACRO_META.map(m => m.key)
 
+// Mifflin-St Jeor BMR → activity-scaled TDEE → goal-adjusted calorie target.
+// Shared by Onboarding (step 14) and Settings' Edit My Details screen so both
+// compute identical numbers from identical inputs.
+export function calculateNutrition(weightKg, heightCm, age, daysCount, fitnessGoal) {
+  const bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161
+  const mults = { 1: 1.375, 2: 1.375, 3: 1.55, 4: 1.55, 5: 1.55, 6: 1.725, 7: 1.725 }
+  const tdee = Math.round(bmr * (mults[daysCount] ?? 1.55))
+  const offsets = { lose_weight: -500, build_muscle: 300, tone_recomp: 0, maintain: 0, athletic_performance: 200 }
+  return { bmr: Math.round(bmr), tdee, goalTarget: tdee + (offsets[fitnessGoal] ?? 0) }
+}
+
 // Full 10-field daily targets. Prefers the personalized TDEE-based
 // dailyCalorieTarget set at onboarding (split by fitnessGoal); falls back to
 // a flat per-physique table only if that value is missing. The six reference

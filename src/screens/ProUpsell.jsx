@@ -15,11 +15,14 @@ export const FEATURES = [
   { icon: '🐾', label: 'Every Legendary pet, free', desc: 'All Legendary pets in the Store are automatically unlocked for you' },
 ]
 
-// One-time paywall shown right after WhyAura, only during first-time
-// onboarding. isTrialEligible(subscription) is always true here in practice
-// (a brand-new account has never touched Stripe), but the same eligibility
-// check used everywhere else runs regardless, so this screen degrades
-// correctly if it's ever reached a second time.
+// Onboarding no longer routes here directly -- every new user gets an
+// automatic 7-day gift trial instead (see App.jsx's handleClaimGiftTrial).
+// This screen is now reached only from GiftTrialEnded's "Continue with Pro"
+// button (once the gift lapses) and the various in-app feature-gate
+// redirects (Analytics, Meals, MuscleMap, StoreScreen, Settings). By the
+// time anyone gets here, isTrialEligible(subscription) is almost always
+// false (they've already had their one free week) -- the trialEligible
+// branch below exists for the rare case it's ever reached before that.
 export default function ProUpsell({ subscription = {}, onContinue }) {
   const [plan, setPlan] = useState('monthly')
   const [busy, setBusy] = useState(false)
