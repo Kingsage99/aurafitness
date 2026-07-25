@@ -19,7 +19,8 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
   const [error,       setError]       = useState('')
   const [showMediaSheet, setShowMediaSheet] = useState(false)
   const fileRef = useRef()
-  const cameraRef = useRef()
+  const cameraPhotoRef = useRef()
+  const cameraVideoRef = useRef()
 
   // Photos and videos post in their original, uncropped format — no forced
   // aspect ratio for this section.
@@ -81,7 +82,12 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
 
         {/* Media picker */}
         <input ref={fileRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handlePickMedia} />
-        <input ref={cameraRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handlePickMedia} />
+        {/* Two separate single-type capture inputs, not one accept="image/*,video/*"
+            input — Android Chrome can't resolve which camera mode to launch for a
+            mixed accept type and silently falls back to the file picker instead of
+            opening the camera at all. */}
+        <input ref={cameraPhotoRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePickMedia} />
+        <input ref={cameraVideoRef} type="file" accept="video/*" capture="environment" style={{ display: 'none' }} onChange={handlePickMedia} />
         <div
           onClick={() => setShowMediaSheet(true)}
           style={{ overflow: 'hidden', marginBottom: 18, cursor: 'pointer', borderRadius: 18, minHeight: mediaPreview ? 0 : 120, display: 'flex', alignItems: 'center', justifyContent: 'center', ...(mediaPreview ? { border: 'none' } : { ...nbCardStyle(NB.green, 3), border: `3px solid ${NB.white}` }) }}
@@ -161,11 +167,21 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
       <BottomSheet open={showMediaSheet} onClose={() => setShowMediaSheet(false)} title="Add Photo or Video">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button
-            onClick={() => { setShowMediaSheet(false); cameraRef.current?.click() }}
+            onClick={() => { setShowMediaSheet(false); cameraPhotoRef.current?.click() }}
             style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.green, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left' }}
           >
             <CameraIcon size={20} />
-            Take Photo or Video
+            Take Photo
+          </button>
+          <button
+            onClick={() => { setShowMediaSheet(false); cameraVideoRef.current?.click() }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.green, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2.5" y="6.5" width="13" height="11" rx="2.2"/>
+              <path d="M15.5 10.5l6-3.5v10l-6-3.5"/>
+            </svg>
+            Record Video
           </button>
           <button
             onClick={() => { setShowMediaSheet(false); fileRef.current?.click() }}
