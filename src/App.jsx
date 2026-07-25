@@ -7,6 +7,7 @@ import WhyAura from './screens/WhyAura'
 import ProUpsell from './screens/ProUpsell'
 import GiftTrialEnded from './screens/GiftTrialEnded'
 import GiftTrialDowngrade from './screens/GiftTrialDowngrade'
+import GiftTrialWelcome from './screens/GiftTrialWelcome'
 import Home from './screens/Home'
 import WorkoutHub from './screens/WorkoutHub'
 import WorkoutDetail from './screens/WorkoutDetail'
@@ -591,12 +592,13 @@ export default function App() {
     try {
       const next = await grantGiftTrial()
       setSubscription(next)
+      navigate('giftTrialWelcome')
     } catch (err) {
       console.error('Gift trial grant failed:', err.message)
       // Never strand a new user here -- worst case they land on Home without
       // Pro yet and can subscribe normally later from Settings.
+      navigate('home')
     }
-    navigate('home')
   }
 
   const handleWorkoutComplete = (rawSessionData = {}) => {
@@ -839,6 +841,8 @@ export default function App() {
         )
       case 'proUpsell':
         return <ProUpsell subscription={subscription} onContinue={() => navigate('home')} />
+      case 'giftTrialWelcome':
+        return <GiftTrialWelcome onContinue={() => navigate('home')} />
       case 'giftTrialEnded':
         return <GiftTrialEnded onNavigate={navigate} />
       case 'giftTrialDowngrade':

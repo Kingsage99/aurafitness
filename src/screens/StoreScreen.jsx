@@ -36,7 +36,8 @@ export const STORE_BORDERS = [
 ]
 
 export const STORE_BANNERS = [
-  { id: 'banner_default',  label: 'Clouds',   cost: 0,   icon: '☁️', desc: 'Dreamy soft clouds',  image: '/banner/clouds.png' },
+  { id: 'banner_none',     label: 'None',     cost: 0,   icon: '🚫', desc: 'No banner equipped',  image: null },
+  { id: 'banner_default',  label: 'Clouds',   cost: 75,  icon: '☁️', desc: 'Dreamy soft clouds',  image: '/banner/clouds.png' },
   { id: 'banner_sunset',   label: 'Sunset',   cost: 100, icon: '🌅', desc: 'Warm sunset skies',   image: '/banner/sunset.png' },
   { id: 'banner_beach',    label: 'Beach',    cost: 150, icon: '🏖️', desc: 'Sandy beach vibes',   image: '/banner/beach.png' },
   { id: 'banner_mountain', label: 'Mountain', cost: 150, icon: '⛰️', desc: 'Mountain horizon',    image: '/banner/mountain.png' },
@@ -46,6 +47,7 @@ export const STORE_BANNERS = [
 // Gradient fallbacks — shown behind the banner image so the profile banner
 // never looks broken if a PNG is missing.
 const BANNER_GRADIENTS = {
+  banner_none:     NB.lavenderMist,
   banner_default:  'linear-gradient(135deg, #C9D6FF, #E2E2F0)',
   banner_sunset:   'linear-gradient(135deg, #F79AC6, #F7CF4A)',
   banner_beach:    'linear-gradient(135deg, #7FD0E6, #F7E7B0)',
@@ -56,13 +58,13 @@ const BANNER_GRADIENTS = {
 // The gradient fallback for a banner (shown behind the image, or alone if the
 // PNG isn't present yet).
 export function bannerGradientFor(bannerId) {
-  const id = bannerId || 'banner_default'
-  return BANNER_GRADIENTS[id] || BANNER_GRADIENTS.banner_default
+  const id = bannerId || 'banner_none'
+  return BANNER_GRADIENTS[id] || BANNER_GRADIENTS.banner_none
 }
 
 // The banner PNG path, or null.
 export function bannerImageFor(bannerId) {
-  const id = bannerId || 'banner_default'
+  const id = bannerId || 'banner_none'
   return STORE_BANNERS.find(b => b.id === id)?.image || null
 }
 
@@ -222,9 +224,15 @@ export default function StoreScreen({ gamification = {}, isProUser = false, onSh
         <GridCard
           bg={bannerGradientFor(item.id)}
           preview={
-            <div style={{ width: 'calc(100% + 10px)', margin: '0 -5px', aspectRatio: '16/9', borderRadius: 10, overflow: 'hidden' }}>
-              <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
+            item.image ? (
+              <div style={{ width: 'calc(100% + 10px)', margin: '0 -5px', aspectRatio: '16/9', borderRadius: 10, overflow: 'hidden' }}>
+                <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ) : (
+              <div style={{ width: 'calc(100% + 10px)', margin: '0 -5px', aspectRatio: '16/9', borderRadius: 10, background: bannerGradientFor(item.id), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 28 }}>🚫</span>
+              </div>
+            )
           }
           label={item.label}
           badge={badge}

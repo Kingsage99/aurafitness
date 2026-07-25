@@ -28,10 +28,10 @@ export default function QuestsScreen({ gamification = {}, onClaimQuest, onClaimC
           </button>
           <div>
             <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 22, textTransform: 'uppercase', color: NB.ink }}>Quests</div>
-            <div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{completedToday.length} / 3 completed today</div>
+            <div style={{ fontSize: 12, color: '#555', marginTop: 1 }}>{completedToday.length} / {quests.length} completed today</div>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-            {[0,1,2].map(i => (
+            {quests.map((_, i) => (
               <div key={i} style={{ width: 10, height: 10, border: `1.5px solid ${NB.ink}`, background: i < completedToday.length ? NB.yellow : 'transparent' }} />
             ))}
           </div>

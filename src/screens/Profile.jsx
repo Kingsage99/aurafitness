@@ -89,7 +89,7 @@ export default function Profile({ userProfile, session, gamification = {}, isPro
     const EQUIP_META = {
       pet:    { equippedId: g.activePet, defaultId: 'pet_greycube' },
       frame:  { equippedId: `frame_${g.frame || 'default'}`, defaultId: 'frame_default' },
-      banner: { equippedId: g.activeBanner || 'banner_default', defaultId: 'banner_default' },
+      banner: { equippedId: g.activeBanner || 'banner_none', defaultId: 'banner_none' },
       theme:  { equippedId: g.activeTheme || 'theme_default', defaultId: 'theme_default' },
     }
     return (

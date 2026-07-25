@@ -98,6 +98,19 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
                 />
               )}
               {equippedBorder?.id === 'frame_pro' && isProUser && <ProBorderRing size={44} />}
+              {bellCount > 0 && (
+                <div
+                  onClick={(e) => { e.stopPropagation(); handleBellTap() }}
+                  style={{
+                    position: 'absolute', top: -4, right: -4, zIndex: 1,
+                    minWidth: 18, height: 18, borderRadius: 7, border: `2px solid ${NB.ink}`,
+                    background: NB.red, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.white }}>{bellCount}</span>
+                </div>
+              )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: NB.fontDisplay, fontSize: 18, fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(isProUser ? proTextStyle : { color: NB.ink }) }}>{userProfile?.name || 'MissVfit'}</div>
@@ -120,24 +133,17 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
             <div style={{ display: 'flex', gap: 3 }}>
               {[1,2,3].map(i => <HeartIcon key={i} size={14} filled={i <= lives} />)}
             </div>
+            {/* Streak */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 14, background: NB.white, border: NB_BORDER, boxShadow: hardShadow(2), padding: '6px 10px' }}>
+              <FireIcon size={13} />
+              <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, color: NB.ink }}>{streak}</span>
+            </div>
             {/* Gems */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, borderRadius: 14, background: NB.white, border: NB_BORDER, boxShadow: hardShadow(2), padding: '6px 10px' }}>
               <GemIcon size={13} />
               <span style={{ fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 14, color: NB.ink }}>{gems}</span>
             </div>
           </div>
-          <button onClick={handleBellTap} style={{ position: 'relative', width: 42, height: 42, borderRadius: 12, border: NB_BORDER, boxShadow: hardShadow(2), background: NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-            {bellCount > 0 && (
-              <div style={{
-                position: 'absolute', top: -5, right: -5,
-                minWidth: 18, height: 18, borderRadius: 6, border: `2px solid ${NB.ink}`,
-                background: NB.red, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px',
-              }}>
-                <span style={{ fontFamily: NB.fontMono, fontSize: 9, fontWeight: 800, color: NB.white }}>{bellCount}</span>
-              </div>
-            )}
-          </button>
         </div>
 
         {/* Today's Workout Card */}
@@ -321,13 +327,13 @@ export default function Home({ userProfile, loggedMacros = { calories: 0, protei
         })()}
 
         {/* Daily Quests — stacked checklist */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, cursor: 'pointer' }} onClick={() => onNavigate('quests')}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <StarIcon size={14} />
               <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, color: NB.ink }}>Daily Quests</span>
             </div>
-            <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700 }}>{completedQuests.length}/3 done</span>
+            <span style={{ fontFamily: NB.fontMono, fontSize: 11, color: '#555', fontWeight: 700 }}>{completedQuests.length}/{dailyQuests.length} done</span>
           </div>
           <div style={{ ...nbCardStyle(NB.lavender, 4, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {dailyQuests.map(quest => {

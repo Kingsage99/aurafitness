@@ -37,12 +37,19 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const url = event.notification.data?.url || '/app'
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      for (const client of windowClients) {
-        if ('focus' in client) return client.focus()
+  event.waitUntil((async () => {
+    const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true })
+    // Prefer an already-open app tab and focus it (navigating to the target
+    // first if needed). Focusing the FIRST client blindly used to surface a
+    // stray marketing landing-page tab (any non-/app path) instead of the app.
+    const appClient = windowClients.find(c => c.url.includes('/app'))
+    if (appClient) {
+      if (!appClient.url.includes(url) && 'navigate' in appClient) {
+        try { await appClient.navigate(url) } catch { /* cross-origin/unsupported — just focus */ }
       }
-      if (clients.openWindow) return clients.openWindow(url)
-    })
-  )
+      return appClient.focus()
+    }
+    // No app tab open (or only a landing tab) — open the target fresh.
+    if (clients.openWindow) return clients.openWindow(url)
+  })())
 })

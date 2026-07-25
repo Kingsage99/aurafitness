@@ -32,7 +32,7 @@ export const DEFAULT_GAMIFICATION = {
   purchasedItems: [],
   inventory: { streakFreezes: 0 },
   workoutDates: [],         // "YYYY-MM-DD" array of all workout days
-  activeBanner: 'banner_default',
+  activeBanner: 'banner_none',
   activeTheme: 'theme_default',
   activePet: 'pet_greycube', // equipped pet — see src/data/pets.js
   muscleRanks: {},          // { [muscleId]: { rank: 'rookie', rankPoints: 0, subLevel: 0 } }
@@ -160,15 +160,16 @@ export const QUEST_POOL = [
   { id: 'log_3_meals',      label: 'Log 3 meals today',        reward: 20, icon: '🍱' },
   { id: 'maintain_streak',  label: 'Keep your streak alive',   reward: 10, icon: '🔥' },
   { id: 'hit_protein',      label: 'Hit your protein goal',    reward: 15, icon: '💯' },
-  { id: 'post_or_react',    label: 'Post a workout/meal or react to 10 posts', reward: 20, icon: '📸' },
+  { id: 'post_workout_or_meal', label: 'Post a workout or meal', reward: 15, icon: '📸' },
+  { id: 'react_10_posts',   label: 'React to 10 posts',        reward: 15, icon: '❤️' },
 ]
 
-// Pick 3 quests deterministically for a given date string (YYYY-MM-DD)
+// Pick 4 quests deterministically for a given date string (YYYY-MM-DD)
 export function getDailyQuests(dateStr) {
   const seed = dateStr.replace(/-/g, '').split('').reduce((acc, c) => acc * 31 + c.charCodeAt(0), 1)
   const indices = []
   let s = seed
-  while (indices.length < 3) {
+  while (indices.length < 4) {
     s = (s * 1664525 + 1013904223) & 0xffffffff
     const idx = Math.abs(s) % QUEST_POOL.length
     if (!indices.includes(idx)) indices.push(idx)
@@ -187,10 +188,11 @@ export const QUEST_CONDITIONS = {
   hit_calories:     s => !!s.caloriesHit,
   log_3_meals:      s => (s.mealCount || 0) >= 3,
   hit_protein:      s => !!s.proteinHit,
-  post_or_react:    s => !!s.postedToday || (s.reactionsToday || 0) >= 10,
+  post_workout_or_meal: s => !!s.postedToday,
+  react_10_posts:   s => (s.reactionsToday || 0) >= 10,
 }
 
-// Marks any of today's 3 quests whose condition is now met as `completed` —
+// Marks any of today's quests whose condition is now met as `completed` —
 // no gems are awarded here; the reward is paid out separately by claimQuest()
 // once the user taps to collect it. Idempotent — already-completed quests are
 // skipped, so re-running with unchanged progress returns the same g and no

@@ -27,8 +27,11 @@ function buildInitSets(exercises, userProfile, workoutHistory) {
     const numSets   = ex.sets || 3
     const defaultR  = defaultRepsFor(ex)
     const suggested = estimateStartingWeight({ exerciseId: ex.id, userProfile, workoutHistory })
-    const weight    = suggested != null ? String(suggested) : ''
-    init[i] = Array.from({ length: numSets }, () => ({ weight, reps: defaultR, done: false }))
+    init[i] = Array.from({ length: numSets }, (_, setIdx) => {
+      const saved  = ex.setRows?.[setIdx]?.weight
+      const weight = (saved != null && saved !== '') ? String(saved) : (suggested != null ? String(suggested) : '')
+      return { weight, reps: defaultR, done: false }
+    })
   })
   return init
 }

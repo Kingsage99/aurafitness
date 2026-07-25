@@ -24,12 +24,19 @@ export default function BottomSheet({ open, onClose, title, children, maxHeight 
 
   if (!mounted) return null
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+    <div style={{ position: 'absolute', inset: 0, zIndex: 200 }}>
+      {/* Backdrop covers the FULL screen (not just the space above the card)
+          so the card's rounded top corners have the dark overlay showing
+          through their curved cutouts, instead of the raw undarkened page —
+          that gap was the old flex-sibling layout's bug (the backdrop was a
+          plain rectangle stopping exactly at the card's top edge, so it
+          never actually sat behind the card's corner curves at all). */}
       <div
         onClick={onClose}
-        style={{ flex: 1, background: 'rgba(0,0,0,.45)', opacity: visible ? 1 : 0, transition: 'opacity 0.2s ease' }}
+        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.45)', opacity: visible ? 1 : 0, transition: 'opacity 0.2s ease' }}
       />
       <div style={{
+        position: 'absolute', left: 0, right: 0, bottom: 0,
         background: NB.white, border: NB_BORDER, borderTopLeftRadius: 22, borderTopRightRadius: 22,
         boxShadow: `0 -4px 14px rgba(0,0,0,.14)`, padding: '16px 22px 32px', maxHeight, display: 'flex', flexDirection: 'column',
         overflow: 'hidden',

@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react'
 import { StatusBar } from '../components/PhoneFrame'
+import BottomSheet from '../components/BottomSheet'
 import { createPost, uploadPostMedia } from '../lib/social'
 import { dateKeyFor } from '../utils/workoutBuilder'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW } from '../styles/neoBrutalism'
-import { SaladIcon } from '../components/Icons'
+import { SaladIcon, CameraIcon } from '../components/Icons'
 
 export default function MealPost({ mealData, userProfile, session, onGamificationChange, onNavigate }) {
   const name        = mealData?.name || 'Meal'
@@ -16,7 +17,9 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
   const [mediaIsVideo, setMediaIsVideo] = useState(false)
   const [posting,     setPosting]     = useState(false)
   const [error,       setError]       = useState('')
+  const [showMediaSheet, setShowMediaSheet] = useState(false)
   const fileRef = useRef()
+  const cameraRef = useRef()
 
   // Photos and videos post in their original, uncropped format — no forced
   // aspect ratio for this section.
@@ -78,8 +81,9 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
 
         {/* Media picker */}
         <input ref={fileRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handlePickMedia} />
+        <input ref={cameraRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handlePickMedia} />
         <div
-          onClick={() => fileRef.current?.click()}
+          onClick={() => setShowMediaSheet(true)}
           style={{ overflow: 'hidden', marginBottom: 18, cursor: 'pointer', borderRadius: 18, minHeight: mediaPreview ? 0 : 120, display: 'flex', alignItems: 'center', justifyContent: 'center', ...(mediaPreview ? { border: 'none' } : { ...nbCardStyle(NB.green, 3), border: `3px solid ${NB.white}` }) }}
         >
           {mediaPreview ? (
@@ -90,15 +94,38 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
             <div style={{ textAlign: 'center', padding: 24 }}>
               <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}><SaladIcon size={28} /></div>
               <div style={{ fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: NB.ink }}>Add a photo of your meal</div>
-              <div style={{ fontSize: 12, color: NB.ink, marginTop: 4 }}>Tap to choose from your gallery</div>
+              <div style={{ fontSize: 12, color: NB.ink, marginTop: 4 }}>Tap to take a photo or choose from your gallery</div>
             </div>
           )}
         </div>
         {mediaPreview && (
-          <button onClick={() => fileRef.current?.click()} style={{ display: 'block', margin: '-10px auto 18px', fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button onClick={() => setShowMediaSheet(true)} style={{ display: 'block', margin: '-10px auto 18px', fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
             Change photo / video
           </button>
         )}
+
+        <BottomSheet open={showMediaSheet} onClose={() => setShowMediaSheet(false)} title="Add Photo or Video">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button
+              onClick={() => { setShowMediaSheet(false); cameraRef.current?.click() }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.green, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <CameraIcon size={20} />
+              Take Photo or Video
+            </button>
+            <button
+              onClick={() => { setShowMediaSheet(false); fileRef.current?.click() }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2.5"/>
+                <circle cx="8.5" cy="9.5" r="1.6"/>
+                <path d="M21 15l-5-5-9 9"/>
+              </svg>
+              Choose From Gallery
+            </button>
+          </div>
+        </BottomSheet>
 
         {/* Meal summary */}
         <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '14px 16px', marginBottom: 18 }}>

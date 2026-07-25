@@ -15,6 +15,7 @@ import { groupOf } from '../utils/muscleGroups'
 import { tierForGroup } from '../utils/muscleRankColors'
 import { FireIcon, AddReactionIcon } from '../components/Icons'
 import ImageCropSheet from '../components/ImageCropSheet'
+import BottomSheet from '../components/BottomSheet'
 import AuthorAvatar from '../components/AuthorAvatar'
 import { SkeletonBox } from '../components/Skeleton'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
@@ -26,34 +27,92 @@ import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRA
 // aggregate tally can render any user's reaction — default or a friend's
 // custom upload — without needing to resolve whose sticker collection it
 // came from.
+// Reaction sizing/position — tunable via the Discovery Reaction Calibrator
+// artifact; these are the exact paste target for whatever values that tool
+// settles on. Each stock sticker gets its OWN size in each context (its art
+// reads differently at the same pixel box — e.g. the "SLAY" wordmark needs
+// more room than the heart to stay legible) instead of one shared size.
+// Custom (user-uploaded) stickers always use the DEFAULT_* fallback, since
+// there's no way to pre-tune a size for an upload that doesn't exist yet.
+// Offsets are relative to the icon's own box (position:relative wrapper,
+// postIconSize(url) square), so (0,0) is the icon's top-left corner.
+const REACTION_NUMBER_OFFSET_X = 34
+const REACTION_NUMBER_OFFSET_Y = 8
+const REACTION_NUMBER_FONT_SIZE = 13
+
+const DEFAULT_POST_ICON_SIZE = 38   // fallback for custom stickers, post card
+const DEFAULT_SHEET_ICON_SIZE = 56  // fallback for custom stickers, reaction sheet
+
+const POST_TALLY_GAP = 0  // gap between icons in the post card's floating tally
+const SHEET_ROW_GAP = 4   // gap between icons in the reaction sheet's rows
+
+const POST_ICON_SIZES = {
+  '/sticker/heart.png': 57,
+  '/sticker/peach.png': 58,
+  '/sticker/fire_sticker.png': 58,
+  '/sticker/slay.png': 58,
+}
+const SHEET_ICON_SIZES = {
+  '/sticker/heart.png': 70,
+  '/sticker/peach.png': 72,
+  '/sticker/fire_sticker.png': 72,
+  '/sticker/slay.png': 72,
+}
+
+function postIconSize(url) { return POST_ICON_SIZES[url] ?? DEFAULT_POST_ICON_SIZE }
+function sheetIconSize(url) { return SHEET_ICON_SIZES[url] ?? DEFAULT_SHEET_ICON_SIZE }
+
 const DEFAULT_STICKERS = ['/sticker/heart.png', '/sticker/peach.png', '/sticker/fire_sticker.png', '/sticker/slay.png']
 const HEART_STICKER = DEFAULT_STICKERS[0]
 const isDefaultSticker = url => DEFAULT_STICKERS.includes(url)
+const MAX_CUSTOM_STICKERS = 10
 
 // The stock stickers are already icon-shaped art with a transparent
 // background — a white circle behind them would just box them in. Only
 // user-uploaded photos (arbitrary rectangles) get the circle-crop + white
 // ring treatment, so they read as a matching sticker instead of a raw photo.
-const STICKER_SIZE = 56
-
 function stickerButtonStyle(url) {
+  const size = sheetIconSize(url)
   return isDefaultSticker(url)
-    ? { width: STICKER_SIZE, height: STICKER_SIZE, background: 'none', border: 'none', boxShadow: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }
-    : { width: STICKER_SIZE, height: STICKER_SIZE, borderRadius: '50%', border: `2.5px solid ${NB.white}`, boxShadow: '0 2px 8px rgba(0,0,0,.4)', overflow: 'hidden', background: NB.white, cursor: 'pointer', padding: 0, flexShrink: 0 }
+    ? { width: size, height: size, background: 'none', border: 'none', boxShadow: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }
+    : { width: size, height: size, borderRadius: '50%', border: `2.5px solid ${NB.white}`, boxShadow: '0 2px 8px rgba(0,0,0,.4)', overflow: 'hidden', background: NB.white, cursor: 'pointer', padding: 0, flexShrink: 0 }
 }
 function stickerImgStyle(url) {
   return { width: '100%', height: '100%', objectFit: isDefaultSticker(url) ? 'contain' : 'cover' }
 }
 
-// The picker's top-4, ranked by this viewer's lifetime usage count
-// (gamification.stickerUsage) — ties (usage 0, i.e. a fresh account) keep
-// DEFAULT_STICKERS' order via Array.sort's stability, so new users see the
-// defaults first and heavy reactors gradually see their real favorites rise.
-function topStickers(gamification, userProfile, max = 4) {
-  const usage = gamification?.stickerUsage || {}
+// Small corner toggle on each sticker in the reaction sheet — filled yellow
+// star = pinned (one of the 4 quick-picks), outline yellow star = tap to
+// pin. Just the glyph, no card/border, per design feedback. Separate tap
+// target from the sticker button itself (stopPropagation'd) so pinning
+// never accidentally reacts.
+function pinBadgeStyle() {
+  return {
+    position: 'absolute', top: -6, right: -6, width: 20, height: 20,
+    background: 'none', border: 'none', padding: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 17, lineHeight: 1, cursor: 'pointer', color: NB.yellow,
+    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.45))',
+  }
+}
+
+// Every reaction available to this viewer — the 4 stock stickers plus their
+// own custom uploads (capped at MAX_CUSTOM_STICKERS elsewhere).
+function allStickers(userProfile) {
   const custom = (userProfile?.customStickers || []).map(s => s.url)
-  const pool = [...DEFAULT_STICKERS, ...custom]
-  return [...pool].sort((a, b) => (usage[b] || 0) - (usage[a] || 0)).slice(0, max)
+  return [...DEFAULT_STICKERS, ...custom]
+}
+
+// User-controlled quick-pick set — replaces the old auto-ranked-by-usage
+// picker with an explicit choice (see userProfile.pinnedStickers, toggled via
+// the pin badge in the reaction sheet). Defaults to the 4 stock stickers
+// until the user manually pins something of their own; a stale pinned URL
+// (shouldn't happen today since stickers are never deleted, but cheap to
+// guard) is filtered out rather than shown broken.
+function pinnedStickers(userProfile) {
+  const pool = new Set(allStickers(userProfile))
+  const pinned = (userProfile?.pinnedStickers || []).filter(url => pool.has(url))
+  return pinned.length > 0 ? pinned : DEFAULT_STICKERS
 }
 
 // Colors a post's worked muscles by the author's own rank tier for that
@@ -96,7 +155,20 @@ export default function Discovery({ session, userProfile, gamification = {}, onG
   const fileInputRef = useRef(null)
   const uploadForPostRef = useRef(null)
 
-  const stickerOptions = useMemo(() => topStickers(gamification, userProfile), [gamification.stickerUsage, userProfile?.customStickers])
+  const pinned = useMemo(() => pinnedStickers(userProfile), [userProfile?.pinnedStickers, userProfile?.customStickers])
+  const library = useMemo(() => allStickers(userProfile).filter(url => !pinned.includes(url)), [userProfile, pinned])
+  const activeStickerPost = useMemo(() => posts.find(p => p.id === openStickerPost) || null, [posts, openStickerPost])
+  const customStickerCount = (userProfile?.customStickers || []).length
+
+  // Pin (favorite) toggle — replaces the old usage-ranked auto-sort with an
+  // explicit user choice. Pinning past 4 drops the oldest pin rather than
+  // blocking, so there's no dead-end "unpin one first" state.
+  const handleTogglePin = (url) => {
+    const next = pinned.includes(url)
+      ? pinned.filter(u => u !== url)
+      : [...pinned, url].slice(-4)
+    onUpdateProfile?.({ pinnedStickers: next })
+  }
 
   const [searchQuery,    setSearchQuery]    = useState('')
   const [searchResult,   setSearchResult]   = useState(null)
@@ -161,6 +233,7 @@ export default function Discovery({ session, userProfile, gamification = {}, onG
   }
 
   const handleAddCustomSticker = (post) => {
+    if ((userProfile?.customStickers || []).length >= MAX_CUSTOM_STICKERS) return
     uploadForPostRef.current = post
     fileInputRef.current?.click()
   }
@@ -297,11 +370,7 @@ export default function Discovery({ session, userProfile, gamification = {}, onG
               post={post}
               author={authors[post.user_id]}
               postReactions={reactions[post.id] || { mine: new Set() }}
-              stickerOptions={stickerOptions}
-              isStickerOpen={openStickerPost === post.id}
-              onToggleSticker={() => setOpenStickerPost(p => p === post.id ? null : post.id)}
-              onPickSticker={(url) => handlePickSticker(post, url)}
-              onAddCustomSticker={() => handleAddCustomSticker(post)}
+              onOpenSticker={() => setOpenStickerPost(post.id)}
               onViewProfile={() => post.user_id && post.user_id !== userId && onViewProfile?.(post.user_id)}
             />
           ))
@@ -312,6 +381,53 @@ export default function Discovery({ session, userProfile, gamification = {}, onG
 
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleStickerFileChosen} style={{ display: 'none' }} />
       <ImageCropSheet file={cropFile} shape="circle" onCancel={() => setCropFile(null)} onCropped={handleStickerCropped} />
+
+      {/* Reaction picker — a single shared bottom sheet for every post, at a
+          fixed screen position, instead of a column that used to expand
+          upward from each post's own media card (which varied in size and
+          position depending on the post's media/aspect ratio, so the picker
+          used to land in a different spot per post). */}
+      <BottomSheet open={!!activeStickerPost} onClose={() => setOpenStickerPost(null)} title="React">
+        {activeStickerPost && (
+          <div style={{ padding: '4px 0 6px' }}>
+            <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Your Reactions</div>
+            <div style={{ display: 'flex', gap: SHEET_ROW_GAP, flexWrap: 'wrap', marginBottom: 20 }}>
+              {pinned.map(url => (
+                <div key={url} style={{ position: 'relative' }}>
+                  <button onClick={() => handlePickSticker(activeStickerPost, url)} style={stickerButtonStyle(url)}>
+                    <img src={url} alt="" style={stickerImgStyle(url)} />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); handleTogglePin(url) }} style={pinBadgeStyle()} title="Unpin">★</button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ fontFamily: NB.fontMono, fontSize: 11, fontWeight: 800, color: '#555', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Library</div>
+            <div style={{ display: 'flex', gap: SHEET_ROW_GAP, flexWrap: 'wrap' }}>
+              {library.map(url => (
+                <div key={url} style={{ position: 'relative' }}>
+                  <button onClick={() => handlePickSticker(activeStickerPost, url)} style={stickerButtonStyle(url)}>
+                    <img src={url} alt="" style={stickerImgStyle(url)} />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); handleTogglePin(url) }} style={pinBadgeStyle()} title="Pin as quick-pick">☆</button>
+                </div>
+              ))}
+              {customStickerCount < MAX_CUSTOM_STICKERS ? (
+                <button
+                  onClick={() => handleAddCustomSticker(activeStickerPost)}
+                  style={{ width: DEFAULT_SHEET_ICON_SIZE, height: DEFAULT_SHEET_ICON_SIZE, borderRadius: '50%', border: `2.5px dashed ${NB.ink}`, background: NB.lavenderMist, color: NB.ink, fontSize: 24, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                >
+                  +
+                </button>
+              ) : (
+                <div style={{ width: '100%', textAlign: 'center', fontSize: 11, color: '#888', marginTop: 4 }}>
+                  Custom reaction library full ({MAX_CUSTOM_STICKERS}/{MAX_CUSTOM_STICKERS})
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </BottomSheet>
     </div>
   )
 }
@@ -365,7 +481,7 @@ function Stat({ label, value }) {
   )
 }
 
-function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, onToggleSticker, onPickSticker, onAddCustomSticker, onViewProfile }) {
+function PostCard({ post, author, postReactions, onOpenSticker, onViewProfile }) {
   const isWorkout = post.type === 'workout'
   const content   = post.content || {}
   const ag        = author?.gamification || {}
@@ -375,8 +491,13 @@ function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, 
   const backColors  = muscleColors(content.muscles, 'back', ag, authorIsPro)
 
   const allStickerUrls  = Object.keys(postReactions).filter(k => k !== 'mine' && (postReactions[k] || 0) > 0)
-  const floatingStickers = allStickerUrls.slice(0, 4)
-  const totalReactions  = allStickerUrls.reduce((s, e) => s + (postReactions[e] || 0), 0)
+  // Capped at 2 real icons — with the current (larger) icon sizes, showing
+  // up to 4 real icons risked growing wide enough to reach the reaction
+  // trigger button on the opposite corner. A "+N" badge covers the rest
+  // instead of trying to fit every distinct reaction as its own icon.
+  const MAX_FLOATING_STICKERS = 2
+  const floatingStickers = allStickerUrls.slice(0, MAX_FLOATING_STICKERS)
+  const floatingOverflowCount = allStickerUrls.length - floatingStickers.length
 
   const duration = fmtDuration(content.elapsed)
   const streak   = ag.workoutStreak || 0
@@ -448,6 +569,12 @@ function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, 
         <div style={{
           display: 'flex', justifyContent: 'center', alignItems: 'flex-start', position: 'relative', flexShrink: 0, scrollSnapAlign: 'start', marginLeft: 16,
           maxWidth: 'calc(100% - 56px)',
+          // A portrait/narrow real photo can shrink-wrap this card well
+          // below the combined width the floating tally (up to 2 icons + an
+          // overflow badge) plus the trigger button pinned to this card's own
+          // right edge actually need — without a floor, the two collide on
+          // narrow photos. 240px covers that worst case with room to spare.
+          minWidth: 240,
           overflow: post.media_url ? 'visible' : 'hidden',
           ...(post.media_url ? {} : { width: 'calc(100% - 56px)', borderRadius: 27, ...nbCardStyle(NB.lavender, 6, NB_CARD_NEUTRAL_SHADOW), border: `4.5px solid ${NB.white}` }),
         }}>
@@ -456,7 +583,7 @@ function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, 
               ? <video src={post.media_url} autoPlay muted loop playsInline style={{ width: 'auto', maxWidth: '100%', height: 'auto', maxHeight: 330, display: 'block', borderRadius: 21, border: `3.75px solid ${NB.white}`, boxShadow: '4.5px 4.5px 0 #C3A6FF' }} />
               : <img src={post.media_url} alt="" style={{ width: 'auto', maxWidth: '100%', height: 'auto', maxHeight: 330, display: 'block', borderRadius: 21, border: `3.75px solid ${NB.white}`, boxShadow: '4.5px 4.5px 0 #C3A6FF' }} />
           ) : (
-            <div style={{ width: '100%', height: 420, background: isWorkout ? NB.magenta : NB.green, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '100%', height: 330, background: isWorkout ? NB.magenta : NB.green, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ fontSize: 72 }}>{isWorkout ? '💪' : '🥗'}</div>
               <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 30, textTransform: 'uppercase', color: NB.ink, marginTop: 15, textAlign: 'center', padding: '0 30px' }}>
                 {isWorkout ? (content.label || 'Workout') : 'Meal'}
@@ -464,48 +591,47 @@ function PostCard({ post, author, postReactions, stickerOptions, isStickerOpen, 
             </div>
           )}
 
-          {/* Floating reaction tally (bottom-left) — each key is the sticker's own URL, so any user's default or custom sticker renders without needing to resolve whose collection it came from */}
+          {/* Floating reaction tally (bottom-left) — each key is the sticker's own URL, so any user's default or custom sticker renders without needing to resolve whose collection it came from. Each sticker shows its OWN count (2 fire + 1 heart reads as two separate counts), positioned via REACTION_NUMBER_OFFSET_X/Y (calibratable, see the constants above) instead of sitting in fixed inline-flex order next to the icon.
+              zIndex is required here: Card 1's own rendered width follows the
+              real photo's aspect ratio (can be much narrower than the fixed
+              emoji-fallback width), so this absolutely-positioned row can
+              extend past Card 1's own right edge into where Card 2 sits.
+              Without a z-index, Card 2 — a later sibling — paints over it
+              there and the overflow badge/icons silently disappear. */}
           {floatingStickers.length > 0 && (
-            <div style={{ position: 'absolute', bottom: 10, left: 10, display: 'flex', gap: 4, alignItems: 'center' }}>
-              {floatingStickers.map((url, i) => (
-                <div key={i} style={isDefaultSticker(url)
-                  ? { width: 38, height: 38, filter: 'drop-shadow(0 1px 3px rgba(0,0,0,.5))', flexShrink: 0 }
-                  : { width: 40, height: 40, borderRadius: '50%', border: `2px solid ${NB.white}`, boxShadow: '0 1px 5px rgba(0,0,0,.35)', overflow: 'hidden', flexShrink: 0 }}
-                >
-                  <img src={url} alt="" style={stickerImgStyle(url)} />
+            <div style={{ position: 'absolute', bottom: 10, left: 10, zIndex: 2, display: 'flex', gap: POST_TALLY_GAP, alignItems: 'center' }}>
+              {floatingStickers.map((url, i) => {
+                const size = postIconSize(url)
+                return (
+                  <div key={i} style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+                    <div style={isDefaultSticker(url)
+                      ? { width: size, height: size, filter: 'drop-shadow(0 1px 3px rgba(0,0,0,.5))' }
+                      : { width: size + 2, height: size + 2, borderRadius: '50%', border: `2px solid ${NB.white}`, boxShadow: '0 1px 5px rgba(0,0,0,.35)', overflow: 'hidden' }}
+                    >
+                      <img src={url} alt="" style={stickerImgStyle(url)} />
+                    </div>
+                    <span style={{ position: 'absolute', left: REACTION_NUMBER_OFFSET_X, top: REACTION_NUMBER_OFFSET_Y, fontSize: REACTION_NUMBER_FONT_SIZE, fontWeight: 800, color: NB.white, textShadow: '0 1px 4px rgba(0,0,0,.8)', whiteSpace: 'nowrap' }}>{postReactions[url]}</span>
+                  </div>
+                )
+              })}
+              {floatingOverflowCount > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 26, padding: '0 9px', borderRadius: 13, background: 'rgba(0,0,0,.5)', flexShrink: 0 }}>
+                  <span style={{ fontFamily: NB.fontMono, fontSize: 12, fontWeight: 800, color: NB.white }}>+{floatingOverflowCount}</span>
                 </div>
-              ))}
-              <span style={{ fontSize: 13, fontWeight: 800, color: NB.white, textShadow: '0 1px 4px rgba(0,0,0,.8)', marginLeft: 2 }}>{totalReactions}</span>
+              )}
             </div>
           )}
 
-          {/* Sticker reaction trigger (heart, always) + expandable vertical picker column, bottom-right */}
-          {isStickerOpen && <div onClick={onToggleSticker} style={{ position: 'absolute', inset: 0, zIndex: 1 }} />}
-          <div style={{ position: 'absolute', bottom: 8, right: 12, zIndex: 2, display: 'flex', flexDirection: 'column-reverse', alignItems: 'center', gap: 10 }}>
-            <button
-              onClick={onToggleSticker}
-              style={{ ...stickerButtonStyle(HEART_STICKER), filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.45))' }}
-            >
-              <AddReactionIcon size={STICKER_SIZE} />
-            </button>
-            {isStickerOpen && stickerOptions.map(url => (
-              <button
-                key={url}
-                onClick={() => onPickSticker(url)}
-                style={isDefaultSticker(url) ? { ...stickerButtonStyle(url), filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.45))' } : stickerButtonStyle(url)}
-              >
-                <img src={url} alt="" style={stickerImgStyle(url)} />
-              </button>
-            ))}
-            {isStickerOpen && (
-              <button
-                onClick={onAddCustomSticker}
-                style={{ width: STICKER_SIZE, height: STICKER_SIZE, borderRadius: '50%', border: `2.5px dashed ${NB.white}`, background: 'rgba(255,255,255,.28)', color: NB.white, fontSize: 24, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-              >
-                +
-              </button>
-            )}
-          </div>
+          {/* Sticker reaction trigger — opens the shared reaction sheet (see
+              Discovery's BottomSheet at the bottom of the component) at a
+              fixed screen position, independent of this card's own media
+              size/aspect ratio. */}
+          <button
+            onClick={onOpenSticker}
+            style={{ position: 'absolute', bottom: 8, right: 12, zIndex: 2, ...stickerButtonStyle(HEART_STICKER), width: postIconSize(HEART_STICKER), height: postIconSize(HEART_STICKER), filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.45))' }}
+          >
+            <AddReactionIcon size={postIconSize(HEART_STICKER)} />
+          </button>
         </div>
 
         {/* Card 2: Muscle map or nutrition — height capped to line up with

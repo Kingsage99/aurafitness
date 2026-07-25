@@ -79,11 +79,11 @@ describe('resetWeeklyIfNeeded', () => {
 })
 
 describe('getDailyQuests', () => {
-  it('returns 3 distinct quests from the pool, deterministically', () => {
+  it('returns 4 distinct quests from the pool, deterministically', () => {
     const a = getDailyQuests('2026-07-06')
     const b = getDailyQuests('2026-07-06')
-    expect(a).toHaveLength(3)
-    expect(new Set(a.map(q => q.id)).size).toBe(3)
+    expect(a).toHaveLength(4)
+    expect(new Set(a.map(q => q.id)).size).toBe(4)
     expect(a.map(q => q.id)).toEqual(b.map(q => q.id))
     a.forEach(q => expect(QUEST_POOL.some(p => p.id === q.id)).toBe(true))
   })
@@ -213,7 +213,8 @@ describe('badge definitions', () => {
 describe('evaluateDailyQuests', () => {
   const DATE = '2025-01-15'
   // A signals object that satisfies every possible quest condition, including
-  // post_or_react (via postedToday rather than the reaction-count path).
+  // both post_workout_or_meal (via postedToday) and react_10_posts (via
+  // reactionsToday >= 10) — every quest in the pool should complete.
   const allSignals = {
     workoutDoneToday: true,
     caloriesHit: true,
@@ -221,13 +222,13 @@ describe('evaluateDailyQuests', () => {
     mealTypes: new Set(['breakfast', 'lunch', 'dinner']),
     mealCount: 3,
     postedToday: true,
-    reactionsToday: 0,
+    reactionsToday: 10,
   }
 
   it('marks met quests as completed but does NOT award gems — claiming is a separate step', () => {
     const { g, newlyCompleted } = evaluateDailyQuests(g0(), allSignals, DATE)
     const todays = getDailyQuests(DATE)
-    expect(newlyCompleted.length).toBe(todays.length) // all 3 met
+    expect(newlyCompleted.length).toBe(todays.length) // all of today's quests met
     expect(g.dailyQuests.date).toBe(DATE)
     expect(g.dailyQuests.completed.sort()).toEqual(todays.map(q => q.id).sort())
     expect(g.dailyQuests.claimed).toEqual([])
@@ -257,14 +258,14 @@ describe('evaluateDailyQuests', () => {
     expect(next.g.dailyQuests.date).toBe('2025-01-16')
   })
 
-  it('post_or_react is satisfied by reacting to 10 posts even without posting', () => {
+  it('react_10_posts is satisfied by reacting to 10 posts even without posting', () => {
     const signals = { workoutDoneToday: false, caloriesHit: false, proteinHit: false, mealTypes: new Set(), mealCount: 0, postedToday: false, reactionsToday: 10 }
     const { g } = evaluateDailyQuests(g0(), signals, DATE)
-    if (g.dailyQuests.completed.includes('post_or_react')) {
-      expect(g.dailyQuests.completed).toContain('post_or_react')
+    if (g.dailyQuests.completed.includes('react_10_posts')) {
+      expect(g.dailyQuests.completed).toContain('react_10_posts')
     } else {
-      // post_or_react wasn't one of today's 3 picked quests — condition fn is still directly testable.
-      expect(QUEST_POOL.find(q => q.id === 'post_or_react')).toBeTruthy()
+      // react_10_posts wasn't one of today's picked quests — condition fn is still directly testable.
+      expect(QUEST_POOL.find(q => q.id === 'react_10_posts')).toBeTruthy()
     }
   })
 })

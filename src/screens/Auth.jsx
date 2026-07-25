@@ -23,7 +23,7 @@ export default function Auth() {
     setError('')
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.origin + '/app' },
     })
     if (error) setError(error.message)
     setLoading(false)
@@ -41,7 +41,7 @@ export default function Auth() {
         password,
         options: {
           data: { full_name: name.trim() },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: window.location.origin + '/app',
         },
       })
       if (error) setError(error.message)
