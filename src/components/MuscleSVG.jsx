@@ -60,10 +60,10 @@ export const SVG_TO_TARGET_AREA = {
   // Glutes
   glute: 'Glutes',
   // Core
-  front_core: 'Core', abs: 'Core',
+  front_core: 'Core', abs: 'Core', back_oblique: 'Core', oblique: 'Core',
   // Arms
   front_bicep: 'Arms', forearm: 'Arms', front_tricep: 'Arms',
-  back_tricep: 'Arms', back_forearm: 'Arms',
+  back_tricep: 'Arms', back_forearm: 'Arms', front_Chest: 'Arms',
   // Back
   lat: 'Back', trap: 'Back', erector_spinae: 'Back',
   back_shoulder: 'Back', scapular_muscle: 'Back', front_shoulder: 'Back',

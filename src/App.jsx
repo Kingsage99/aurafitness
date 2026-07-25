@@ -49,6 +49,27 @@ import { getDailyTargets } from './utils/nutrition'
 import { MUSCLE_LABELS } from './utils/muscleLabels'
 import RewardToast from './components/RewardToast'
 
+// The one place gems actually persist. protect_billing_columns_trigger (DB)
+// reverts any write to gamification.gems that isn't made as service_role —
+// correctly blocks self-granting, but that also silently swallowed every
+// legitimate award, since the client's own debounced autosave writes
+// gamification the same way a forged write would. This Edge Function
+// recomputes the reward/cost itself from a server-owned copy of the same
+// tables (never trusts a client-supplied amount), then writes via a
+// service-role client so the trigger's check passes. Everything else in
+// gamification (streaks, badges, dailyQuests, purchasedItems, XP) isn't
+// gem-protected and keeps persisting through the normal autosave — this
+// only ever needs to correct `gems` itself. Returns the authoritative gems
+// total on success, or null on failure (caller reverts its optimistic guess).
+async function callGamificationAction(action, payload) {
+  const { data, error } = await supabase.functions.invoke('gamification-action', { body: { action, payload } })
+  if (error || !data?.ok) {
+    console.error('gamification-action failed:', error?.message || data?.error)
+    return null
+  }
+  return data.gems
+}
+
 const DEFAULT_PROFILE = {
   physique: 'lean_toned',
   experience: 'some',
@@ -267,11 +288,15 @@ export default function App() {
         const ydDate = new Date(); ydDate.setDate(ydDate.getDate() - 1)
         const yesterdayKey = dateKeyFor(ydDate)
         const yesterdayLog = data.daily_log_date === yesterdayKey ? data.daily_log : null
+        let calorieGoalHit = false
+        let calorieLifeLost = false
+        let streakLifeLost = false
         {
           const dailyTarget = profile.dailyCalorieTarget
           const { g: checkedG, lifeLost, penaltyApplied, goalHit } = checkCaloriePenalty(g, yesterdayKey, dailyTarget, yesterdayLog)
           g = checkedG
           if (lifeLost) {
+            calorieLifeLost = true
             if (penaltyApplied > 0) pushNotification(`❤️ Life lost — missed calorie goal. -${penaltyApplied} 💎 penalty`)
             else pushNotification('❤️ Life lost — calorie goal missed yesterday')
             if (checkedG.lives === 0) {
@@ -283,6 +308,7 @@ export default function App() {
               })
             }
           } else if (goalHit) {
+            calorieGoalHit = true
             pushNotification('+20 💎  Yesterday\'s calorie goal achieved!')
           }
         }
@@ -294,6 +320,7 @@ export default function App() {
           const { g: reconciledG, streakBroken, freezeConsumed, penaltyApplied: streakPenalty } = reconcileWorkoutStreak(g, todayKey)
           g = reconciledG
           if (streakBroken) {
+            streakLifeLost = true
             if (streakPenalty > 0) pushNotification(`❤️ Life lost — workout streak broken. -${streakPenalty} 💎 penalty`)
             else pushNotification('❤️ Life lost — workout streak broken')
             if (g.lives === 0) {
@@ -312,9 +339,11 @@ export default function App() {
         // Badge thresholds (calorieGoalStreak / workoutStreak) may have just
         // been crossed by either check above — evaluate immediately instead of
         // waiting for an unrelated later meal-log/workout event.
+        let loadBadgeIds = []
         {
           const { updatedG, newBadges } = checkBadges(g, {})
           g = updatedG
+          loadBadgeIds = newBadges.map(b => b.id)
           newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
         }
 
@@ -333,6 +362,16 @@ export default function App() {
         if (workoutMissedYesterday) pushNotification(`😔 You missed ${yesterdaySlot.label} yesterday`)
 
         setGamification(g)
+
+        // Sync gems for whatever this load pass just determined happened —
+        // see callGamificationAction's comment for why this is the only
+        // path that actually persists gems. Penalties and rewards can't
+        // both apply from the same check, but the calorie check and the
+        // streak check are independent, so both penalties could fire together.
+        if (calorieLifeLost) callGamificationAction('apply_penalty', {}).then(gems => { if (gems != null) setGamification(prev => ({ ...prev, gems })) })
+        if (streakLifeLost) callGamificationAction('apply_penalty', {}).then(gems => { if (gems != null) setGamification(prev => ({ ...prev, gems })) })
+        if (calorieGoalHit) callGamificationAction('award_action', { kind: 'calorie_goal' }).then(gems => { if (gems != null) setGamification(prev => ({ ...prev, gems })) })
+        if (loadBadgeIds.length > 0) callGamificationAction('award_action', { kind: 'badge_only', newBadgeIds: loadBadgeIds }).then(gems => { if (gems != null) setGamification(prev => ({ ...prev, gems })) })
       }
 
       console.log('Profile loaded ✓', profile.name)
@@ -573,9 +612,11 @@ export default function App() {
         let g = resetWeeklyIfNeeded(DEFAULT_GAMIFICATION)
         g = awardGems(g, 50)
         ;({ g } = awardXP(g, 100))
-        const { updatedG } = checkBadges(g, { onboardingCompleted: true })
+        const { updatedG, newBadges } = checkBadges(g, { onboardingCompleted: true })
         setGamification(updatedG)
         pushNotification('Welcome to MissVfit! +50 💎 +100 XP 🎉')
+        callGamificationAction('award_action', { kind: 'onboarding', newBadgeIds: newBadges.map(b => b.id) })
+          .then(gems => { if (gems != null) setGamification(prev => ({ ...prev, gems })) })
       }
     }
 
@@ -644,6 +685,7 @@ export default function App() {
       }
 
       const allWeekDone = g.weeklyWorkoutsDone >= (userProfile.daysPerWeek || 3)
+      if (allWeekDone) g = awardGems(g, 60)
       const { updatedG, newBadges } = checkBadges(g, { workoutCompleted: true, cookbookCount: cookbook.length, allWeekDone })
       g = updatedG
 
@@ -687,6 +729,14 @@ export default function App() {
 
     setGamification(prev => buildWorkoutRewards(prev).g)
     setWorkoutSession({ ...rawSessionData, xpEarned: baseXP, gemsEarned: baseGems, streak: display.g.workoutStreak, muscleGains: display.muscleGains, muscleRankUps: display.muscleRankUps })
+    callGamificationAction('award_action', {
+      kind: 'workout',
+      setsCompleted: rawSessionData.setsCompleted || 0,
+      totalSets: rawSessionData.totalSets || 0,
+      workoutStreak: display.g.workoutStreak,
+      allWeekDone: display.allWeekDone,
+      newBadgeIds: display.newBadges.map(b => b.id),
+    }).then(gems => { if (gems != null) setGamification(prev => ({ ...prev, gems })) })
 
     // Persist workout history (user chooses whether to post via WorkoutPost)
     if (sessionRef.current) {
@@ -740,6 +790,13 @@ export default function App() {
     if (awarded > 0) {
       setGamification(updated)
       pushNotification(`+${awarded} 💎`)
+      callGamificationAction('claim_quest', { questId }).then(gems => {
+        if (gems != null) setGamification(prev => ({ ...prev, gems }))
+        else {
+          setGamification(prev => ({ ...prev, gems: prev.gems - awarded, dailyQuests: { ...prev.dailyQuests, claimed: prev.dailyQuests.claimed.filter(id => id !== questId) } }))
+          pushNotification("Couldn't claim reward — try again")
+        }
+      })
     }
   }
 
@@ -748,6 +805,13 @@ export default function App() {
     if (awarded > 0) {
       setGamification(updated)
       pushNotification(`Weekly challenge complete! +${awarded} 💎`)
+      callGamificationAction('claim_challenge', { challengeId }).then(gems => {
+        if (gems != null) setGamification(prev => ({ ...prev, gems }))
+        else {
+          setGamification(prev => ({ ...prev, gems: prev.gems - awarded, weeklyChallenges: { ...prev.weeklyChallenges, claimed: prev.weeklyChallenges.claimed.filter(id => id !== challengeId) } }))
+          pushNotification("Couldn't claim reward — try again")
+        }
+      })
     }
   }
 
@@ -761,6 +825,14 @@ export default function App() {
       setGamification(updated)
       const item = SHOP_ITEMS.find(i => i.id === itemId)
       pushNotification(item ? `${item.icon} ${item.label} purchased!` : '✅ Purchased!')
+      const cost = costOverride ?? item?.cost ?? 0
+      callGamificationAction('purchase_item', { itemId }).then(gems => {
+        if (gems != null) setGamification(prev => ({ ...prev, gems }))
+        else {
+          setGamification(prev => ({ ...prev, gems: prev.gems + cost, purchasedItems: prev.purchasedItems.filter(id => id !== itemId) }))
+          pushNotification("Purchase didn't go through — try again")
+        }
+      })
     } else {
       pushNotification('Not enough gems')
     }
@@ -798,6 +870,8 @@ export default function App() {
     setGamification(prev => buildMealRewards(prev).g)
     pushNotification('+5 💎  Meal logged!')
     display.newBadges.forEach(b => pushNotification(`🏅 ${b.label} badge unlocked!`))
+    callGamificationAction('award_action', { kind: 'meal', newBadgeIds: display.newBadges.map(b => b.id) })
+      .then(gems => { if (gems != null) setGamification(prev => ({ ...prev, gems })) })
 
     if (offerShare && mealData.name) {
       setMealPostData(mealData)

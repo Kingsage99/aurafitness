@@ -49,8 +49,11 @@ export default function WhyAura({ userProfile = {}, weeklyPlan = null, onContinu
     <>
       <StatusBar />
       <div className="scroll-fade-bottom" style={{ flex: 1, overflowY: 'auto', padding: '16px 22px 0', display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <div style={{ textAlign: 'center', margin: '14px 0 6px' }}>
+        {/* Header — top margin is large enough to clear the "Welcome to
+            MissVfit!" reward toast (RewardToast.jsx, pinned at top:56),
+            which fires right as onboarding completes and this screen mounts
+            — without it, the toast painted directly over this heading. */}
+        <div style={{ textAlign: 'center', margin: '84px 0 6px' }}>
           <div style={{ fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', color: '#555' }}>Your path to</div>
           <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 28, textTransform: 'uppercase', color: NB.ink, lineHeight: 1.1 }}>{goalLabel}</div>
         </div>
