@@ -28,7 +28,7 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    if (file.size > 50 * 1024 * 1024) { setError('File is too large (max 50 MB).'); return }
+    if (file.size > 100 * 1024 * 1024) { setError('File is too large (max 100 MB).'); return }
     setError('')
     setMediaFile(file)
     setMediaIsVideo(file.type.startsWith('video'))
