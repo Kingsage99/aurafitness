@@ -104,29 +104,6 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
           </button>
         )}
 
-        <BottomSheet open={showMediaSheet} onClose={() => setShowMediaSheet(false)} title="Add Photo or Video">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button
-              onClick={() => { setShowMediaSheet(false); cameraRef.current?.click() }}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.green, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left' }}
-            >
-              <CameraIcon size={20} />
-              Take Photo or Video
-            </button>
-            <button
-              onClick={() => { setShowMediaSheet(false); fileRef.current?.click() }}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left' }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="16" rx="2.5"/>
-                <circle cx="8.5" cy="9.5" r="1.6"/>
-                <path d="M21 15l-5-5-9 9"/>
-              </svg>
-              Choose From Gallery
-            </button>
-          </div>
-        </BottomSheet>
-
         {/* Meal summary */}
         <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '14px 16px', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -180,6 +157,29 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
           Skip
         </button>
       </div>
+
+      <BottomSheet open={showMediaSheet} onClose={() => setShowMediaSheet(false)} title="Add Photo or Video">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button
+            onClick={() => { setShowMediaSheet(false); cameraRef.current?.click() }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.green, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left' }}
+          >
+            <CameraIcon size={20} />
+            Take Photo or Video
+          </button>
+          <button
+            onClick={() => { setShowMediaSheet(false); fileRef.current?.click() }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', border: NB_BORDER, borderRadius: 16, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 14, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2.5"/>
+              <circle cx="8.5" cy="9.5" r="1.6"/>
+              <path d="M21 15l-5-5-9 9"/>
+            </svg>
+            Choose From Gallery
+          </button>
+        </div>
+      </BottomSheet>
     </>
   )
 }
