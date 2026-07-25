@@ -103,9 +103,8 @@ button:active {
   height: 0;
 }
 
-@keyframes skeletonPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .55; }
+@keyframes skeletonShimmer {
+  100% { background-position: -100% 0; }
 }
 
 /* App-wide loading spinner — a rotating 3D cube built from 6 faces. Needs a

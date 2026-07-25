@@ -494,7 +494,7 @@ function AnalyticsSkeleton() {
         {[1, 2, 3, 4].map(i => (
           <div key={i} style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 2, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '14px 16px' }}>
             <SkeletonBox height={11} borderRadius={4} style={{ width: '55%', marginBottom: 8 }} />
-            <SkeletonBox height={22} borderRadius={4} style={{ width: '35%', border: 'none' }} />
+            <SkeletonBox height={22} borderRadius={4} style={{ width: '35%' }} />
           </div>
         ))}
       </div>

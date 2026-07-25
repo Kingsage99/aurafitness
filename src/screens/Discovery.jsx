@@ -683,10 +683,10 @@ function SkeletonFeed() {
             <SkeletonBox width={40} height={40} borderRadius={11} style={{ flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
               <SkeletonBox height={13} borderRadius={4} style={{ width: '40%', marginBottom: 6 }} />
-              <SkeletonBox height={11} borderRadius={4} style={{ width: '25%', border: 'none' }} />
+              <SkeletonBox height={11} borderRadius={4} style={{ width: '25%' }} />
             </div>
           </div>
-          <SkeletonBox height={300} borderRadius={18} style={{ border: 'none' }} />
+          <SkeletonBox height={300} borderRadius={18} />
         </div>
       ))}
     </div>
