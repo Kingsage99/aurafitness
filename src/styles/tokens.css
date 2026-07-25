@@ -107,6 +107,12 @@ button:active {
   100% { background-position: -100% 0; }
 }
 
+@keyframes shine {
+  0% { background-position: 0; }
+  60% { background-position: 180px; }
+  100% { background-position: 180px; }
+}
+
 /* App-wide loading spinner — a rotating 3D cube built from 6 faces. Needs a
    real @keyframes + nth-of-type selectors, which inline styles can't express,
    so it lives here instead (see App.jsx's Spinner component). Face color is

@@ -152,9 +152,22 @@ export default function MealPost({ mealData, userProfile, session, onGamificatio
         <button
           onClick={handlePost}
           disabled={posting}
-          style={{ width: '100%', padding: '15px', border: NB_BORDER, borderRadius: 16, boxShadow: posting ? 'none' : hardShadow(4), background: posting ? '#ccc' : NB.green, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: posting ? 'default' : 'pointer', marginBottom: 12 }}
+          style={{ width: '100%', padding: '15px', border: NB_BORDER, borderRadius: 16, boxShadow: posting ? 'none' : hardShadow(4), background: posting ? '#5a5a5a' : NB.green, color: NB.ink, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: posting ? 'default' : 'pointer', marginBottom: 12 }}
         >
-          {posting ? 'Posting…' : 'Share Meal'}
+          {posting ? (
+            <span style={{
+              background: 'linear-gradient(to right, #9f9f9f 0, #fff 10%, #868686 20%)',
+              backgroundPosition: '0',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              color: 'transparent',
+              animation: 'shine 3s infinite linear',
+              animationFillMode: 'forwards',
+            }}>
+              Posting…
+            </span>
+          ) : 'Share Meal'}
         </button>
         <button
           onClick={() => onNavigate('meals')}

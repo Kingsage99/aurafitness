@@ -183,9 +183,22 @@ export default function WorkoutPost({ sessionData, userProfile, session, gamific
         <button
           onClick={handlePost}
           disabled={posting}
-          style={{ width: '100%', padding: '15px', border: NB_BORDER, borderRadius: 16, boxShadow: posting ? 'none' : hardShadow(4), background: posting ? '#ccc' : NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: posting ? 'default' : 'pointer', marginBottom: 12 }}
+          style={{ width: '100%', padding: '15px', border: NB_BORDER, borderRadius: 16, boxShadow: posting ? 'none' : hardShadow(4), background: posting ? '#5a5a5a' : NB.magenta, color: NB.white, fontFamily: NB.fontDisplay, fontSize: 15, fontWeight: 800, textTransform: 'uppercase', cursor: posting ? 'default' : 'pointer', marginBottom: 12 }}
         >
-          {posting ? 'Posting…' : 'Post Workout'}
+          {posting ? (
+            <span style={{
+              background: 'linear-gradient(to right, #9f9f9f 0, #fff 10%, #868686 20%)',
+              backgroundPosition: '0',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              color: 'transparent',
+              animation: 'shine 3s infinite linear',
+              animationFillMode: 'forwards',
+            }}>
+              Posting…
+            </span>
+          ) : 'Post Workout'}
         </button>
         <button
           onClick={() => onNavigate('home')}
