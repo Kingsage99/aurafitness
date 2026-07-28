@@ -127,6 +127,10 @@ const Spinner = () => (
 
 export default function App() {
   const [session, setSession] = useState(undefined)
+  // Set on a PASSWORD_RECOVERY auth event — see onAuthStateChange below. Keeps
+  // <Auth/> mounted (in its "set new password" mode) even though verifyOtp
+  // already made `session` truthy, since nobody actually "logged in" yet.
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
   const [profileLoading, setProfileLoading] = useState(true)
   const [screen, setScreen] = useState('onboarding')
   const [userProfile, setUserProfile] = useState(DEFAULT_PROFILE)
@@ -575,6 +579,13 @@ export default function App() {
         setProfileLoading(false)
         setScreen('onboarding')
         resetUserState()
+      } else if (event === 'PASSWORD_RECOVERY') {
+        // verifyOtp({type:'recovery'}) establishes a real session (session
+        // becomes truthy above) without the user ever "logging in" — without
+        // this flag the render gate below would treat them as authenticated
+        // and fall through to the profileLoading spinner forever, since
+        // loadProfile() is only ever triggered by SIGNED_IN.
+        setPasswordRecovery(true)
       }
       // TOKEN_REFRESHED / USER_UPDATED / INITIAL_SESSION etc: session refs are already
       // updated above — don't reset dataReady/profileLoading or re-run loadProfile, or
@@ -1125,7 +1136,13 @@ export default function App() {
   }
 
   if (session === undefined) return <PhoneFrame hideStatus={true}><Spinner /></PhoneFrame>
-  if (!session) return <PhoneFrame hideStatus={true}><Auth /></PhoneFrame>
+  if (!session || passwordRecovery) {
+    return (
+      <PhoneFrame hideStatus={true}>
+        <Auth recoveryMode={passwordRecovery} onRecoveryDone={() => setPasswordRecovery(false)} />
+      </PhoneFrame>
+    )
+  }
   if (profileLoading) return <PhoneFrame hideStatus={true}><Spinner /></PhoneFrame>
 
   const todayKeyForBadge = dateKeyFor()
