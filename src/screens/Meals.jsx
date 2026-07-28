@@ -3,6 +3,7 @@ import { StatusBar } from '../components/PhoneFrame'
 import BottomNav from '../components/BottomNav'
 import { suggestMeal, adjustMeal, identifyEatenFood, lookupFood } from '../utils/claudeApi'
 import { getDailyTargets, MACRO_META, MACRO_DAILY_REF, MACRO_KEYS } from '../utils/nutrition'
+import { scaleMacros } from '../utils/macroValidation'
 import { AI_DAILY_LIMITS, getAiUsesRemaining, recordAiUsage } from '../utils/gamification'
 import { diffMeal } from '../utils/mealDiff'
 import { dateKeyFor } from '../utils/workoutBuilder'
@@ -417,6 +418,53 @@ function CookbookItemSheet({ item, targets, collections = [], onToggleCollection
 
 // Swipeable macro grid — pages of up to 4 tiles (name / value+unit / mini progress bar / % daily),
 // with dot indicators. Matches the Fitness UI Kit v2 Meal Detail section.
+// Portion size is the single biggest source of error in food logging — a
+// correct per-100g estimate on a wrongly-judged serving is still wrong. Scaling
+// is pure arithmetic, so correcting it costs no AI call and no quota.
+//
+// Deliberately a plain −/+ stepper with a written-out label rather than
+// multiplier chips ("½×", "2×"): multiplier notation is maths, and reads as
+// jargon to most people. "1 serving" / "2 servings" needs no explaining.
+const PORTION_MIN = 0.5
+const PORTION_MAX = 4
+const PORTION_STEP = 0.5
+
+const portionLabel = p => {
+  if (p === 0.5) return 'Half a serving'
+  if (p === 1) return '1 serving'
+  return `${Number.isInteger(p) ? p : p.toFixed(1)} servings`
+}
+
+function PortionScaler({ portion, onChange }) {
+  const step = dir => {
+    const next = Math.round((portion + dir * PORTION_STEP) * 10) / 10
+    if (next >= PORTION_MIN && next <= PORTION_MAX) onChange(next)
+  }
+  const btn = (dir, glyph, disabled) => (
+    <button
+      onClick={() => step(dir)}
+      disabled={disabled}
+      aria-label={dir < 0 ? 'Smaller portion' : 'Bigger portion'}
+      style={{ width: 42, height: 38, flexShrink: 0, border: `2.5px solid ${NB.ink}`, borderRadius: 10, background: disabled ? NB.lavender : NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 20, lineHeight: 1, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.45 : 1, boxShadow: disabled ? 'none' : hardShadow(2) }}
+    >{glyph}</button>
+  )
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: '#666', marginBottom: 8 }}>
+        How much did you have?
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {btn(-1, '−', portion <= PORTION_MIN)}
+        <div style={{ flex: 1, textAlign: 'center', fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 15, color: NB.ink }}>
+          {portionLabel(portion)}
+        </div>
+        {btn(1, '+', portion >= PORTION_MAX)}
+      </div>
+    </div>
+  )
+}
+
 function MacroPageGrid({ macros = {}, targets }) {
   const scrollRef = useRef()
   const [page, setPage] = useState(0)
@@ -544,7 +592,10 @@ function CompactAiWidget({ isProUser, gamification, onNavigate }) {
 // Unified meal detail card — used for generated meals, adjusted meals, and "already ate" results.
 // Matches the Fitness UI Kit v2 Meal Detail section 1:1: three separate cards (header photo/name,
 // swipeable macro grid, ingredients/method) — Adjust/Log live outside in <MealActionBar>.
-function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEditNameStart, onNameChange, onSaveToCookbook, onViewCookbook, saved, targets, showIngredients = true, diff = null }) {
+function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEditNameStart, onNameChange, onSaveToCookbook, onViewCookbook, saved, targets, showIngredients = true, diff = null, macros = null, portion = 1, onPortionChange = null }) {
+  // `macros` overrides meal.macros when the parent owns portion scaling, so the
+  // grid shows the scaled figures while meal.macros stays the ×1 baseline.
+  const shownMacros = macros || meal.macros || {}
   const color = MEAL_COLORS[mealType] || NB.teal
   const nameInputRef = useRef()
   const recipeCardRef = useRef()
@@ -565,7 +616,7 @@ function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEd
   }, [diff])
 
   const subtitleParts = [
-    meal.macros?.calories ? `${Math.round(meal.macros.calories)} kcal` : null,
+    shownMacros?.calories ? `${Math.round(shownMacros.calories)} kcal` : null,
     meal.prepTimeMinutes ? `${meal.prepTimeMinutes} min` : null,
     MEAL_LABELS[mealType] || (mealType || '').toUpperCase(),
   ].filter(Boolean)
@@ -629,9 +680,10 @@ function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEd
         </div>
       </div>
 
-      {/* Card 2: swipeable macro grid */}
+      {/* Card 2: portion scaler + swipeable macro grid */}
       <div style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 6, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 20, padding: '18px 20px 6px' }}>
-        <MacroPageGrid macros={meal.macros || {}} targets={targets} />
+        {onPortionChange && <PortionScaler portion={portion} onChange={onPortionChange} />}
+        <MacroPageGrid macros={shownMacros} targets={targets} />
       </div>
 
       {/* Card 3: ingredients + method, tabbed so only one list shows at a time */}
@@ -646,14 +698,17 @@ function MealDetailCard({ meal, mealType, name, userCraving, isEditingName, onEd
 
 // Adjust/Log action row — deliberately rendered outside MealDetailCard's cards, sticky to the
 // bottom of the scrolling viewport so it stays reachable no matter how far the meal is scrolled.
-function MealActionBar({ onAdjust, onLog, logged }) {
+// `failed` marks a placeholder left behind by a generation error / quota block —
+// it has no real macros, so logging it would write invented data.
+function MealActionBar({ onAdjust, onLog, logged, failed = false }) {
+  const locked = logged || failed
   return (
     <div style={{ position: 'sticky', bottom: 0, display: 'flex', gap: 8, padding: '14px 0 4px', background: `linear-gradient(to top, ${NB.bg} 85%, transparent)` }}>
       <button onClick={onAdjust} style={{ flex: 1, height: 46, border: `2px solid ${NB.ink}`, borderRadius: 12, boxShadow: hardShadow(3), background: NB.white, color: NB.ink, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', cursor: 'pointer' }}>
         Adjust
       </button>
-      <button onClick={onLog} disabled={logged} style={{ flex: 1.4, height: 46, border: NB_BORDER, borderRadius: 12, boxShadow: logged ? 'none' : hardShadow(3), background: logged ? NB.green : NB.magenta, color: logged ? NB.ink : NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: logged ? 'default' : 'pointer' }}>
-        {logged ? 'Logged ✓' : 'Log Meal'}
+      <button onClick={onLog} disabled={locked} style={{ flex: 1.4, height: 46, border: NB_BORDER, borderRadius: 12, boxShadow: locked ? 'none' : hardShadow(3), background: logged ? NB.green : failed ? NB.lavender : NB.magenta, color: logged || failed ? NB.ink : NB.white, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', cursor: locked ? 'default' : 'pointer', opacity: failed ? 0.6 : 1 }}>
+        {logged ? 'Logged ✓' : failed ? 'Unavailable' : 'Log Meal'}
       </button>
     </div>
   )
@@ -726,6 +781,10 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
   const [mealCount, setMealCount] = useState(3)
   const [generating, setGenerating] = useState(false)
   const [generatedMeals, setGeneratedMeals] = useState(null)
+  // Portion multiplier per generated meal type, e.g. { lunch: 1.5 }. meal.macros
+  // always stays the ×1 baseline; the scaled figures are derived at render/log
+  // time, so repeated taps never compound.
+  const [mealPortions, setMealPortions] = useState({})
   const [cookbookSearch, setCookbookSearch] = useState('')
   const [viewingCookbookItem, setViewingCookbookItem] = useState(null)
   const [cookbookTab, setCookbookTab] = useState('type') // 'type' | 'collections'
@@ -748,6 +807,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
   const [eatenLogged, setEatenLogged] = useState(false)
   const [eatenSaved, setEatenSaved] = useState(false)
   const [adjustingEaten, setAdjustingEaten] = useState(false)
+  const [eatenPortion, setEatenPortion] = useState(1)
 
   // ── Full-day builder state ──────────────────────────────────────────────────
   const [builderMode, setBuilderMode] = useState('single')
@@ -853,10 +913,15 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
     const mealCravingsMap = {}
     const namesMap = {}
 
-    const errorFallback = (type, calTarget, pTarget, cTarget, fTarget) => ({
+    // Placeholders carry ZERO macros and failed:true. They used to echo the
+    // requested targets back, which rendered as a normal-looking meal the user
+    // could log — writing entirely invented numbers into nutrition_log and the
+    // daily total. failed:true also disables the Log button (see MealActionBar).
+    const errorFallback = () => ({
       name: '⚠️ Generation failed',
+      failed: true,
       ingredients: ['Tap "Adjust" below to try again.'],
-      macros: { calories: calTarget, protein: pTarget, carbs: cTarget, fat: fTarget },
+      macros: {},
       prepTimeMinutes: 0,
       instructions: ['The AI could not build this recipe. Tap Adjust to retry.'],
     })
@@ -864,15 +929,16 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
     // Wraps suggestMeal so a mid-batch quota/Pro rejection on one slot (e.g.
     // client/server drift) shows a clear inline message on just that slot
     // instead of throwing and discarding the whole Promise.all batch.
-    const safeSuggestMeal = async (params, calTarget, pTarget, cTarget, fTarget) => {
+    const safeSuggestMeal = async (params) => {
       try {
         return await suggestMeal(params)
       } catch (err) {
         if (err?.code === 'QUOTA_EXCEEDED') {
           return {
             name: '⚠️ Daily limit reached',
+            failed: true,
             ingredients: [],
-            macros: { calories: calTarget, protein: pTarget, carbs: cTarget, fat: fTarget },
+            macros: {},
             prepTimeMinutes: 0,
             instructions: [`You've used today's ${AI_DAILY_LIMITS.mealGens} free generations — resets tomorrow, or go Pro for unlimited.`],
           }
@@ -880,8 +946,9 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         if (err?.code === 'PRO_REQUIRED') {
           return {
             name: '⭐ MissVfit Pro required',
+            failed: true,
             ingredients: [],
-            macros: { calories: calTarget, protein: pTarget, carbs: cTarget, fat: fTarget },
+            macros: {},
             prepTimeMinutes: 0,
             instructions: ['Upgrade to MissVfit Pro to generate this meal.'],
           }
@@ -910,12 +977,12 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         const meal = await safeSuggestMeal({
           mealType: isSnack ? 'snack' : slot.type,
           targetCalories: calTarget, targetProtein: pTarget, targetCarbs: cTarget, targetFat: fTarget,
-          dietary, allergies, physique,
+          dietary, allergies, fitnessGoal,
           craving: slot.craving || '',
           countryName,
-        }, calTarget, pTarget, cTarget, fTarget)
+        })
 
-        results[slot.type] = meal || errorFallback(slot.type, calTarget, pTarget, cTarget, fTarget)
+        results[slot.type] = meal || errorFallback()
         mealCravingsMap[slot.type] = slot.craving
         namesMap[slot.type] = meal ? meal.name : '⚠️ Generation failed'
       }))
@@ -949,12 +1016,12 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
         const meal = await safeSuggestMeal({
           mealType: type, targetCalories: calTarget, targetProtein: pTarget,
           targetCarbs: cTarget, targetFat: fTarget,
-          dietary, allergies, physique, craving: effectiveCraving,
+          dietary, allergies, fitnessGoal, craving: effectiveCraving,
           cravingOnly: isSingleCraving,
           countryName,
-        }, calTarget, pTarget, cTarget, fTarget)
+        })
 
-        results[type] = meal || errorFallback(type, calTarget, pTarget, cTarget, fTarget)
+        results[type] = meal || errorFallback()
         mealCravingsMap[type] = effectiveCraving
         namesMap[type] = meal ? meal.name : '⚠️ Generation failed'
       }))
@@ -963,6 +1030,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
     }
 
       setGeneratedMeals(results)
+      setMealPortions({}) // fresh meals start at ×1, never inherit the last batch's scaling
       setMealCravings(mealCravingsMap)
       setMealNames(namesMap)
       setGeneratedTypes(orderedTypes)
@@ -1002,14 +1070,16 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
 
   const handleSaveToCookbook = (type, chosenType, collectionIds) => {
     const meal = generatedMeals?.[type]
-    if (!meal || savedTypes.has(type)) return
+    if (!meal || meal.failed || savedTypes.has(type)) return
     const n = mealNames[type] || meal.name
+    // Save the portion-scaled figures so the cookbook entry matches what was shown.
+    const m = scaleMacros(meal.macros || {}, mealPortions[type] ?? 1)
     if (onUpdateCookbook) onUpdateCookbook(prev => [{
       id: newId(), collections: collectionIds || [],
       name: n, type: chosenType || type,
-      macros: meal.macros ?? {},
-      protein: meal.macros?.protein ?? 0,
-      calories: meal.macros?.calories ?? 0,
+      macros: m,
+      protein: m.protein ?? 0,
+      calories: m.calories ?? 0,
       ingredients: meal.ingredients ?? [],
       instructions: meal.instructions ?? [],
       prepTimeMinutes: meal.prepTimeMinutes ?? null,
@@ -1022,8 +1092,9 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
 
   const handleLogOneMeal = (type) => {
     const meal = generatedMeals?.[type]
-    if (!meal || loggedTypes.has(type)) return
-    const m = meal.macros || {}
+    if (!meal || meal.failed || loggedTypes.has(type)) return
+    // Log what the user actually sees — the portion-scaled figures, not the baseline.
+    const m = scaleMacros(meal.macros || {}, mealPortions[type] ?? 1)
     if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => addMacros(prev, m))
     const nextLogged = new Set([...loggedTypes, type])
     // Only offer to share once there's nothing left to log — either a single
@@ -1048,6 +1119,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
     setView('eaten')
     setEatenResult(null)
     setEatenLogged(false)
+    setEatenPortion(1) // a new identification always starts at a single serving
     setEatenLoading(true)
     try {
       const result = await identifyEatenFood(text, { countryName, countryCode: country })
@@ -1085,7 +1157,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
 
   const handleLogEaten = () => {
     if (!eatenResult || eatenResult.error || eatenLogged) return
-    const m = eatenResult.macros || {}
+    const m = scaleMacros(eatenResult.macros || {}, eatenPortion)
     if (onUpdateLoggedMacros) onUpdateLoggedMacros(prev => addMacros(prev, m))
     if (onMealLogged) onMealLogged({ name: eatenResult.identifiedAs, macros: m, mealType: 'eaten' })
     setEatenLogged(true)
@@ -1093,7 +1165,7 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
 
   const handleSaveEatenToCookbook = (chosenType, collectionIds) => {
     if (!eatenResult || eatenResult.error || eatenSaved) return
-    const m = eatenResult.macros || {}
+    const m = scaleMacros(eatenResult.macros || {}, eatenPortion)
     if (onUpdateCookbook) onUpdateCookbook(prev => [{
       id: newId(), collections: collectionIds || [],
       name: eatenResult.identifiedAs, type: chosenType || 'snack',
@@ -1409,6 +1481,9 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
                 onViewCookbook={() => setView('cookbook')}
                 saved={eatenSaved}
                 targets={targets}
+                macros={scaleMacros(eatenResult.macros || {}, eatenPortion)}
+                portion={eatenPortion}
+                onPortionChange={setEatenPortion}
               />
               <MealActionBar onAdjust={() => setAdjustingEaten(true)} onLog={handleLogEaten} logged={eatenLogged} />
             </>
@@ -1635,13 +1710,16 @@ export default function Meals({ userProfile = {}, loggedMacros, onUpdateLoggedMa
                     isEditingName={editingName === type}
                     onEditNameStart={() => setEditingName(type)}
                     onNameChange={(newName) => { setMealNames(prev => ({ ...prev, [type]: newName })); setEditingName(null) }}
-                    onSaveToCookbook={defaultType => setSavingContext({ kind: 'generated', type, defaultType })}
+                    onSaveToCookbook={generatedMeals[type].failed ? null : (defaultType => setSavingContext({ kind: 'generated', type, defaultType }))}
                     onViewCookbook={() => setView('cookbook')}
                     saved={savedTypes.has(type)}
                     targets={targets}
                     diff={preAdjustMeals[type] ? diffMeal(preAdjustMeals[type], generatedMeals[type]) : null}
+                    macros={scaleMacros(generatedMeals[type].macros || {}, mealPortions[type] ?? 1)}
+                    portion={mealPortions[type] ?? 1}
+                    onPortionChange={generatedMeals[type].failed ? null : (p => setMealPortions(prev => ({ ...prev, [type]: p })))}
                   />
-                  <MealActionBar onAdjust={() => setAdjustingMeal(type)} onLog={() => handleLogOneMeal(type)} logged={loggedTypes.has(type)} />
+                  <MealActionBar onAdjust={() => setAdjustingMeal(type)} onLog={() => handleLogOneMeal(type)} logged={loggedTypes.has(type)} failed={!!generatedMeals[type].failed} />
                 </div>
               ))}
             </div>

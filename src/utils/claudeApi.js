@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { normalizeMacros } from './macroValidation'
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
 const API_URL = 'https://api.anthropic.com/v1/messages'
@@ -12,12 +13,30 @@ let proxyUnavailable = false
 // output schema below.
 const MACRO_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'saturatedFat', 'sodium', 'cholesterol', 'potassium']
 
-// Structured outputs guarantee valid, correctly-typed JSON, but require the
-// redeployed claude-proxy to forward output_config. Leave OFF until that proxy
-// version is verified to accept it — the robust parsing below is the reliability
-// floor regardless, so nothing depends on this being on.
-const USE_STRUCTURED_OUTPUT = false
+// Structured outputs guarantee valid, correctly-typed JSON with every macro
+// field present — the model can no longer silently omit `fiber` or return a
+// string where a number belongs. It also removes nearly all parse failures,
+// which matters for cost: a parse failure makes callClaudeJson() retry the
+// whole request, which bills a second Haiku call AND burns a second free-tier
+// quota unit (the proxy increments usage before calling Anthropic).
+//
+// Supported on claude-haiku-4-5 (GA, no beta header) and forwarded by
+// claude-proxy v21+, which passes body.output_config straight through.
+const USE_STRUCTURED_OUTPUT = true
+
+// The "already ate" path attaches the web_search server tool. Structured
+// outputs are documented as incompatible with citations, and web-search results
+// carry their own citation blocks, so that combination stays OFF until it's
+// verified live — a schema rejection there would break the app's highest-volume
+// macro path. Everything else runs with schemas on.
+const USE_STRUCTURED_OUTPUT_WITH_SEARCH = false
+
 const MACRO_PROPS = MACRO_FIELDS.reduce((o, k) => { o[k] = { type: 'number' }; return o }, {})
+const MACRO_OBJECT_SCHEMA = { type: 'object', properties: MACRO_PROPS, required: MACRO_FIELDS, additionalProperties: false }
+
+// Note: numeric bounds (minimum/maximum) are deliberately absent — the API's
+// structured-output subset doesn't support them. Range checking happens in
+// macroValidation.js instead.
 const MEAL_FORMAT = {
   format: {
     type: 'json_schema',
@@ -26,11 +45,53 @@ const MEAL_FORMAT = {
       properties: {
         name: { type: 'string' },
         ingredients: { type: 'array', items: { type: 'string' } },
-        macros: { type: 'object', properties: MACRO_PROPS, required: MACRO_FIELDS, additionalProperties: false },
+        macros: MACRO_OBJECT_SCHEMA,
         prepTimeMinutes: { type: 'number' },
         instructions: { type: 'array', items: { type: 'string' } },
       },
       required: ['name', 'ingredients', 'macros', 'prepTimeMinutes', 'instructions'],
+      additionalProperties: false,
+    },
+  },
+}
+
+// A strict schema can't also express the old `{ error: "not found" }` escape
+// hatch, so unidentifiable food is signalled with found:false instead. The
+// callers still check json.error too, so a non-schema response is handled the
+// same way it always was.
+const LOOKUP_FORMAT = {
+  format: {
+    type: 'json_schema',
+    schema: {
+      type: 'object',
+      properties: {
+        found: { type: 'boolean' },
+        name: { type: 'string' },
+        servingSize: { type: 'string' },
+        calories: { type: 'number' },
+        protein: { type: 'number' },
+        carbs: { type: 'number' },
+        fat: { type: 'number' },
+      },
+      required: ['found', 'name', 'servingSize', 'calories', 'protein', 'carbs', 'fat'],
+      additionalProperties: false,
+    },
+  },
+}
+
+// Only used if USE_STRUCTURED_OUTPUT_WITH_SEARCH is turned on — see the note there.
+const EATEN_FORMAT = {
+  format: {
+    type: 'json_schema',
+    schema: {
+      type: 'object',
+      properties: {
+        found: { type: 'boolean' },
+        identifiedAs: { type: 'string' },
+        servingSize: { type: 'string' },
+        macros: MACRO_OBJECT_SCHEMA,
+      },
+      required: ['found', 'identifiedAs', 'servingSize', 'macros'],
       additionalProperties: false,
     },
   },
@@ -47,7 +108,13 @@ function localeBlock(countryName) {
 
 // Per-ingredient reconciliation forces the macros to actually add up, instead
 // of a lump-sum guess. The worked example doubles as cheap few-shot grounding.
-const RECONCILE = `Accuracy method: list each ingredient with an explicit quantity (grams or standard units, e.g. "120 g chicken breast"). Estimate each ingredient's macros from standard nutrition data, then sum them for the totals. The total calories MUST reconcile with the macros — calories ≈ 4×protein + 4×carbs + 9×fat, within ~5%. If they don't reconcile, correct the numbers before returning. Example: 150 g cooked chicken breast ≈ 248 kcal / 46 g protein / 0 g carbs / 5.4 g fat — sum every ingredient the same way.`
+const RECONCILE = `Accuracy method: list each ingredient with an explicit quantity (grams or standard units, e.g. "120 g chicken breast"). Estimate each ingredient's macros from standard nutrition data, then sum them for the totals. The total calories MUST reconcile with the macros — calories ≈ 4×protein + 4×carbs + 9×fat, within ~5%. If they don't reconcile, correct the numbers before returning. Example: 150 g cooked chicken breast ≈ 248 kcal / 46 g protein / 0 g carbs / 5.4 g fat — sum every ingredient the same way.
+Also check these hold before returning: saturatedFat ≤ fat, sugar ≤ carbs, fiber ≤ carbs.`
+
+// The estimation paths (food lookup, "already ate") describe a portion rather
+// than building a recipe, so they get the arithmetic requirement without the
+// per-ingredient recipe framing.
+const RECONCILE_ESTIMATE = `Accuracy method: work out the portion's component parts and their weights first, estimate each from standard nutrition data, then sum. The total calories MUST reconcile with the macros — calories ≈ 4×protein + 4×carbs + 9×fat, within ~5%. If they don't reconcile, correct the numbers before returning. Also check these hold: saturatedFat ≤ fat, sugar ≤ carbs, fiber ≤ carbs. Be realistic about portion size — it is the single largest source of error; state the portion you assumed in servingSize.`
 
 // All Claude traffic goes through the claude-proxy Supabase Edge Function
 // (key lives server-side). The direct browser call only exists as a local-dev
@@ -56,12 +123,13 @@ const RECONCILE = `Accuracy method: list each ingredient with an explicit quanti
 // webSearch=true asks the proxy to attach the web_search tool (used only on the
 // "already ate" path for authoritative regional branded nutrition). countryCode
 // (ISO alpha-2) scopes the search. outputConfig carries structured-output format.
-async function anthropicRequest({ system, messages, maxTokens = 512, webSearch = false, countryCode = '', outputConfig = null, kind = '' }) {
+async function anthropicRequest({ system, messages, maxTokens = 512, webSearch = false, countryCode = '', outputConfig = null, kind = '', temperature = null }) {
   if (!proxyUnavailable) {
     const body = { system, messages, max_tokens: maxTokens }
     if (webSearch) { body.webSearch = true; if (countryCode) body.country = countryCode }
     if (outputConfig) body.output_config = outputConfig
     if (kind) body.kind = kind
+    if (temperature != null) body.temperature = temperature
     const { data, error } = await supabase.functions.invoke('claude-proxy', { body })
     if (!error && data?.content) return data
     // A Pro-gated or quota-exceeded rejection is never a "proxy is down"
@@ -91,6 +159,7 @@ async function anthropicRequest({ system, messages, maxTokens = 512, webSearch =
     basePayload.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3, user_location: userLocation }]
   }
   if (outputConfig) basePayload.output_config = outputConfig
+  if (temperature != null) basePayload.temperature = temperature
 
   let convo = messages
   let last = null
@@ -124,11 +193,11 @@ function extractText(data) {
   return blocks.filter(b => b?.type === 'text').map(b => b.text).join('\n').trim()
 }
 
-async function callClaude(systemPrompt, userMessage, { maxTokens = 512, webSearch = false, countryCode = '', outputConfig = null, kind = '' } = {}) {
+async function callClaude(systemPrompt, userMessage, { maxTokens = 512, webSearch = false, countryCode = '', outputConfig = null, kind = '', temperature = null } = {}) {
   const data = await anthropicRequest({
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
-    maxTokens, webSearch, countryCode, outputConfig, kind,
+    maxTokens, webSearch, countryCode, outputConfig, kind, temperature,
   })
   return extractText(data)
 }
@@ -163,42 +232,93 @@ async function callClaudeJson(system, userMessage, opts, tag) {
   return null
 }
 
-// Coerce every present macro field to a finite number (never a string / NaN).
-function coerceMacros(obj) {
-  if (!obj || typeof obj !== 'object') return obj
-  const out = { ...obj }
-  for (const k of MACRO_FIELDS) {
-    if (k in out) {
-      const n = Number(out[k])
-      out[k] = Number.isFinite(n) ? n : 0
-    }
-  }
-  return out
+// --- Food Lookup cache ---
+// The craving box calls lookupFood on every 700ms typing pause, so backspacing
+// a character and retyping it used to cost a fresh Haiku call AND a free-tier
+// quota unit for an answer we already had. Keyed by query + country because the
+// same query genuinely returns different figures per region (see localeBlock).
+//
+// Persisted so the cache survives a reload, capped so it can't grow unbounded,
+// and versioned so a prompt change invalidates every stored answer.
+const LOOKUP_CACHE_KEY = 'mv_food_lookup_v1'
+const LOOKUP_CACHE_MAX = 200
+const lookupCache = new Map()
+
+function loadLookupCache() {
+  try {
+    const raw = localStorage.getItem(LOOKUP_CACHE_KEY)
+    if (!raw) return
+    for (const [k, v] of Object.entries(JSON.parse(raw))) lookupCache.set(k, v)
+  } catch { /* corrupt or unavailable storage — start empty */ }
 }
+loadLookupCache()
+
+function persistLookupCache() {
+  try {
+    // Map preserves insertion order, so the oldest entries drop out first.
+    const trimmed = [...lookupCache.entries()].slice(-LOOKUP_CACHE_MAX)
+    lookupCache.clear()
+    for (const [k, v] of trimmed) lookupCache.set(k, v)
+    localStorage.setItem(LOOKUP_CACHE_KEY, JSON.stringify(Object.fromEntries(trimmed)))
+  } catch { /* quota exceeded / private mode — in-memory cache still works */ }
+}
+
+const lookupCacheKey = (query, countryName) =>
+  `${countryName || '-'}::${String(query || '').trim().toLowerCase().replace(/\s+/g, ' ')}`
 
 // --- Food Lookup ---
 // Returns { name, calories, protein, carbs, fat, servingSize } or null
 export async function lookupFood(query, { countryName = '' } = {}) {
+  const cacheKey = lookupCacheKey(query, countryName)
+  if (lookupCache.has(cacheKey)) return lookupCache.get(cacheKey)
+
   const system = `${localeBlock(countryName)}You are a nutrition database. Given a food description, return ONLY valid JSON with these exact keys:
-{ "name": string, "servingSize": string, "calories": number, "protein": number, "carbs": number, "fat": number }
+{ "found": boolean, "name": string, "servingSize": string, "calories": number, "protein": number, "carbs": number, "fat": number }
 All macros are in grams. Calories are kcal. Use standard serving sizes for the user's region.
-If you cannot identify the food, return { "error": "not found" }.
+${RECONCILE_ESTIMATE}
+If you cannot identify the food, return found:false with empty name and zeroed numbers. Otherwise found:true.
 Return ONLY the JSON object — no explanation, no markdown.`
 
-  const json = await callClaudeJson(system, query, { maxTokens: 250, kind: 'lookupFood' }, 'lookupFood')
-  if (!json || json.error) return null
-  return coerceMacros(json)
+  const json = await callClaudeJson(system, query, {
+    maxTokens: 350,
+    outputConfig: USE_STRUCTURED_OUTPUT ? LOOKUP_FORMAT : null,
+    kind: 'lookupFood',
+    temperature: 0,
+  }, 'lookupFood')
+
+  // A transport/parse failure (null json) is deliberately NOT cached — that's a
+  // transient error, and caching it would lock the user out of retrying. A
+  // confident "not found" is cached, since re-asking won't change the answer.
+  if (!json) return null
+  const result = (json.error || json.found === false) ? null : normalizeMacros(json)
+  lookupCache.set(cacheKey, result)
+  persistLookupCache()
+  return result
 }
 
 const MACRO_SCHEMA = `{"calories": number, "protein": number, "carbs": number, "fat": number, "fiber": number, "sugar": number, "saturatedFat": number, "sodium": number, "cholesterol": number, "potassium": number}`
 
+// What the meal should be optimised for. This replaces an older "Physique goal"
+// line that interpolated userProfile.physique — that field is hardcoded to
+// 'lean_toned' for every user (the physique onboarding step was removed), so it
+// was the same sentence on every request. fitnessGoal is set during onboarding
+// and actually varies, so it's real personalisation for the same token cost.
+const GOAL_PROMPT = {
+  lose_weight: 'Goal: fat loss — high protein and high volume for satiety, moderate calories.',
+  build_muscle: 'Goal: muscle gain — high protein with enough carbs to fuel training.',
+  tone_recomp: 'Goal: tone and recomposition — high protein, whole foods, balanced carbs and fat.',
+  maintain: 'Goal: maintenance — balanced whole foods, adequate protein.',
+  athletic_performance: 'Goal: athletic performance — carb-forward for fuelling, solid protein for recovery.',
+}
+
 // --- Meal Suggestion ---
 // Returns { name, ingredients[], macros{...full macro schema...}, prepTimeMinutes, instructions[] } or null
 // cravingOnly=true: generate the craved dish authentically — no calorie padding
-export async function suggestMeal({ mealType, targetCalories, targetProtein, targetCarbs, targetFat, dietary, allergies, physique, craving, cravingOnly = false, countryName = '' }) {
+export async function suggestMeal({ mealType, targetCalories, targetProtein, targetCarbs, targetFat, dietary, allergies, fitnessGoal, craving, cravingOnly = false, countryName = '' }) {
   const allergyStr = allergies?.length ? `Never include: ${allergies.join(', ')}.` : ''
   const dietaryStr = dietary?.length ? `Diet: ${dietary.join(', ')}.` : ''
   const locale = localeBlock(countryName)
+  const goalStr = GOAL_PROMPT[fitnessGoal] || GOAL_PROMPT.tone_recomp
 
   let system
   if (cravingOnly && craving) {
@@ -227,7 +347,7 @@ Generate a single ${mealType} meal fitting these constraints:
 ${dietaryStr}
 ${allergyStr}
 ${cravingStr}
-Physique goal: ${physique || 'lean_toned'} — lean, high protein, whole foods preferred.
+${goalStr}
 ${RECONCILE}
 Return ONLY valid JSON:
 { "name": string, "ingredients": [string], "macros": ${MACRO_SCHEMA}, "prepTimeMinutes": number, "instructions": [string] }
@@ -235,13 +355,16 @@ Estimate fiber/sugar/saturatedFat/sodium/cholesterol/potassium as best you can (
 No markdown, no explanation — just the JSON.`
   }
 
+  // No temperature override here — recipe variety is a feature, and users
+  // regenerate expecting something different. Only the estimation paths are
+  // pinned to 0.
   const json = await callClaudeJson(system, `Suggest a ${mealType} for today.`, {
     maxTokens: 1100,
     outputConfig: USE_STRUCTURED_OUTPUT ? MEAL_FORMAT : null,
     kind: 'suggestMeal',
   }, 'suggestMeal')
   if (!json) return null
-  if (json.macros) json.macros = coerceMacros(json.macros)
+  if (json.macros) json.macros = normalizeMacros(json.macros)
   return json
 }
 
@@ -269,7 +392,7 @@ No markdown, no explanation — just the JSON.`
     kind: 'adjustMeal',
   }, 'adjustMeal')
   if (!json) return null
-  if (json.macros) json.macros = coerceMacros(json.macros)
+  if (json.macros) json.macros = normalizeMacros(json.macros)
   return json
 }
 
@@ -286,14 +409,22 @@ The user tells you what they already ate. Identify the most likely specific food
 If the item is a branded, restaurant, or packaged product, use the web_search tool to look up its OFFICIAL published nutrition information for the user's country and base the macros on those figures. For generic or home-cooked food, estimate from a standard serving without searching.
 ${brandExample}
 If multiple items are mentioned, combine them into one total.
+${RECONCILE_ESTIMATE}
 Return ONLY valid JSON with these exact keys:
 { "identifiedAs": string, "servingSize": string, "macros": ${MACRO_SCHEMA} }
 If you cannot identify anything food-related, return { "error": "not found" }.
 Return ONLY the JSON object — no explanation, no markdown.`
 
-  const json = await callClaudeJson(system, description, { maxTokens: 1200, webSearch: true, countryCode, kind: 'identifyEatenFood' }, 'identifyEatenFood')
+  const json = await callClaudeJson(system, description, {
+    maxTokens: 1200,
+    webSearch: true,
+    countryCode,
+    outputConfig: USE_STRUCTURED_OUTPUT && USE_STRUCTURED_OUTPUT_WITH_SEARCH ? EATEN_FORMAT : null,
+    kind: 'identifyEatenFood',
+    temperature: 0,
+  }, 'identifyEatenFood')
   if (!json) return null
   if (json.error) return { error: json.error }
-  if (json.macros) json.macros = coerceMacros(json.macros)
+  if (json.macros) json.macros = normalizeMacros(json.macros)
   return json
 }
