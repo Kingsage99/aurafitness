@@ -5,7 +5,7 @@ import { StarIcon, renderIcon } from '../components/Icons'
 import { NB, NB_BORDER, hardShadow, nbCardStyle, NB_CARD_NEUTRAL, NB_CARD_NEUTRAL_SHADOW, proTextStyle } from '../styles/neoBrutalism'
 
 export const FEATURES = [
-  { icon: '🍽️', label: 'Unlimited AI meal generation', desc: 'No daily limit on meal suggestions, food lookup, or "already ate" scans' },
+  { icon: '🌯', label: 'Unlimited AI meal generation', desc: 'No daily limit on meal suggestions, food lookup, or "already ate" scans' },
   { icon: '🪄', label: 'AI meal adjustments', desc: 'Request changes to any recipe — more protein, no dairy — a Pro-only feature' },
   { icon: '📅', label: 'Build my full day', desc: 'Auto-plan every meal and snack for the whole day in one tap' },
   { icon: '✨', label: 'Shiny Pro name & muscle map', desc: 'Your name and workout stats shine blue-purple everywhere' },
@@ -23,10 +23,27 @@ export const FEATURES = [
 // time anyone gets here, isTrialEligible(subscription) is almost always
 // false (they've already had their one free week) -- the trialEligible
 // branch below exists for the rare case it's ever reached before that.
+// Small circle-i info glyph, matching the stroke-based inline SVG style used
+// elsewhere on this screen and in Auth.jsx (no separate icon component exists
+// for this yet).
+function InfoIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={NB.ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="11" x2="12" y2="16.5" />
+      <circle cx="12" cy="7.8" r="0.5" fill={NB.ink} />
+    </svg>
+  )
+}
+
 export default function ProUpsell({ subscription = {}, onContinue }) {
   const [plan, setPlan] = useState('monthly')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // Which single feature card has its description expanded, if any — only
+  // the tapped one shows detail at a time, so the list stays calm instead of
+  // showing every description at once.
+  const [expandedFeature, setExpandedFeature] = useState(null)
   const trialEligible = isTrialEligible(subscription)
 
   const handleSubscribe = async () => {
@@ -57,18 +74,35 @@ export default function ProUpsell({ subscription = {}, onContinue }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-          {FEATURES.map(f => (
-            <div key={f.label} style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: NB.white, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{renderIcon(f.icon, 20)}</div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: NB.ink }}>{f.label}</div>
-                <div style={{ fontSize: 11, color: '#555', marginTop: 1 }}>{f.desc}</div>
+          {FEATURES.map(f => {
+            const isOpen = expandedFeature === f.label
+            return (
+              <div key={f.label} style={{ ...nbCardStyle(NB_CARD_NEUTRAL, 3, NB_CARD_NEUTRAL_SHADOW), border: `3px solid ${NB.white}`, borderRadius: 16, padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: NB.white, border: `1.5px solid ${NB.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{renderIcon(f.icon, 20)}</div>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 800, color: NB.ink, textAlign: 'center' }}>{f.label}</div>
+                  <button
+                    onClick={() => setExpandedFeature(isOpen ? null : f.label)}
+                    aria-label={isOpen ? 'Hide details' : 'Show details'}
+                    style={{ width: 26, height: 26, borderRadius: '50%', border: `1.5px solid ${NB.ink}`, background: isOpen ? NB.yellow : NB.white, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer', padding: 0 }}
+                  >
+                    <InfoIcon size={14} />
+                  </button>
+                </div>
+                {isOpen && (
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 8, paddingTop: 8, borderTop: `1.5px solid ${NB.ink}22` }}>{f.desc}</div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
+      </div>
 
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+      {/* Price toggle + error live in the pinned footer, not the scrollable
+          feature list above — so they're always visible no matter how far
+          down the (now full 8-item) feature list the user has scrolled. */}
+      <div style={{ padding: '14px 22px 26px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <button
             onClick={() => setPlan('monthly')}
             style={{ flex: 1, height: 56, border: `2.5px solid ${NB.ink}`, borderRadius: 14, background: plan === 'monthly' ? NB.teal : NB.white, boxShadow: plan === 'monthly' ? hardShadow(3) : 'none', cursor: 'pointer' }}
@@ -87,13 +121,11 @@ export default function ProUpsell({ subscription = {}, onContinue }) {
         </div>
 
         {error && (
-          <div style={{ marginTop: 10, padding: '10px 14px', ...nbCardStyle(NB.red, 3), border: `3px solid ${NB.white}`, borderRadius: 12 }}>
+          <div style={{ marginBottom: 12, padding: '10px 14px', ...nbCardStyle(NB.red, 3), border: `3px solid ${NB.white}`, borderRadius: 12 }}>
             <span style={{ fontFamily: NB.fontMono, fontSize: 13, color: NB.white, fontWeight: 700 }}>{error}</span>
           </div>
         )}
-      </div>
 
-      <div style={{ padding: '14px 22px 26px', flexShrink: 0 }}>
         <button
           onClick={handleSubscribe}
           disabled={busy}

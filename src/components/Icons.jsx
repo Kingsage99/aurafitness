@@ -196,7 +196,7 @@ const ICON_MAP = {
   '💪': StrengthArmIcon, '🏋️': WeightlifterIcon, '📈': TrendingChartIcon,
   '📅': CalendarIcon, '📸': CameraIcon, '🎒': BackpackIcon, '🏅': MedalIcon,
   '🍽️': MealPlateIcon, '🛍️': ShoppingBagsIcon, '💆': SpaIcon,
-  '⏱️': StopwatchIcon, '🛠️': ToolsIcon,
+  '⏱️': StopwatchIcon, '🛠️': ToolsIcon, '🌯': BurritoMealIcon,
 }
 export function renderIcon(char, size = 24) {
   const Comp = ICON_MAP[char]
