@@ -734,7 +734,7 @@ export default function Onboarding({ onComplete, session }) {
               <div style={{ ...nbCardStyle(NB.teal, 4), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '16px', marginBottom: 14 }}>
                 <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Your daily target</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                  <button onClick={() => setDailyCalorieTarget(t => Math.max(800, (t ?? 1500) - 50))} style={{ width: 48, height: 48, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: NB.white, fontSize: 22, fontWeight: 800, color: NB.ink, cursor: 'pointer', flexShrink: 0 }}>−</button>
+                  <button onClick={() => setDailyCalorieTarget(t => Math.max(1200, (t ?? 1500) - 50))} style={{ width: 48, height: 48, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: NB.white, fontSize: 22, fontWeight: 800, color: NB.ink, cursor: 'pointer', flexShrink: 0 }}>−</button>
                   <div style={{ textAlign: 'center', flex: 1 }}>
                     <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 42, color: NB.ink, lineHeight: 1 }}>{dailyCalorieTarget?.toLocaleString() ?? '—'}</div>
                     <div style={{ fontFamily: NB.fontMono, fontSize: 12, color: NB.ink, fontWeight: 700 }}>kcal / day</div>

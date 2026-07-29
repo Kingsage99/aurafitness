@@ -394,7 +394,7 @@ export default function EditDetails({ userProfile, onUpdateProfile, onNavigate }
           <div style={{ ...nbCardStyle(NB.teal, 4), border: `3px solid ${NB.white}`, borderRadius: 18, padding: '16px', marginBottom: 10 }}>
             <div style={{ fontFamily: NB.fontMono, fontSize: 10, fontWeight: 800, color: NB.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Your daily target</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-              <button onClick={() => setDailyCalorieTarget(t => Math.max(800, (t ?? 1500) - 50))} style={{ width: 46, height: 46, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: NB.white, fontSize: 20, fontWeight: 800, color: NB.ink, cursor: 'pointer', flexShrink: 0 }}>−</button>
+              <button onClick={() => setDailyCalorieTarget(t => Math.max(1200, (t ?? 1500) - 50))} style={{ width: 46, height: 46, borderRadius: 12, border: `2.5px solid ${NB.ink}`, background: NB.white, fontSize: 20, fontWeight: 800, color: NB.ink, cursor: 'pointer', flexShrink: 0 }}>−</button>
               <div style={{ textAlign: 'center', flex: 1 }}>
                 <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 38, color: NB.ink, lineHeight: 1 }}>{dailyCalorieTarget?.toLocaleString() ?? '—'}</div>
                 <div style={{ fontFamily: NB.fontMono, fontSize: 11, color: NB.ink, fontWeight: 700 }}>kcal / day</div>
