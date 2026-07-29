@@ -48,6 +48,7 @@ import {
 import { getDailyTargets } from './utils/nutrition'
 import { MUSCLE_LABELS } from './utils/muscleLabels'
 import RewardToast from './components/RewardToast'
+import { initAnalytics, identifyUser, resetAnalytics, trackScreen, track } from './lib/analytics'
 
 // The one place gems actually persist. protect_billing_columns_trigger (DB)
 // reverts any write to gamification.gems that isn't made as service_role —
@@ -395,9 +396,16 @@ export default function App() {
     const params = new URLSearchParams(window.location.search)
     const checkout = params.get('checkout')
     if (!checkout) return
-    if (checkout === 'success' && params.get('type') === 'gems') pushNotification('💎 Gems added to your balance!')
-    else if (checkout === 'success') pushNotification('🎉 Welcome to MissVfit Pro!')
-    else if (checkout === 'cancel') pushNotification('Checkout canceled')
+    if (checkout === 'success' && params.get('type') === 'gems') {
+      pushNotification('💎 Gems added to your balance!')
+      track('purchase_completed', { type: 'gems' })
+    } else if (checkout === 'success') {
+      pushNotification('🎉 Welcome to MissVfit Pro!')
+      track('purchase_completed', { type: 'pro_subscription' })
+    } else if (checkout === 'cancel') {
+      pushNotification('Checkout canceled')
+      track('purchase_canceled', { type: params.get('type') || 'unknown' })
+    }
     params.delete('checkout')
     const query = params.toString()
     window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : '') + window.location.hash)
@@ -551,10 +559,21 @@ export default function App() {
   }, [customExercises]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    initAnalytics()
+  }, [])
+
+  // Screen-view tracking — see analytics.js for why this substitutes for
+  // PostHog's URL-based autocapture (this app has no real router).
+  useEffect(() => {
+    trackScreen(screen)
+  }, [screen])
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       sessionRef.current = session
       if (session) {
+        identifyUser(session.user.id)
         if (!profileLoadTriggered.current) {
           profileLoadTriggered.current = true
           loadProfile(session.user.id)
@@ -568,12 +587,14 @@ export default function App() {
       sessionRef.current = newSession
 
       if (event === 'SIGNED_IN') {
+        identifyUser(newSession.user.id)
         if (profileLoadTriggered.current) return // already handled by getSession() above
         profileLoadTriggered.current = true
         dataReady.current = false
         setProfileLoading(true)
         loadProfile(newSession.user.id)
       } else if (event === 'SIGNED_OUT') {
+        resetAnalytics()
         profileLoadTriggered.current = false // allow a fresh load on the next sign-in
         dataReady.current = false
         setProfileLoading(false)
@@ -728,6 +749,12 @@ export default function App() {
     }
 
     const display = buildWorkoutRewards(gamification)
+    track('workout_completed', {
+      completion_ratio: completionRatio,
+      is_makeup: isMakeup,
+      exercise_count: (rawSessionData.exercises || []).length,
+      workout_streak: display.g.workoutStreak,
+    })
     pushNotification(`+${baseGems} 💎  Workout complete!`)
     if (display.levelUp) pushNotification(`Level up! You're now Level ${display.lvl} ⬆️`)
     if (display.mb) pushNotification(`🔥 ${display.g.workoutStreak}-day streak bonus! +${display.mb.gems} 💎`)

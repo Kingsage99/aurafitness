@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { normalizeMacros } from './macroValidation'
+import { track } from '../lib/analytics'
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
 const API_URL = 'https://api.anthropic.com/v1/messages'
@@ -221,14 +222,22 @@ async function callClaudeJson(system, userMessage, opts, tag) {
     try {
       raw = await callClaude(system, userMessage, opts)
     } catch (err) {
-      if (err?.code === 'PRO_REQUIRED' || err?.code === 'QUOTA_EXCEEDED') throw err
+      if (err?.code === 'PRO_REQUIRED' || err?.code === 'QUOTA_EXCEEDED') {
+        track('ai_request', { kind: tag, outcome: err.code.toLowerCase() })
+        throw err
+      }
       console.error(`[${tag}] request failed`, err?.message)
+      track('ai_request', { kind: tag, outcome: 'error' })
       return null
     }
     const json = parseLoose(raw)
-    if (json !== undefined) return json
+    if (json !== undefined) {
+      track('ai_request', { kind: tag, outcome: 'success' })
+      return json
+    }
     if (attempt === 1) console.error(`[${tag}] JSON parse failed after retry`)
   }
+  track('ai_request', { kind: tag, outcome: 'parse_failed' })
   return null
 }
 
