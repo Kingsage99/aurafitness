@@ -707,8 +707,10 @@ export default function Onboarding({ onComplete, session }) {
       {step === 14 && (() => {
         const warnings = getCalorieWarnings(dailyCalorieTarget, tdeeData?.tdee)
         const diff = (dailyCalorieTarget ?? 0) - (tdeeData?.tdee ?? 0)
-        const weeklyKg = (Math.abs(diff) / 500 * 0.5).toFixed(2)
-        const weeklyText = Math.abs(diff) < 50 ? 'Maintaining weight' : diff < 0 ? `~${weeklyKg} kg/week loss` : `~${weeklyKg} kg/week gain`
+        const weeklyKgNum = Math.abs(diff) / 500 * 0.5
+        const weeklyKg = weeklyKgNum.toFixed(2)
+        const weeklyLbs = (weeklyKgNum * 2.20462).toFixed(1)
+        const weeklyText = Math.abs(diff) < 50 ? 'Maintaining weight' : diff < 0 ? `~${weeklyKg} kg (${weeklyLbs} lb)/week loss` : `~${weeklyKg} kg (${weeklyLbs} lb)/week gain`
         const isCutting = ['lose_weight', 'tone_recomp'].includes(fitnessGoal)
         const isBuilding = ['build_muscle', 'athletic_performance'].includes(fitnessGoal)
         const presets = isCutting
