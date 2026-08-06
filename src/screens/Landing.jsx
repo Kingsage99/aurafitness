@@ -6,8 +6,6 @@ import {
 import { renderIcon, FireIcon, StarIcon, SaladIcon, BurritoMealIcon, CookbookIcon } from '../components/Icons'
 import { FEATURES as PRO_FEATURES } from './ProUpsell'
 import MuscleSVG from '../components/MuscleSVG'
-import { isIOSDevice } from '../utils/pushNotifications'
-import { useInstallPrompt } from '../hooks/useInstallPrompt'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { supabase } from '../lib/supabase'
 
@@ -445,28 +443,6 @@ function FinalCTA({ isMobile, installLabel, onInstall, host }) {
   )
 }
 
-function IOSStepsSheet({ open, onClose }) {
-  if (!open) return null
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(26,26,26,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: NB.white, borderTop: NB_BORDER, borderLeft: NB_BORDER, borderRight: NB_BORDER, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: '22px 22px calc(30px + env(safe-area-inset-bottom))', width: '100%', maxWidth: 480 }}>
-        <div style={{ fontFamily: NB.fontDisplay, fontWeight: 900, fontSize: 18, textTransform: 'uppercase', color: NB.ink, marginBottom: 12 }}>Add MissVfit to your Home Screen</div>
-        <div style={{ fontFamily: NB.fontMono, fontSize: 13.5, color: '#555', lineHeight: 1.9 }}>
-          1. Tap the <b>Share</b> icon in Safari<br />
-          2. Scroll down and tap <b>“Add to Home Screen”</b><br />
-          3. Open MissVfit from your Home Screen to sign up
-        </div>
-        <a href="/app" style={{ display: 'inline-block', marginTop: 16, fontFamily: NB.fontMono, fontSize: 13, fontWeight: 700, color: NB.purpleDeep, textDecoration: 'underline' }}>
-          Or continue in the browser
-        </a>
-        <button onClick={onClose} style={{ display: 'block', width: '100%', marginTop: 16, height: 46, border: NB_BORDER, borderRadius: 12, background: NB.lavender, fontFamily: NB.fontDisplay, fontWeight: 800, fontSize: 13, textTransform: 'uppercase', color: NB.ink, cursor: 'pointer' }}>
-          Got it
-        </button>
-      </div>
-    </div>
-  )
-}
-
 function Footer() {
   return (
     <footer style={{ textAlign: 'center', padding: '28px 20px 40px', borderTop: `2px solid ${NB.lavender}` }}>
@@ -480,9 +456,6 @@ function Footer() {
 
 export default function Landing() {
   const isMobile = useIsMobile()
-  const { canInstall, promptInstall } = useInstallPrompt()
-  const isIOS = isIOSDevice()
-  const [showIOSSteps, setShowIOSSteps] = useState(false)
   const [showStickyCTA, setShowStickyCTA] = useState(false)
 
   // An already-signed-in visitor on a phone (returning from an OAuth/email
@@ -498,16 +471,17 @@ export default function Landing() {
     return () => { cancelled = true }
   }, [isMobile])
 
-  // One install action shared by every CTA on the page: fire the native
-  // Android/Chrome prompt when we have it, reveal the manual iOS steps sheet
-  // on iOS, and otherwise hard-navigate into the app.
-  const handleInstall = async () => {
-    if (isMobile && canInstall) { await promptInstall(); return }
-    if (isMobile && isIOS) { setShowIOSSteps(true); return }
+  // One CTA shared by every button on the page: go straight into the app.
+  // We used to branch into the native install prompt / iOS "Add to Home
+  // Screen" steps here, but in-app browsers (TikTok, Instagram, etc.) can't
+  // install PWAs at all, so that flow just stranded those visitors — they
+  // had to leave and reopen in Safari/Chrome to get anywhere. The web app
+  // works fine without installing, so just take everyone there directly.
+  const handleInstall = () => {
     window.location.href = '/app'
   }
 
-  const installLabel = !isMobile ? 'Get the App' : canInstall ? 'Install App' : isIOS ? 'Add to Home Screen' : 'Open the App'
+  const installLabel = isMobile ? 'Open the App' : 'Get the App'
   const host = typeof window !== 'undefined' ? window.location.host : ''
 
   // Keep the focal CTA one tap away on mobile: a floating install bar that
@@ -536,8 +510,6 @@ export default function Landing() {
           <InstallButton label={installLabel} onClick={handleInstall} style={{ width: '100%', height: 52 }} />
         </div>
       )}
-
-      <IOSStepsSheet open={showIOSSteps} onClose={() => setShowIOSSteps(false)} />
     </div>
   )
 }
