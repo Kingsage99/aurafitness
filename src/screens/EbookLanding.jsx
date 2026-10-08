@@ -96,7 +96,7 @@ function CancelBanner({ onDismiss }) {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
     }}>
       <span style={{ fontFamily: EBOOK.fontMono, fontSize: 12.5, fontWeight: 700, color: EBOOK.ink, lineHeight: 1.5 }}>
-        Checkout canceled — no charge was made.
+        Checkout canceled. No charge was made.
       </span>
       <button onClick={onDismiss} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: EBOOK.ink, fontWeight: 800, flexShrink: 0 }} aria-label="Dismiss">✕</button>
     </div>
@@ -125,7 +125,7 @@ function PurchaseSuccessReveal({ status, downloadUrl, onDismiss }) {
 
         <div style={{ fontFamily: EBOOK.fontMono, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 10, lineHeight: 1.6 }}>
           {status === 'verifying' && 'Verifying your purchase…'}
-          {status === 'ready' && 'Your download should start automatically — if it doesn’t, use the button below (valid for 2 hours). We’ve also emailed you a copy of this link, so you can come back and re-download any time.'}
+          {status === 'ready' && 'Your download should start automatically. If it doesn’t, use the button below (valid for 2 hours). We’ve also emailed you a copy of this link, so you can come back and re-download any time.'}
           {status === 'error' && (
             <>We couldn't automatically verify this purchase. If you were just charged, email <a href="mailto:support@missvfit.app" style={{ color: EBOOK.lavender }}>support@missvfit.app</a> with your receipt and we'll get your copy to you directly.</>
           )}
@@ -169,8 +169,8 @@ function BrandBar() {
 // PDF, living in public/ebook-preview/. Clicking a thumbnail swaps which one
 // shows inside the device frame, same pattern as the reference product pages.
 const GALLERY_IMAGES = [
-  { src: '/ebook-preview/cover.jpg', alt: 'The Shape Shift Playbook — cover' },
-  { src: '/ebook-preview/page-11.jpg', alt: 'Inside the Playbook: the Goal Checklist (page 11)' },
+  { src: '/ebook-preview/cover.jpg', alt: 'The Shape Shift Playbook cover' },
+  { src: '/ebook-preview/page-10.jpg', alt: 'Inside the Playbook: Find Your Shift (page 10)' },
   { src: '/ebook-preview/page-21.jpg', alt: 'Inside the Playbook: the Swap System (page 21)' },
   { src: '/ebook-preview/page-40.jpg', alt: 'Inside the Playbook: Progressive Overload (page 40)' },
   { src: '/ebook-preview/page-44.jpg', alt: 'Inside the Playbook: Intensity and Proximity to Failure (page 44)' },
@@ -193,7 +193,7 @@ function ProductGallery() {
         </div>
       </div>
 
-      <div role="tablist" aria-label="Preview pages" style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}>
+      <div role="tablist" aria-label="Preview pages" style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
         {GALLERY_IMAGES.map((img, i) => (
           <button
             key={img.src}
@@ -263,7 +263,7 @@ const INCLUDED = [
   'The Core System: training, nutrition, recovery',
   'Blank exercise-selection grid + customizable weekly template',
   'Myth-busting section',
-  'Lifetime access — yours to keep',
+  'Lifetime access, yours to keep',
 ]
 
 // The single consolidated purchase unit — replaces what used to be three
@@ -284,21 +284,21 @@ function BuyBox({ busy, onBuy, error, avgRating, reviewCount, buyBoxRef }) {
         </span>
       </div>
 
-      <h1 style={{ fontFamily: EBOOK.fontDisplay, fontWeight: 900, fontSize: 'clamp(30px, 4.2vw, 44px)', textTransform: 'uppercase', color: EBOOK.ink, lineHeight: 1.04, margin: '10px 0 0', textWrap: 'balance' }}>
+      <h1 style={{ fontFamily: EBOOK.fontDisplay, fontWeight: 900, fontSize: 'clamp(30px, 4.2vw, 44px)', textTransform: 'uppercase', color: EBOOK.ink, lineHeight: 1.04, margin: '8px 0 0', textWrap: 'balance' }}>
         The Shape Shift Playbook
       </h1>
-      <p style={{ fontFamily: EBOOK.fontMono, fontSize: 14.5, color: EBOOK.textBody, marginTop: 10, lineHeight: 1.55, maxWidth: 440 }}>
-        The fitness guide that skips the body-type quiz — one adaptable system for training, nutrition, and recovery, built around your starting point.
+      <p style={{ fontFamily: EBOOK.fontMono, fontSize: 14.5, color: EBOOK.textBody, marginTop: 8, lineHeight: 1.55, maxWidth: 440 }}>
+        The fitness guide that skips the body-type quiz. One adaptable system for training, nutrition, and recovery, built around your starting point.
       </p>
 
-      <div style={{ fontFamily: EBOOK.fontDisplay, fontWeight: 900, fontSize: 36, color: EBOOK.ink, marginTop: 20 }}>$26.99</div>
-      <div style={{ fontFamily: EBOOK.fontMono, fontSize: 11, color: EBOOK.textMuted, marginTop: 2 }}>One-time payment · Instant digital download</div>
+      <div style={{ fontFamily: EBOOK.fontDisplay, fontWeight: 900, fontSize: 36, color: EBOOK.ink, marginTop: 24 }}>$26.99</div>
+      <div style={{ fontFamily: EBOOK.fontMono, fontSize: 11, color: EBOOK.textMuted, marginTop: 4 }}>One-time payment · Instant digital download</div>
 
-      <BuyButton label="Get The Playbook — $26.99" onClick={onBuy} busy={busy} style={{ width: '100%', marginTop: 16 }} />
+      <BuyButton label="Get The Playbook for $26.99" onClick={onBuy} busy={busy} style={{ width: '100%', marginTop: 16 }} />
 
       {error && (
         <div role="alert" style={{
-          fontFamily: EBOOK.fontMono, fontSize: 11.5, fontWeight: 700, color: EBOOK.ink, marginTop: 10,
+          fontFamily: EBOOK.fontMono, fontSize: 11.5, fontWeight: 700, color: EBOOK.ink, marginTop: 8,
           padding: '8px 10px', border: `1.5px solid ${EBOOK.ink}`, borderRadius: 8, background: EBOOK.lavenderTint,
         }}>
           {error}
@@ -306,10 +306,10 @@ function BuyBox({ busy, onBuy, error, avgRating, reviewCount, buyBoxRef }) {
       )}
 
       <div style={{ fontFamily: EBOOK.fontMono, fontSize: 10.5, color: EBOOK.textMuted, marginTop: 8 }}>
-        Non-refundable once downloaded — see our <a href="/legal" style={{ color: EBOOK.textMuted }}>refund policy</a>
+        Non-refundable once downloaded. See our <a href="/legal" style={{ color: EBOOK.textMuted }}>refund policy</a>.
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 26 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 24 }}>
         {STATS.map(s => <StatBadge key={s.label} icon={s.icon} label={s.label} />)}
       </div>
 
@@ -416,7 +416,7 @@ function ReviewsSection({ isMobile }) {
 
   return (
     <section style={{ background: `linear-gradient(135deg, ${EBOOK.lavender} 0%, ${EBOOK.lavenderDeep} 100%)`, padding: '40px 0' }}>
-      <div style={{ fontFamily: EBOOK.fontMono, fontWeight: 700, fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: EBOOK.ink, textAlign: 'center', marginBottom: 12 }}>
+      <div style={{ fontFamily: EBOOK.fontMono, fontWeight: 700, fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: EBOOK.ink, textAlign: 'center', marginBottom: 16 }}>
         What Readers Say
       </div>
 
@@ -453,7 +453,7 @@ function ReviewsSection({ isMobile }) {
 function ProductDescription() {
   return (
     <p style={{ fontFamily: EBOOK.fontMono, fontSize: 13.5, color: EBOOK.textBody, lineHeight: 1.7, textAlign: 'center', maxWidth: 560, margin: '0 auto' }}>
-      The Shape Shift Playbook distills the training philosophy behind the MissVfit app — training, nutrition, and recovery, built on established exercise science — into one complete framework you read once and use for years.
+      The Shape Shift Playbook distills the training philosophy behind the MissVfit app (training, nutrition, and recovery, built on established exercise science) into one complete framework you read once and use for years.
     </p>
   )
 }
@@ -462,7 +462,7 @@ const PILLAR_LABELS = ['Training', 'Nutrition', 'Recovery']
 
 function FeatureHighlights() {
   return (
-    <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', marginTop: 18 }}>
+    <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
       {PILLAR_LABELS.map(label => (
         <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <CheckMark size={18} />
@@ -486,7 +486,7 @@ const TOC = [
   },
   {
     part: 'Part 2', title: 'The Swap System',
-    bullets: ['What to cut, what to add — including "the volume trick" (more food, fewer calories)', 'Three calorie directions — Fat Loss, Maintenance, Muscle Gain — tied to your own goal'],
+    bullets: ['What to cut, what to add, including "the volume trick" (more food, fewer calories)', 'Three calorie directions (Fat Loss, Maintenance, Muscle Gain) tied to your own goal'],
   },
   {
     part: 'Part 3', title: 'The Training Path',
@@ -494,30 +494,30 @@ const TOC = [
   },
   {
     part: 'Part 4', title: 'Weekly Routines',
-    bullets: ['Three-level progression: Build the Habit, Build Consistency, Build Results', 'One customizable weekly template you adapt — not three rigid plans to choose between'],
+    bullets: ['Three-level progression: Build the Habit, Build Consistency, Build Results', 'One customizable weekly template you adapt, not three rigid plans to choose between'],
   },
 ]
 
 const MYTHS = [
-  { myth: '"Spot reduction works."', fact: 'You can’t choose where fat comes off by targeting a muscle — the Playbook explains what actually determines it.' },
+  { myth: '"Spot reduction works."', fact: 'You can’t choose where fat comes off by targeting a muscle. The Playbook explains what actually determines it.' },
   { myth: '"Lifting will make me bulky."', fact: 'The physiology behind that fear, and why it doesn’t hold up, laid out plainly in Part 1.' },
   { myth: '"Extreme dieting is the fast way."', fact: 'What actually happens when you cut too hard, and why it backfires more often than it works.' },
 ]
 
 const FAQS = [
-  { q: 'What exactly do I get?', a: 'A digital PDF — the complete Shape Shift Playbook: front matter, all four parts, and the blank exercise-selection grid and weekly template to fill in yourself. No physical book is shipped.' },
-  { q: 'Is this personalized to my body type?', a: 'No — and that’s deliberate. Instead of sorting you into a category, the Playbook gives you one adaptable system and shows you how to adjust it to your own starting point and goal.' },
+  { q: 'What exactly do I get?', a: 'A digital PDF: the complete Shape Shift Playbook, front matter, all four parts, and the blank exercise-selection grid and weekly template to fill in yourself. No physical book is shipped.' },
+  { q: 'Is this personalized to my body type?', a: 'No, and that’s deliberate. Instead of sorting you into a category, the Playbook gives you one adaptable system and shows you how to adjust it to your own starting point and goal.' },
   { q: 'I’m a complete beginner. Is this still for me?', a: 'Yes. The three-level progression (Build the Habit, Build Consistency, Build Results) starts wherever you are, and you move through it at your own pace.' },
-  { q: 'I’ve been training for years — is this too basic?', a: 'The Training Path is built on core exercise-science principles that apply at any experience level, and Build Results is written for someone already consistent.' },
-  { q: 'Does it include exact calorie numbers or a meal plan?', a: 'No, on purpose. The Swap System teaches the framework — what to cut, what to add, and the three calorie directions — so you can apply it to your own food, not a meal plan you’d abandon the first time you eat out.' },
-  { q: 'What equipment do I need?', a: 'None specifically required. The Training Path is built around movement patterns — squat, hinge, push, pull, core — so you build your own exercise selection around whatever equipment you actually have.' },
+  { q: 'I’ve been training for years, is this too basic?', a: 'The Training Path is built on core exercise-science principles that apply at any experience level, and Build Results is written for someone already consistent.' },
+  { q: 'Does it include exact calorie numbers or a meal plan?', a: 'No, on purpose. The Swap System teaches the framework (what to cut, what to add, and the three calorie directions) so you can apply it to your own food, not a meal plan you’d abandon the first time you eat out.' },
+  { q: 'What equipment do I need?', a: 'None specifically required. The Training Path is built around movement patterns (squat, hinge, push, pull, core) so you build your own exercise selection around whatever equipment you actually have.' },
   { q: 'Is this a subscription?', a: 'No. One-time payment, $26.99, yours to keep.' },
-  { q: 'How do I access it after I buy?', a: 'You’re redirected straight to your download the moment payment completes — no email needed. Keep that confirmation page open until the file has downloaded.' },
+  { q: 'How do I access it after I buy?', a: 'You’re redirected straight to your download the moment payment completes, no email needed. Keep that confirmation page open until the file has downloaded.' },
 ]
 
 function WhatsInsideBody() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {TOC.map(section => (
         <div key={section.part}>
           <div style={{ fontFamily: EBOOK.fontMono, fontSize: 10.5, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: EBOOK.textMuted }}>{section.part}</div>
@@ -538,7 +538,7 @@ function WhatsInsideBody() {
 
 function MythsBody() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {MYTHS.map(m => (
         <div key={m.myth}>
           <div style={{ fontFamily: EBOOK.fontDisplay, fontWeight: 800, fontSize: 13, color: EBOOK.textMuted, textDecoration: 'line-through', textDecorationThickness: 2 }}>{m.myth}</div>
@@ -620,9 +620,9 @@ function Footer() {
     <footer style={{ textAlign: 'center', padding: '28px 20px 40px', borderTop: `2px solid ${EBOOK.lavenderTint}` }}>
       <div style={{ fontFamily: EBOOK.fontDisplay, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', color: EBOOK.ink }}>MissVfit</div>
       <div style={{ fontFamily: EBOOK.fontMono, fontSize: 11, color: EBOOK.textMuted, marginTop: 8, lineHeight: 1.6, maxWidth: 440, marginLeft: 'auto', marginRight: 'auto' }}>
-        Digital product — no physical item is shipped. One-time payment, no subscription. Questions about your order? Contact us at <a href="mailto:support@missvfit.app" style={{ color: EBOOK.ink }}>support@missvfit.app</a>.
+        Digital product. No physical item is shipped. One-time payment, no subscription. Questions about your order? Contact us at <a href="mailto:support@missvfit.app" style={{ color: EBOOK.ink }}>support@missvfit.app</a>.
       </div>
-      <div style={{ fontFamily: EBOOK.fontMono, fontSize: 11, color: EBOOK.textMuted, marginTop: 10 }}>
+      <div style={{ fontFamily: EBOOK.fontMono, fontSize: 11, color: EBOOK.textMuted, marginTop: 8 }}>
         © {new Date().getFullYear()} MissVfit. All rights reserved. · <a href="/legal" style={{ color: EBOOK.textMuted }}>Terms · Privacy · Refund Policy</a>
       </div>
     </footer>
@@ -690,7 +690,7 @@ export default function EbookLanding() {
   const handleBuy = async () => {
     setCheckoutError('')
     if (!EBOOK_STRIPE_PRICE) {
-      setCheckoutError("This isn't set up for purchase yet — check back soon.")
+      setCheckoutError("This isn't set up for purchase yet. Check back soon.")
       return
     }
     setBusy(true)
@@ -749,7 +749,7 @@ export default function EbookLanding() {
 
       {isMobile && showStickyCTA && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 150, padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', background: 'rgba(255,255,255,0.92)', borderTop: EBOOK_BORDER, backdropFilter: 'blur(6px)' }}>
-          <BuyButton label="Buy now — $26.99" onClick={handleBuy} busy={busy} style={{ width: '100%', height: 52 }} />
+          <BuyButton label="Buy now for $26.99" onClick={handleBuy} busy={busy} style={{ width: '100%', height: 52 }} />
         </div>
       )}
     </div>

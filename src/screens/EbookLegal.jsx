@@ -22,7 +22,7 @@ const SECTIONS = [
     title: 'Terms of Service',
     items: [
       { h: 'What you’re buying', body: 'The Shape Shift Playbook is a digital PDF guide, delivered as an instant download after payment. No physical item is shipped, and no MissVfit account is required to buy it.' },
-      { h: 'License', body: 'Your purchase gives you a personal-use copy of the Playbook. It’s yours to keep and use for your own training and nutrition — please don’t redistribute, resell, or share the file itself.' },
+      { h: 'License', body: 'Your purchase gives you a personal-use copy of the Playbook. It’s yours to keep and use for your own training and nutrition. Please don’t redistribute, resell, or share the file itself.' },
       { h: 'Not medical advice', body: 'The Playbook offers general training and nutrition education. It isn’t a medical device and doesn’t provide medical advice, diagnosis, or treatment. Talk to a doctor before starting a new exercise or nutrition program, especially if you’re pregnant, injured, or managing a health condition.' },
       { h: 'Payment', body: 'Payments are processed by Stripe. MissVfit never sees or stores your full card details.' },
       { h: 'Age', body: 'You must be at least 16 years old to purchase the Playbook.' },
@@ -33,7 +33,7 @@ const SECTIONS = [
   {
     title: 'Privacy Policy',
     items: [
-      { h: 'What we collect', body: 'This page doesn’t create an account or collect health data. At checkout, Stripe collects your email and payment details directly — MissVfit receives your email and purchase confirmation from Stripe, not your card information.' },
+      { h: 'What we collect', body: 'This page doesn’t create an account or collect health data. At checkout, Stripe collects your email and payment details directly. MissVfit receives your email and purchase confirmation from Stripe, not your card information.' },
       { h: 'How we use it', body: 'Your email is used to verify your purchase and, if you contact support, to help with your order. We don’t sell your information.' },
       { h: 'Analytics', body: 'This page uses PostHog to understand anonymous visit and purchase-funnel trends (e.g. how many visitors reach checkout). This doesn’t identify you personally.' },
       { h: 'Service providers', body: 'Stripe processes payment. Supabase stores the purchase record and the Playbook file itself, in a private location not accessible without a verified purchase.' },
@@ -46,7 +46,7 @@ const SECTIONS = [
     items: [
       { h: 'Non-refundable once downloaded', body: 'Because this is a digital product delivered instantly on purchase, once you’ve downloaded the Playbook the sale is final and non-refundable.' },
       { h: 'Before you download', body: `If you haven’t yet downloaded your copy and have a genuine issue with your purchase, contact ${CONTACT_EMAIL} within 14 days of buying.` },
-      { h: 'Trouble accessing your file', body: `If payment went through but you couldn’t verify or download your copy, that’s not covered by the above — email ${CONTACT_EMAIL} with your receipt and we’ll get your copy to you directly.` },
+      { h: 'Trouble accessing your file', body: `If payment went through but you couldn’t verify or download your copy, that’s not covered by the above. Email ${CONTACT_EMAIL} with your receipt and we’ll get your copy to you directly.` },
     ],
   },
 ]
