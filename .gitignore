@@ -29,6 +29,18 @@ Thumbs.db
 .env.*.local
 .mcp.json
 
+# The paid ebook deliverable itself — a purchase-gated digital product, not
+# source code. Never committed: git history would defeat the payment gate
+# (and the webhook-driven delivery pipeline, once built, serves it directly
+# from storage rather than from this checkout).
+/ebook/
+
+# Original drop location for the ebook's marketing preview images — the
+# copies that actually need to be committed live in public/ebook-preview/
+# (served on the live site); this is just the untouched source duplicate,
+# kept out of git to avoid committing the same ~4MB of images twice.
+/images_books/
+
 .vercel
 
 # Playwright UX audit — real session tokens + generated artifacts, never commit
