@@ -15,8 +15,14 @@ export const EBOOK = {
   textBody: shade('#1A1A1A', 25),
   textMuted: shade('#1A1A1A', 45),
 
-  fontDisplay: NB.fontDisplay,
-  fontMono: NB.fontMono,
+  // Anton/Poppins, not NB's Archivo/Space Mono — this page's own typographic
+  // choice, deliberately separate from the gated app's design system. Token
+  // names (fontDisplay/fontMono) are kept as-is even though Poppins isn't a
+  // mono font: every call site across EbookLanding.jsx/EbookLegal.jsx already
+  // keys off these two names, and renaming them would be a page-wide
+  // find/replace for no behavioral change.
+  fontDisplay: "'Anton',sans-serif",
+  fontMono: "'Poppins',sans-serif",
 }
 
 export { hardShadow, shade, NB_RADIUS, NB_RADIUS_SM, NB_RADIUS_XS }
